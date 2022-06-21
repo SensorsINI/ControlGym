@@ -9,9 +9,4 @@ Main features:
 ### References
 
 * [OpenAI Gym on GitHub](https://github.com/openai/gym)
-* @misc{1606.01540,
-  Author = {Greg Brockman and Vicki Cheung and Ludwig Pettersson and Jonas Schneider and John Schulman and Jie Tang and Wojciech Zaremba},
-  Title = {OpenAI Gym},
-  Year = {2016},
-  Eprint = {arXiv:1606.01540},
-}
+* [Brockman et al. 2016, OpenAI Gym](https://arxiv.org/abs/1606.01540)
