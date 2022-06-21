@@ -1,0 +1,14 @@
+*venv
+.DS_Store
+*__pycache__
+*.pyc
+*.csv
+*.png
+*.txt
+*.ckpt.*
+*.pt
+*.env
+*.vscode
+/Modeling/SI_Toolkit/TF/NNI/NNI_Results
+
+/SI_Toolkit_ASF/Experiments/*
