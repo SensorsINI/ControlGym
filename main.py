@@ -5,7 +5,12 @@ import time
 
 GLOBAL_SEED = 1234
 
-from Configs.default_cem import ENV_NAME, NUM_ITERATIONS, CONTROLLER_NAME, CONTROLLER_CONFIG
+from Configs.default_cem import (
+    ENV_NAME,
+    NUM_ITERATIONS,
+    CONTROLLER_NAME,
+    CONTROLLER_CONFIG,
+)
 
 
 if __name__ == "__main__":
@@ -29,6 +34,6 @@ if __name__ == "__main__":
         print(obs)
         print(action)
         obs = new_obs
-    
+
     # Close the env
     env.close()

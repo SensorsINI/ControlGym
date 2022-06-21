@@ -4,13 +4,13 @@ import numpy as np
 from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
 
-
 class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
     """Accepts batches of data to environment
 
     :param Continuous_MountainCarEnv: _description_
     :type Continuous_MountainCarEnv: _type_
     """
+
     def __init__(self, goal_velocity=0, batch_size=1):
         super().__init__(goal_velocity)
         self._batch_size = batch_size
@@ -22,7 +22,7 @@ class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
 
         velocity += force * self.power - 0.0025 * np.cos(3 * position)
         velocity = np.clip(velocity, -self.max_speed, self.max_speed)
-        
+
         position += velocity
         position = np.clip(position, self.min_position, self.max_position)
         velocity[(position == self.min_position) & (velocity < 0)] = 0
@@ -37,13 +37,19 @@ class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
         self.state = np.c_[position, velocity]
         return self.state, reward, done, {}
 
-    def reset(self, state: np.ndarray, seed: Optional[int] = None, return_info: bool = False, options: Optional[dict] = None):
+    def reset(
+        self,
+        state: np.ndarray,
+        seed: Optional[int] = None,
+        return_info: bool = False,
+        options: Optional[dict] = None,
+    ):
         self.state = np.tile(state, (self._batch_size, 1))
         if not return_info:
             return np.array(self.state, dtype=np.float32)
         else:
             return np.array(self.state, dtype=np.float32), {}
-    
+
     def render(self, mode="human"):
         if self._batch_size == 1:
             return super().render(mode=mode)

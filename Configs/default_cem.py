@@ -1,4 +1,6 @@
-from Environments.continuous_mountain_car_batched import Continuous_MountainCarEnv_Batched
+from Environments.continuous_mountain_car_batched import (
+    Continuous_MountainCarEnv_Batched,
+)
 
 ENV_NAME = "MountainCarContinuous-v0"
 ENV = Continuous_MountainCarEnv_Batched
@@ -18,5 +20,5 @@ CONTROLLER_CONFIG = {
     "cem_ccrc_weight": 1,
     "cem_best_k": 5,
     "cem_LR": 0.1,
-    "cem_initial_action_variance": 0.5
+    "cem_initial_action_variance": 0.5,
 }
