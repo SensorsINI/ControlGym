@@ -1,11 +1,4 @@
-from Environments.continuous_cartpole_batched import Continuous_CartPoleEnv_Batched
-from Environments.continuous_mountain_car_batched import (
-    Continuous_MountainCarEnv_Batched,
-)
-from Environments.pendulum_batched import PendulumEnvBatched
-
-ENV_NAME = "CustomEnvironments/CartPoleContinuous-v1"
-ENV = Continuous_CartPoleEnv_Batched
+ENV_NAME = "CustomEnvironments/CartPoleContinuous"
 NUM_ITERATIONS = 300
 
 CONTROLLER_NAME = "ControllerCem"

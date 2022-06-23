@@ -11,6 +11,7 @@ from Configs.default_cem import (
     CONTROLLER_NAME,
     CONTROLLER_CONFIG,
 )
+import Environments
 
 
 if __name__ == "__main__":

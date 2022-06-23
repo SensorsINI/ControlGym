@@ -1,7 +1,12 @@
 from copy import copy, deepcopy
+from importlib import import_module
 import tensorflow as tf
 
-from Configs.default_cem import ENV
+from Configs.default_cem import ENV_NAME
+from Environments import ENV_REGISTRY
+
+_m, _c = ENV_REGISTRY[ENV_NAME].rsplit(":", maxsplit=1)
+ENV = getattr(import_module(_m), _c)
 
 tf.config.run_functions_eagerly(True)
 import numpy as np
@@ -51,7 +56,7 @@ class ControllerCem(Controller):
 
     def step(self, s: np.ndarray, env: Env, target_position: np.ndarray = 0, time=None):
         self._predictor_environment = ENV(batch_size=self._num_rollouts)
-        self._predictor_environment.reset(s)
+        self._predictor_environment.reset(state=s)
 
         s = self._predictor_environment.state.copy()
         s = tf.convert_to_tensor(s, dtype=tf.float32)
