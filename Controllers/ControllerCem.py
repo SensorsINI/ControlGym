@@ -40,8 +40,6 @@ class ControllerCem(Controller):
         traj_cost = np.zeros((self._num_rollouts))
 
         for horizon_step in range(self._horizon_steps):
-            # TODO: Create a list of predictor envs, one for each rollout
-            # TODO: Implement this more efficiently?
             new_obs, reward, done, info = self._predictor_environment.step(
                 Q[:, horizon_step, tf.newaxis].numpy()
             )
@@ -55,7 +53,7 @@ class ControllerCem(Controller):
         self._predictor_environment = ENV(batch_size=self._num_rollouts)
         self._predictor_environment.reset(s)
 
-        s = np.tile(s, tf.constant([self._num_rollouts, 1]))
+        s = self._predictor_environment.state.copy()
         s = tf.convert_to_tensor(s, dtype=tf.float32)
         for _ in range(0, self._outer_it):
             # generate random input sequence and clip to control limits

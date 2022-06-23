@@ -1,16 +1,18 @@
+from Environments.continuous_cartpole_batched import Continuous_CartPoleEnv_Batched
 from Environments.continuous_mountain_car_batched import (
     Continuous_MountainCarEnv_Batched,
 )
+from Environments.pendulum_batched import PendulumEnvBatched
 
-ENV_NAME = "MountainCarContinuous-v0"
-ENV = Continuous_MountainCarEnv_Batched
+ENV_NAME = "CustomEnvironments/CartPoleContinuous-v1"
+ENV = Continuous_CartPoleEnv_Batched
 NUM_ITERATIONS = 300
 
 CONTROLLER_NAME = "ControllerCem"
 
 CONTROLLER_CONFIG = {
     "SEED": 12345,
-    "mpc_horizon": 2,
+    "mpc_horizon": 3,
     "dt": 0.02,
     "cem_outer_it": 5,
     "cem_rollouts": 100,
@@ -20,5 +22,5 @@ CONTROLLER_CONFIG = {
     "cem_ccrc_weight": 1,
     "cem_best_k": 5,
     "cem_LR": 0.1,
-    "cem_initial_action_variance": 0.5,
+    "cem_initial_action_variance": 1,
 }
