@@ -19,9 +19,9 @@ class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
 
     def step(self, action: tf.Tensor):
         if action.ndim < 2:
-            action = tf.reshape(action, [self._batch_size, 1])
+            action = tf.reshape(action, [self._batch_size, sum(self.action_space.shape)])
         if self.state.ndim < 2:
-            self.state = tf.reshape(self.state, [self._batch_size, 2])
+            self.state = tf.reshape(self.state, [self._batch_size, sum(self.observation_space.shape)])
 
         position, velocity = tf.unstack(self.state, axis=1)
         force = tf.clip_by_value(action[:, 0], self.min_action, self.max_action)
@@ -75,7 +75,7 @@ class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
             self.state = tf.tile(state, [self._batch_size, 1])
 
         if self._batch_size == 1:
-            self.state = self.state.numpy()
+            self.state = tf.squeeze(self.state).numpy()
 
         if not return_info:
             return self.state

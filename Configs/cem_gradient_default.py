@@ -1,4 +1,4 @@
-ENV_NAME = "CustomEnvironments/MountainCarContinuous"
+ENV_NAME = "CustomEnvironments/CartPoleContinuous"
 NUM_ITERATIONS = 300
 
 CONTROLLER_NAME = "ControllerCemGradient"

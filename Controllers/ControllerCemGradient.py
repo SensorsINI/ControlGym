@@ -98,8 +98,7 @@ class ControllerCemGradient(Controller):
     def step(self, s: np.ndarray):
         self._predictor_environment = ENV(batch_size=self._num_rollouts)
         self._predictor_environment.reset(s)
-        s = self._predictor_environment.state.numpy().copy()
-        s = tf.convert_to_tensor(s, dtype=tf.float32)
+        s = self._predictor_environment.state
 
         for _ in range(self._outer_it):
             self._predict_and_cost(s)

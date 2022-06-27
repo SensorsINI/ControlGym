@@ -2,7 +2,7 @@ from copy import copy, deepcopy
 from importlib import import_module
 import tensorflow as tf
 
-from Configs.cem_default import ENV_NAME
+from Configs.cem_gradient_default import ENV_NAME
 from Environments import ENV_REGISTRY
 
 _m, _c = ENV_REGISTRY[ENV_NAME].rsplit(":", maxsplit=1)
@@ -19,7 +19,7 @@ from Controllers import Controller
 class ControllerCem(Controller):
     def __init__(self, environment: Env, **controller_config) -> None:
         super().__init__(environment)
-        
+
         self._rng = default_rng(seed=controller_config["SEED"])
 
         self._num_rollouts = controller_config["cem_rollouts"]
@@ -37,14 +37,12 @@ class ControllerCem(Controller):
         )
 
     @tf.function(jit_compile=True)
-    def predict_and_cost(
-        self, s: np.ndarray, Q: np.ndarray, target_position: np.ndarray
-    ):
+    def predict_and_cost(self, s: np.ndarray, Q: np.ndarray):
         # rollout trajectories and retrieve cost
         rollout_trajectory = np.empty(
             (self._num_rollouts, self._horizon_steps + 1, self._n), dtype=np.float32
         )
-        rollout_trajectory[:, 0, :] = s.numpy().copy()
+        rollout_trajectory[:, 0, :] = s.numpy()
         traj_cost = np.zeros((self._num_rollouts))
 
         for horizon_step in range(self._horizon_steps):
@@ -53,16 +51,15 @@ class ControllerCem(Controller):
             )
             traj_cost -= reward
             s = new_obs
-            rollout_trajectory[:, horizon_step + 1, :] = s.copy()
+            rollout_trajectory[:, horizon_step + 1, :] = s.numpy()
 
         return traj_cost, rollout_trajectory
 
     def step(self, s: np.ndarray):
         self._predictor_environment = ENV(batch_size=self._num_rollouts)
         self._predictor_environment.reset(state=s)
+        s = self._predictor_environment.state
 
-        s = self._predictor_environment.state.copy()
-        s = tf.convert_to_tensor(s, dtype=tf.float32)
         for _ in range(0, self._outer_it):
             # generate random input sequence and clip to control limits
             Q = np.tile(
@@ -71,12 +68,10 @@ class ControllerCem(Controller):
                 size=(self._num_rollouts, self._horizon_steps), dtype=np.float32
             )
             Q = np.clip(Q, -1.0, 1.0, dtype=np.float32)
-
             Q = tf.convert_to_tensor(Q, dtype=tf.float32)
-            target_position = tf.convert_to_tensor(target_position, dtype=tf.float32)
 
             # rollout the trajectories and get cost
-            traj_cost, rollout_trajectory = self.predict_and_cost(s, Q, target_position)
+            traj_cost, rollout_trajectory = self.predict_and_cost(s, Q)
             Q = Q.numpy()
             # sort the costs and find best k costs
             sorted_cost = np.argsort(traj_cost)

@@ -14,19 +14,22 @@ class Continuous_CartPoleEnv_Batched(CartPoleEnv):
         self.action_space = spaces.Box(
             low=-self.force_mag, high=self.force_mag, shape=(1,), dtype=np.float32
         )
-
         self._batch_size = batch_size
 
-    def step(self, action):
+    def step(self, action: tf.Tensor):
         if action.ndim < 2:
-            action = np.expand_dims(action, axis=0)
+            action = tf.reshape(action, [self._batch_size, sum(self.action_space.shape)])
+        if self.state.ndim < 2:
+            self.state = tf.reshape(self.state, [self._batch_size, sum(self.observation_space.shape)])
+
         err_msg = f"{action!r} ({type(action)}) invalid"
         assert np.all([self.action_space.contains(a) for a in action]), err_msg
         assert self.state is not None, "Call reset before using step method."
-        x, x_dot, theta, theta_dot = list(self.state.T)
-        force = action[:, 0]
-        costheta = np.cos(theta)
-        sintheta = np.sin(theta)
+        
+        x, x_dot, theta, theta_dot = tf.unstack(self.state, axis=1)
+        force = tf.clip_by_value(action[:, 0], self.action_space.low, self.action_space.high)
+        costheta = tf.cos(theta)
+        sintheta = tf.sin(theta)
 
         # For the interested reader:
         # https://coneural.org/florian/papers/05_cart_pole.pdf
@@ -49,7 +52,7 @@ class Continuous_CartPoleEnv_Batched(CartPoleEnv):
             theta_dot = theta_dot + self.tau * thetaacc
             theta = theta + self.tau * theta_dot
 
-        self.state = np.squeeze(np.c_[x, x_dot, theta, theta_dot])
+        self.state = tf.squeeze(tf.stack([x, x_dot, theta, theta_dot], axis=1))
 
         done = (
             (x < -self.x_threshold)
@@ -58,12 +61,12 @@ class Continuous_CartPoleEnv_Batched(CartPoleEnv):
             | (theta > self.theta_threshold_radians)
         )
 
-        reward = np.zeros((self._batch_size))
-        reward[~done] = 1.0
+        # TODO: Review cost function here (changed from default to be differentiable)
+        reward = -(tf.abs(theta) + tf.abs(theta_dot) + tf.abs(x) + tf.abs(x_dot))
         if self.steps_beyond_done is None:
             # Pole just fell!
             self.steps_beyond_done = 0
-            reward[done] = 1.0
+            reward += tf.cast(done, dtype=tf.float32)
         else:
             if self.steps_beyond_done == 0:
                 logger.warn(
@@ -73,13 +76,11 @@ class Continuous_CartPoleEnv_Batched(CartPoleEnv):
                     "True' -- any further steps are undefined behavior."
                 )
             self.steps_beyond_done += 1
-            reward[done] = 0.0
 
         if self._batch_size == 1:
-            done = bool(done)
-            reward = float(reward)
-
-        return np.array(self.state, dtype=np.float32), reward, done, {}
+            return np.array(self.state, dtype=np.float32), float(reward), bool(done), {}
+        
+        return self.state, reward, done, {}
 
     def reset(
         self,
@@ -93,17 +94,23 @@ class Continuous_CartPoleEnv_Batched(CartPoleEnv):
 
         if state is None:
             if self._batch_size == 1:
-                self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(4,))
+                self.state = tf.convert_to_tensor([self.np_random.uniform(low=-0.05, high=0.05, size=(4,))], dtype=tf.float32)
             else:
-                self.state = self.np_random.uniform(
-                    low=-0.05, high=0.05, size=(self._batch_size, 4)
-                )
+                self.state = tf.convert_to_tensor([
+                    self.np_random.uniform(
+                        low=-0.05, high=0.05, size=(self._batch_size, 4)
+                )], dtype=tf.float32)
         else:
-            self.state = np.tile(state.ravel(), (self._batch_size, 1))
+            if state.ndim < 2:
+                state = tf.expand_dims(state, axis=0)
+            self.state = tf.tile(state, [self._batch_size, 1])
 
         self.steps_beyond_done = None
 
+        if self._batch_size == 1:
+            self.state = tf.squeeze(self.state).numpy()
+
         if not return_info:
-            return np.array(self.state, dtype=np.float32)
+            return self.state
         else:
-            return np.array(self.state, dtype=np.float32), {}
+            return self.state, {}
