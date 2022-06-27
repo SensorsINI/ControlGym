@@ -1,5 +1,5 @@
 from typing import Optional
-import numpy as np
+import tensorflow as tf
 
 from gym.utils import seeding
 
@@ -17,38 +17,39 @@ class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
         super().__init__(goal_velocity)
         self._batch_size = batch_size
 
-    def step(self, action: np.ndarray):
+    def step(self, action: tf.Tensor):
         if action.ndim < 2:
-            action = np.expand_dims(action, axis=0)
+            action = tf.reshape(action, [self._batch_size, 1])
+        if self.state.ndim < 2:
+            self.state = tf.reshape(self.state, [self._batch_size, 2])
 
-        position, velocity = list(self.state.T)
-        force = np.clip(action[:, 0], self.min_action, self.max_action)
+        position, velocity = tf.unstack(self.state, axis=1)
+        force = tf.clip_by_value(action[:, 0], self.min_action, self.max_action)
 
-        velocity += force * self.power - 0.0025 * np.cos(3 * position)
-        velocity = np.clip(velocity, -self.max_speed, self.max_speed)
+        velocity += force * self.power - 0.0025 * tf.cos(3 * position)
+        velocity = tf.clip_by_value(velocity, -self.max_speed, self.max_speed)
 
         position += velocity
-        position = np.clip(position, self.min_position, self.max_position)
-        velocity[(position == self.min_position) & (velocity < 0)] = 0
+        position = tf.clip_by_value(position, self.min_position, self.max_position)
+        velocity *= tf.cast(~((position == self.min_position) & (velocity < 0)), dtype=tf.float32)
 
         done = (position >= self.goal_position) & (velocity >= self.goal_velocity)
 
-        reward = np.sin(3 * position)
+        reward = tf.sin(3 * position)
         # reward = np.zeros_like(position)
-        reward[done] = 100.0
-        reward -= np.power(action[:, 0], 2) * 0.1
+        reward += 100.0 * tf.cast(done, dtype=tf.float32)
+        reward -= tf.pow(action[:, 0], 2) * 0.1
 
-        self.state = np.squeeze(np.c_[position, velocity])
+        self.state = tf.squeeze(tf.stack([position, velocity], axis=1))
 
         if self._batch_size == 1:
-            done = bool(done)
-            reward = float(reward)
-
+            return tf.squeeze(self.state).numpy(), float(reward), bool(done), {}
+        
         return self.state, reward, done, {}
 
     def reset(
         self,
-        state: np.ndarray = None,
+        state: tf.Tensor = None,
         seed: Optional[int] = None,
         return_info: bool = False,
         options: Optional[dict] = None,
@@ -58,26 +59,28 @@ class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
 
         if state is None:
             if self._batch_size == 1:
-                self.state = np.array([self.np_random.uniform(low=-0.6, high=-0.4), 0])
+                self.state = tf.convert_to_tensor([self.np_random.uniform(low=-0.6, high=-0.4), 0])
             else:
-                self.state = np.c_[
-                    self.np_random.uniform(
+                self.state = tf.stack([
+                    tf.convert_to_tensor(self.np_random.uniform(
                         low=-0.6, high=-0.4, size=(self._batch_size,)
-                    ),
-                    np.zeros(
+                    )),
+                    tf.zeros(
                         self._batch_size,
                     ),
-                ]
-                self.state = self.np_random.uniform(
-                    low=-0.05, high=0.05, size=(self._batch_size, 4)
-                )
+                ], axis=1)
         else:
-            self.state = np.tile(state.ravel(), (self._batch_size, 1))
+            if state.ndim < 2:
+                state = tf.expand_dims(state, axis=0)
+            self.state = tf.tile(state, [self._batch_size, 1])
+
+        if self._batch_size == 1:
+            self.state = self.state.numpy()
 
         if not return_info:
-            return np.array(self.state, dtype=np.float32)
+            return self.state
         else:
-            return np.array(self.state, dtype=np.float32), {}
+            return self.state, {}
 
     def render(self, mode="human"):
         if self._batch_size == 1:

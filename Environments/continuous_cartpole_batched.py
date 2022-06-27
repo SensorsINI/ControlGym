@@ -1,5 +1,6 @@
 from typing import Optional
 import numpy as np
+import tensorflow as tf
 
 from gym import spaces, logger
 from gym.utils import seeding

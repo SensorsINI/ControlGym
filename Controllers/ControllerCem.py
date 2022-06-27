@@ -2,7 +2,7 @@ from copy import copy, deepcopy
 from importlib import import_module
 import tensorflow as tf
 
-from Configs.default_cem import ENV_NAME
+from Configs.cem_default import ENV_NAME
 from Environments import ENV_REGISTRY
 
 _m, _c = ENV_REGISTRY[ENV_NAME].rsplit(":", maxsplit=1)
@@ -12,12 +12,15 @@ tf.config.run_functions_eagerly(True)
 import numpy as np
 from gym import Env, vector
 
+from numpy.random import default_rng
 from Controllers import Controller
 
 
 class ControllerCem(Controller):
     def __init__(self, environment: Env, **controller_config) -> None:
-        super().__init__(environment=environment, seed=controller_config["SEED"])
+        super().__init__(environment)
+        
+        self._rng = default_rng(seed=controller_config["SEED"])
 
         self._num_rollouts = controller_config["cem_rollouts"]
         self._horizon_steps = int(
@@ -54,7 +57,7 @@ class ControllerCem(Controller):
 
         return traj_cost, rollout_trajectory
 
-    def step(self, s: np.ndarray, env: Env, target_position: np.ndarray = 0, time=None):
+    def step(self, s: np.ndarray):
         self._predictor_environment = ENV(batch_size=self._num_rollouts)
         self._predictor_environment.reset(state=s)
 

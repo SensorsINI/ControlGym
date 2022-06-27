@@ -5,7 +5,7 @@ import time
 
 GLOBAL_SEED = 1234
 
-from Configs.default_cem import (
+from Configs.cem_gradient_default import (
     ENV_NAME,
     NUM_ITERATIONS,
     CONTROLLER_NAME,
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     controller = getattr(controller_module, CONTROLLER_NAME)(env, **CONTROLLER_CONFIG)
 
     for step in range(NUM_ITERATIONS):
-        action = controller.step(obs, env)
+        action = controller.step(obs)
         new_obs, reward, done, info = env.step(action)
         env.render()
         time.sleep(0.001)
