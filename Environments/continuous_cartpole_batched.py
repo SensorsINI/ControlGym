@@ -1,14 +1,15 @@
-from typing import Optional
+from typing import Optional, Tuple, Union
+
 import numpy as np
 import tensorflow as tf
-
-from gym import spaces, logger
+from gym import logger, spaces
+from gym.envs.classic_control.cartpole import CartPoleEnv
 from gym.utils import seeding
 
-from gym.envs.classic_control.cartpole import CartPoleEnv
+from Environments import EnvironmentBatched
 
 
-class Continuous_CartPoleEnv_Batched(CartPoleEnv):
+class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
     def __init__(self, batch_size=1):
         super().__init__()
         self.action_space = spaces.Box(
@@ -16,18 +17,31 @@ class Continuous_CartPoleEnv_Batched(CartPoleEnv):
         )
         self._batch_size = batch_size
 
-    def step(self, action: tf.Tensor):
+    def step(
+        self, action: Union[np.ndarray, tf.Tensor]
+    ) -> Tuple[
+        Union[np.ndarray, tf.Tensor],
+        Union[np.ndarray, float],
+        Union[np.ndarray, bool],
+        dict,
+    ]:
         if action.ndim < 2:
-            action = tf.reshape(action, [self._batch_size, sum(self.action_space.shape)])
+            action = tf.reshape(
+                action, [self._batch_size, sum(self.action_space.shape)]
+            )
         if self.state.ndim < 2:
-            self.state = tf.reshape(self.state, [self._batch_size, sum(self.observation_space.shape)])
+            self.state = tf.reshape(
+                self.state, [self._batch_size, sum(self.observation_space.shape)]
+            )
 
         err_msg = f"{action!r} ({type(action)}) invalid"
         assert np.all([self.action_space.contains(a) for a in action.numpy()]), err_msg
         assert self.state is not None, "Call reset before using step method."
-        
+
         x, x_dot, theta, theta_dot = tf.unstack(self.state, axis=1)
-        force = tf.clip_by_value(action[:, 0], self.action_space.low, self.action_space.high)
+        force = tf.clip_by_value(
+            action[:, 0], self.action_space.low, self.action_space.high
+        )
         costheta = tf.cos(theta)
         sintheta = tf.sin(theta)
 
@@ -79,7 +93,7 @@ class Continuous_CartPoleEnv_Batched(CartPoleEnv):
 
         if self._batch_size == 1:
             return np.array(self.state, dtype=np.float32), float(reward), bool(done), {}
-        
+
         return self.state, reward, done, {}
 
     def reset(
@@ -88,18 +102,25 @@ class Continuous_CartPoleEnv_Batched(CartPoleEnv):
         seed: Optional[int] = None,
         return_info: bool = False,
         options: Optional[dict] = None,
-    ):
+    ) -> Tuple[np.ndarray, Optional[dict]]:
         if seed is not None:
             self._np_random, seed = seeding.np_random(seed)
 
         if state is None:
             if self._batch_size == 1:
-                self.state = tf.convert_to_tensor([self.np_random.uniform(low=-0.05, high=0.05, size=(4,))], dtype=tf.float32)
+                self.state = tf.convert_to_tensor(
+                    [self.np_random.uniform(low=-0.05, high=0.05, size=(4,))],
+                    dtype=tf.float32,
+                )
             else:
-                self.state = tf.convert_to_tensor([
-                    self.np_random.uniform(
-                        low=-0.05, high=0.05, size=(self._batch_size, 4)
-                )], dtype=tf.float32)
+                self.state = tf.convert_to_tensor(
+                    [
+                        self.np_random.uniform(
+                            low=-0.05, high=0.05, size=(self._batch_size, 4)
+                        )
+                    ],
+                    dtype=tf.float32,
+                )
         else:
             if state.ndim < 2:
                 state = tf.expand_dims(state, axis=0)
@@ -110,7 +131,9 @@ class Continuous_CartPoleEnv_Batched(CartPoleEnv):
         if self._batch_size == 1:
             self.state = tf.squeeze(self.state).numpy()
 
-        if not return_info:
-            return self.state
-        else:
-            return self.state, {}
+        ret_val = (
+            self.state.numpy() if isinstance(self.state, tf.Tensor) else self.state
+        )
+        if return_info:
+            ret_val = tuple((ret_val, {}))
+        return ret_val

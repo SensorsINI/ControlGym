@@ -113,7 +113,7 @@ class ControllerAdamResampler(Controller):
 
         return Q_keep, best_idx
 
-    def step(self, s: np.ndarray):
+    def step(self, s: np.ndarray) -> np.ndarray:
         s0 = s.copy()
         self._predictor_environment.reset(s)
         s = self._predictor_environment.state
@@ -190,4 +190,4 @@ class ControllerAdamResampler(Controller):
         self.opt.set_weights([adam_weights[0], w_m, w_v])
         self.Q.assign(Q_new)
         self.iteration += 1
-        return u
+        return tf.expand_dims(u, 0).numpy()

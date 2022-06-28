@@ -1,17 +1,17 @@
-from typing import Optional
+from typing import Optional, Tuple, Union
+
 import numpy as np
 import tensorflow as tf
-
 from gym import spaces
+from gym.envs.classic_control.pendulum import PendulumEnv, angle_normalize
 from gym.utils import seeding
 
-from gym.envs.classic_control.pendulum import PendulumEnv, angle_normalize
-
+from Environments import EnvironmentBatched
 
 _PI = tf.constant(np.pi, dtype=tf.float32)
 
 
-class PendulumEnv_Batched(PendulumEnv):
+class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
     def __init__(self, g=10, batch_size=1):
         super().__init__(g)
         self._batch_size = batch_size
@@ -22,7 +22,14 @@ class PendulumEnv_Batched(PendulumEnv):
     def _angle_normalize(self, x):
         return ((x + _PI) % (2 * _PI)) - _PI
 
-    def step(self, action: np.ndarray):
+    def step(
+        self, action: Union[np.ndarray, tf.Tensor]
+    ) -> Tuple[
+        Union[np.ndarray, tf.Tensor],
+        Union[np.ndarray, float],
+        Union[np.ndarray, bool],
+        dict,
+    ]:
         if action.ndim < 2:
             action = tf.reshape(
                 action, [self._batch_size, sum(self.action_space.shape)]
@@ -64,7 +71,7 @@ class PendulumEnv_Batched(PendulumEnv):
         seed: Optional[int] = None,
         return_info: bool = False,
         options: Optional[dict] = None,
-    ):
+    ) -> Tuple[np.ndarray, Optional[dict]]:
         if seed is not None:
             self._np_random, seed = seeding.np_random(seed)
 
@@ -86,10 +93,12 @@ class PendulumEnv_Batched(PendulumEnv):
         if self._batch_size == 1:
             self.state = tf.squeeze(self.state).numpy()
 
-        if not return_info:
-            return self.state
-        else:
-            return self.state, {}
+        ret_val = (
+            self.state.numpy() if isinstance(self.state, tf.Tensor) else self.state
+        )
+        if return_info:
+            ret_val = tuple((ret_val, {}))
+        return ret_val
 
     # def render(self, mode="human"):
     #     if self._batch_size == 1:

@@ -1,12 +1,15 @@
-from typing import Optional
-import tensorflow as tf
+from typing import Optional, Tuple, Union
 
+import numpy as np
+import tensorflow as tf
+from gym.envs.classic_control.continuous_mountain_car import \
+    Continuous_MountainCarEnv
 from gym.utils import seeding
 
-from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
+from Environments import EnvironmentBatched
 
 
-class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
+class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainCarEnv):
     """Accepts batches of data to environment
 
     :param Continuous_MountainCarEnv: _description_
@@ -17,11 +20,22 @@ class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
         super().__init__(goal_velocity)
         self._batch_size = batch_size
 
-    def step(self, action: tf.Tensor):
+    def step(
+        self, action: Union[np.ndarray, tf.Tensor]
+    ) -> Tuple[
+        Union[np.ndarray, tf.Tensor],
+        Union[np.ndarray, float],
+        Union[np.ndarray, bool],
+        dict,
+    ]:
         if action.ndim < 2:
-            action = tf.reshape(action, [self._batch_size, sum(self.action_space.shape)])
+            action = tf.reshape(
+                action, [self._batch_size, sum(self.action_space.shape)]
+            )
         if self.state.ndim < 2:
-            self.state = tf.reshape(self.state, [self._batch_size, sum(self.observation_space.shape)])
+            self.state = tf.reshape(
+                self.state, [self._batch_size, sum(self.observation_space.shape)]
+            )
 
         position, velocity = tf.unstack(self.state, axis=1)
         force = tf.clip_by_value(action[:, 0], self.min_action, self.max_action)
@@ -31,7 +45,9 @@ class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
 
         position += velocity
         position = tf.clip_by_value(position, self.min_position, self.max_position)
-        velocity *= tf.cast(~((position == self.min_position) & (velocity < 0)), dtype=tf.float32)
+        velocity *= tf.cast(
+            ~((position == self.min_position) & (velocity < 0)), dtype=tf.float32
+        )
 
         done = (position >= self.goal_position) & (velocity >= self.goal_velocity)
 
@@ -44,31 +60,38 @@ class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
 
         if self._batch_size == 1:
             return tf.squeeze(self.state).numpy(), float(reward), bool(done), {}
-        
+
         return self.state, reward, done, {}
 
     def reset(
         self,
-        state: tf.Tensor = None,
+        state: np.ndarray = None,
         seed: Optional[int] = None,
         return_info: bool = False,
         options: Optional[dict] = None,
-    ):
+    ) -> Tuple[np.ndarray, Optional[dict]]:
         if seed is not None:
             self._np_random, seed = seeding.np_random(seed)
 
         if state is None:
             if self._batch_size == 1:
-                self.state = tf.convert_to_tensor([self.np_random.uniform(low=-0.6, high=-0.4), 0])
+                self.state = tf.convert_to_tensor(
+                    [self.np_random.uniform(low=-0.6, high=-0.4), 0]
+                )
             else:
-                self.state = tf.stack([
-                    tf.convert_to_tensor(self.np_random.uniform(
-                        low=-0.6, high=-0.4, size=(self._batch_size,)
-                    )),
-                    tf.zeros(
-                        self._batch_size,
-                    ),
-                ], axis=1)
+                self.state = tf.stack(
+                    [
+                        tf.convert_to_tensor(
+                            self.np_random.uniform(
+                                low=-0.6, high=-0.4, size=(self._batch_size,)
+                            )
+                        ),
+                        tf.zeros(
+                            self._batch_size,
+                        ),
+                    ],
+                    axis=1,
+                )
         else:
             if state.ndim < 2:
                 state = tf.expand_dims(state, axis=0)
@@ -77,10 +100,12 @@ class Continuous_MountainCarEnv_Batched(Continuous_MountainCarEnv):
         if self._batch_size == 1:
             self.state = tf.squeeze(self.state).numpy()
 
-        if not return_info:
-            return self.state
-        else:
-            return self.state, {}
+        ret_val = (
+            self.state.numpy() if isinstance(self.state, tf.Tensor) else self.state
+        )
+        if return_info:
+            ret_val = tuple((ret_val, {}))
+        return ret_val
 
     def render(self, mode="human"):
         if self._batch_size == 1:

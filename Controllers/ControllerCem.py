@@ -53,7 +53,7 @@ class ControllerCem(Controller):
 
         return traj_cost, rollout_trajectory
 
-    def step(self, s: np.ndarray):
+    def step(self, s: np.ndarray) -> np.ndarray:
         self._predictor_environment.reset(state=s)
         s = self._predictor_environment.state
 
@@ -85,7 +85,7 @@ class ControllerCem(Controller):
         ).astype(np.float32)
         self.u = self.dist_mean[0]
         self.dist_mean = np.append(self.dist_mean[1:], 0).astype(np.float32)
-        return np.array([self.u])
+        return np.array([self.u], dtype=np.float32)
 
     def controller_reset(self):
         self.dist_mean = np.zeros([1, self._horizon_steps])

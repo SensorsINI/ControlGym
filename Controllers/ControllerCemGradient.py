@@ -80,11 +80,10 @@ class ControllerCemGradient(Controller):
         )
 
         # Final rollout
-        final_eval_env = ENV(batch_size=self._num_rollouts)
-        final_eval_env.reset(state=rollout_trajectory[0, 0, :].copy())
+        self._predictor_environment.reset(state=rollout_trajectory[0, 0, :].copy())
         final_traj_cost = tf.zeros([self._num_rollouts])
         for horizon_step in range(self._horizon_steps):
-            new_obs, reward, done, info = final_eval_env.step(
+            new_obs, reward, done, info = self._predictor_environment.step(
                 Q_updated[:, horizon_step, tf.newaxis]
             )
             final_traj_cost -= reward
@@ -99,7 +98,7 @@ class ControllerCemGradient(Controller):
         self.dist_mean = tf.math.reduce_mean(Q_keep, axis=0, keepdims=True)
         self.dist_stdev = tf.math.reduce_std(Q_keep, axis=0, keepdims=True)
 
-    def step(self, s: np.ndarray):
+    def step(self, s: np.ndarray) -> np.ndarray:
         self._predictor_environment.reset(s)
         s = self._predictor_environment.state
 
@@ -114,5 +113,4 @@ class ControllerCemGradient(Controller):
         self.dist_mean = tf.concat(
             [self.dist_mean[:, 1:], tf.constant(0.0, shape=[1, 1])], -1
         )
-
-        return u
+        return tf.expand_dims(u, 0).numpy()

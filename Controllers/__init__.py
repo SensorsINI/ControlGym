@@ -12,8 +12,8 @@ class Controller:
         self._m = environment.action_space.shape[0]
         self._env = environment
     
-    def step(self, s: np.ndarray):
+    def step(self, s: np.ndarray) -> np.ndarray:
         raise NotImplementedError()
     
-    def controller_reset(self):
+    def controller_reset(self) -> None:
         raise NotImplementedError()
