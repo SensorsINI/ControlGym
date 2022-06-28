@@ -2,7 +2,7 @@
 
 Main features:
 * Conforms to OpenAI Gym API
-* Re-Implements batched versions of OpenAI Gym environments
+* Implements batched versions of OpenAI Gym environments
 * Can implement new controllers and test them
 
 
