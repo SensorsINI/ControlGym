@@ -37,3 +37,27 @@ class EnvironmentBatched:
         options: Optional[dict] = None,
     ) -> Tuple[np.ndarray, Optional[dict]]:
         return NotImplementedError()
+
+    def _expand_arrays(
+        self, state: Union[np.ndarray, tf.Tensor], action: Union[np.ndarray, tf.Tensor]
+    ):
+        if action.ndim < 2:
+            action = tf.reshape(
+                action, [self._batch_size, sum(self.action_space.shape)]
+            )
+        if state.ndim < 2:
+            state = tf.reshape(
+                state, [self._batch_size, sum(self.observation_space.shape)]
+            )
+        return state, action
+
+    def _get_reset_return_val(self, return_info: bool = False):
+        if self._batch_size == 1:
+            self.state = tf.squeeze(self.state).numpy()
+
+        ret_val = (
+            self.state.numpy() if isinstance(self.state, tf.Tensor) else self.state
+        )
+        if return_info:
+            ret_val = tuple((ret_val, {}))
+        return ret_val

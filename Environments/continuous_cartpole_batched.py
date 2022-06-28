@@ -25,14 +25,7 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
         Union[np.ndarray, bool],
         dict,
     ]:
-        if action.ndim < 2:
-            action = tf.reshape(
-                action, [self._batch_size, sum(self.action_space.shape)]
-            )
-        if self.state.ndim < 2:
-            self.state = tf.reshape(
-                self.state, [self._batch_size, sum(self.observation_space.shape)]
-            )
+        self.state, action = self._expand_arrays(self.state, action)
 
         err_msg = f"{action!r} ({type(action)}) invalid"
         assert np.all([self.action_space.contains(a) for a in action.numpy()]), err_msg
@@ -128,12 +121,4 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
 
         self.steps_beyond_done = None
 
-        if self._batch_size == 1:
-            self.state = tf.squeeze(self.state).numpy()
-
-        ret_val = (
-            self.state.numpy() if isinstance(self.state, tf.Tensor) else self.state
-        )
-        if return_info:
-            ret_val = tuple((ret_val, {}))
-        return ret_val
+        return self._get_reset_return_val()

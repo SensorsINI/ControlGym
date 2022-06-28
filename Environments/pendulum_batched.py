@@ -30,14 +30,7 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
         Union[np.ndarray, bool],
         dict,
     ]:
-        if action.ndim < 2:
-            action = tf.reshape(
-                action, [self._batch_size, sum(self.action_space.shape)]
-            )
-        if self.state.ndim < 2:
-            self.state = tf.reshape(
-                self.state, [self._batch_size, sum(self.observation_space.shape)]
-            )
+        self.state, action = self._expand_arrays(self.state, action)
 
         th, thdot = tf.unstack(self.state, axis=1)  # th := theta
 
@@ -90,15 +83,7 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
 
         self.last_u = None
 
-        if self._batch_size == 1:
-            self.state = tf.squeeze(self.state).numpy()
-
-        ret_val = (
-            self.state.numpy() if isinstance(self.state, tf.Tensor) else self.state
-        )
-        if return_info:
-            ret_val = tuple((ret_val, {}))
-        return ret_val
+        return self._get_reset_return_val()
 
     # def render(self, mode="human"):
     #     if self._batch_size == 1:
