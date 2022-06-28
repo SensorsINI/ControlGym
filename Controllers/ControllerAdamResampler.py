@@ -1,14 +1,10 @@
 from importlib import import_module
+
 import numpy as np
 import tensorflow as tf
 from gym import Env
 from gym.spaces import Box
-from Configs.cem_adam_resampler_default import ENV_NAME
-
-from Environments import ENV_REGISTRY
-
-_m, _c = ENV_REGISTRY[ENV_NAME].rsplit(":", maxsplit=1)
-ENV = getattr(import_module(_m), _c)
+from yaml import FullLoader, load
 
 tf.config.run_functions_eagerly(True)
 
@@ -30,7 +26,9 @@ class ControllerAdamResampler(Controller):
         self._outer_it = controller_config["cem_outer_it"]
         self._max_grad = controller_config["max_grad"]
         self._select_best_k = controller_config["cem_best_k"]
-        self._initial_action_variance = controller_config["cem_initial_action_variance"]
+        self._initial_action_variance = tf.constant(
+            controller_config["cem_initial_action_variance"], dtype=tf.float32
+        )
         self._minimal_action_stdev = controller_config["cem_stdev_min"]
         self._resamp_every = controller_config["resamp_every"]
         self._do_warmup = controller_config["do_warmup"]
@@ -49,7 +47,9 @@ class ControllerAdamResampler(Controller):
             epsilon=controller_config["grad_epsilon"],
         )
 
-        self._predictor_environment = ENV(batch_size=self._num_rollouts)
+        self._predictor_environment = environment.unwrapped.__class__(
+            batch_size=self._num_rollouts
+        )
 
     def _sample_inputs(self, num_trajectories: int):
         Q = tf.sqrt(self._initial_action_variance) * self._rng.normal(
@@ -59,12 +59,11 @@ class ControllerAdamResampler(Controller):
         return Q
 
     def _grad_step(self, s: tf.Tensor, Q: tf.Tensor):
-        # TODO: Make all gradient tapes non-persistent
         rollout_trajectory = np.zeros(
             (self._num_rollouts, self._horizon_steps + 1, self._n), dtype=np.float32
         )
         rollout_trajectory[:, 0, :] = s.numpy()
-        with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(Q)
             traj_cost = tf.zeros([self._num_rollouts])
             for horizon_step in range(self._horizon_steps):

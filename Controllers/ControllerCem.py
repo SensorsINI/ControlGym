@@ -1,18 +1,13 @@
 from copy import copy, deepcopy
 from importlib import import_module
+
 import tensorflow as tf
-
-from Configs import ENV_NAME
-from Environments import ENV_REGISTRY
-
-_m, _c = ENV_REGISTRY[ENV_NAME].rsplit(":", maxsplit=1)
-ENV = getattr(import_module(_m), _c)
 
 tf.config.run_functions_eagerly(True)
 import numpy as np
 from gym import Env, vector
-
 from numpy.random import default_rng
+
 from Controllers import Controller
 
 
@@ -35,6 +30,9 @@ class ControllerCem(Controller):
         self.dist_stdev = np.sqrt(self._initial_action_variance) * np.ones(
             (1, self._horizon_steps)
         )
+        self._predictor_environment = environment.unwrapped.__class__(
+            batch_size=self._num_rollouts
+        )
 
     @tf.function(jit_compile=True)
     def predict_and_cost(self, s: np.ndarray, Q: np.ndarray):
@@ -56,7 +54,6 @@ class ControllerCem(Controller):
         return traj_cost, rollout_trajectory
 
     def step(self, s: np.ndarray):
-        self._predictor_environment = ENV(batch_size=self._num_rollouts)
         self._predictor_environment.reset(state=s)
         s = self._predictor_environment.state
 
