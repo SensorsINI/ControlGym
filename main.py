@@ -5,13 +5,12 @@ import time
 
 GLOBAL_SEED = 1234
 
-from Configs.cem_gradient_default import (
+from Configs import (
     ENV_NAME,
     NUM_ITERATIONS,
     CONTROLLER_NAME,
     CONTROLLER_CONFIG,
 )
-import Environments
 
 
 if __name__ == "__main__":

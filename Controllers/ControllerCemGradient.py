@@ -2,7 +2,7 @@ from importlib import import_module
 
 import numpy as np
 import tensorflow as tf
-from Configs.cem_gradient_default import ENV_NAME
+from Configs import ENV_NAME
 from Environments import ENV_REGISTRY
 from gym import Env
 from gym.spaces.box import Box
@@ -11,7 +11,6 @@ from Controllers import Controller
 
 _m, _c = ENV_REGISTRY[ENV_NAME].rsplit(":", maxsplit=1)
 ENV = getattr(import_module(_m), _c)
-DIST_VAR = tf.constant(0.5, dtype=tf.float32)
 
 class ControllerCemGradient(Controller):
     def __init__(self, environment: Env, **controller_config) -> None:
@@ -29,9 +28,10 @@ class ControllerCemGradient(Controller):
         self._max_grad = controller_config["max_grad"]
         self._grad_alpha = controller_config["grad_alpha"]
         self._select_best_k = controller_config["cem_best_k"]
+        self._initial_action_variance = controller_config["cem_initial_action_variance"]
 
         self.dist_mean = tf.zeros([1, self._horizon_steps], dtype=tf.float32)
-        self.dist_stdev = tf.sqrt(DIST_VAR) * tf.ones([1, self._horizon_steps], dtype=tf.float32)
+        self.dist_stdev = tf.sqrt(self._initial_action_variance) * tf.ones([1, self._horizon_steps], dtype=tf.float32)
         self.u = 0.0
     
     # @tf.function(jit_compile=True)
@@ -61,12 +61,12 @@ class ControllerCemGradient(Controller):
                 rollout_trajectory[:, horizon_step + 1, :] = s.numpy()
 
         # Compute gradient and clip for each rollout where max value is surpassed 
-        dJ_dQ = tape.gradient(traj_cost, Q)  # TODO: Debug where gradient tape is lost
+        dJ_dQ = tape.gradient(traj_cost, Q)
         dJ_dQ_max = tf.reduce_max(tf.abs(dJ_dQ), axis=1, keepdims=True)
         mask = (dJ_dQ_max > self._max_grad)
 
         dJ_dQ_clipped = (
-            dJ_dQ
+            tf.cast(~mask, dtype=tf.float32) * dJ_dQ
             + tf.cast(mask, dtype=tf.float32) * self._max_grad * (dJ_dQ / dJ_dQ_max)
         )
 
@@ -104,7 +104,7 @@ class ControllerCemGradient(Controller):
             self._predict_and_cost(s)
         
         self.dist_stdev = tf.clip_by_value(self.dist_stdev, 0.1, 10)
-        self.dist_stdev = tf.concat([self.dist_stdev[:, 1:], tf.sqrt([[DIST_VAR]])], -1)
+        self.dist_stdev = tf.concat([self.dist_stdev[:, 1:], tf.sqrt([[self._initial_action_variance]])], -1)
         u = self.dist_mean[0, 0]
         self.dist_mean = tf.concat([self.dist_mean[:, 1:], tf.constant(0.0, shape=[1,1])], -1)
 

@@ -2,7 +2,7 @@ from copy import copy, deepcopy
 from importlib import import_module
 import tensorflow as tf
 
-from Configs.cem_gradient_default import ENV_NAME
+from Configs import ENV_NAME
 from Environments import ENV_REGISTRY
 
 _m, _c = ENV_REGISTRY[ENV_NAME].rsplit(":", maxsplit=1)

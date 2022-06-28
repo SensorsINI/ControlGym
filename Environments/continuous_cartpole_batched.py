@@ -23,7 +23,7 @@ class Continuous_CartPoleEnv_Batched(CartPoleEnv):
             self.state = tf.reshape(self.state, [self._batch_size, sum(self.observation_space.shape)])
 
         err_msg = f"{action!r} ({type(action)}) invalid"
-        assert np.all([self.action_space.contains(a) for a in action]), err_msg
+        assert np.all([self.action_space.contains(a) for a in action.numpy()]), err_msg
         assert self.state is not None, "Call reset before using step method."
         
         x, x_dot, theta, theta_dot = tf.unstack(self.state, axis=1)

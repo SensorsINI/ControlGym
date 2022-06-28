@@ -1,4 +1,6 @@
-ENV_NAME = "CustomEnvironments/CartPoleContinuous"
+import tensorflow as tf
+
+ENV_NAME = "CustomEnvironments/Pendulum"
 NUM_ITERATIONS = 300
 
 CONTROLLER_NAME = "ControllerCemGradient"
@@ -15,7 +17,7 @@ CONTROLLER_CONFIG = {
     "cem_ccrc_weight": 1,
     "cem_best_k": 5,
     "cem_LR": 0.1,
-    "cem_initial_action_variance": 1,
     "max_grad": 1000,
     "grad_alpha": 0.05,
+    "cem_initial_action_variance": tf.constant(0.5, dtype=tf.float32),
 }
