@@ -6,12 +6,15 @@ from yaml import FullLoader, load
 
 from Environments import *
 from Utilities.generate_plots import generate_plots
+from Utilities.utils import get_logger
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAME, ENVIRONMENT_NAME = (
     config["controller_name"],
     config["environment_name"],
 )
+frames = []
+logger = get_logger(__name__, "INFO")
 
 if __name__ == "__main__":
     env = gym.make(ENVIRONMENT_NAME)
@@ -25,16 +28,18 @@ if __name__ == "__main__":
     for step in range(config["num_iterations"]):
         action = controller.step(obs)
         new_obs, reward, done, info = env.step(action)
-        env.render()
+        if config["render"] == "human":
+            env.render(mode=config["render"])
+        elif config["render"] == "rgb_array":
+            frames.append(env.render(mode=config["render"]))
+
         time.sleep(0.001)
 
         # If the epsiode is up, then start another one
         if done:
             env.reset()
 
-        print(f"Step: {step}")
-        print(obs)
-        print(action)
+        logger.info(f"\nStep       : {step}\nObservation: {obs}\nAction     : {action}\n")
         obs = new_obs
 
     # Close the env
@@ -42,4 +47,4 @@ if __name__ == "__main__":
 
     # Generate plots
     if config["controllers"][config["controller_name"]]["controller_logging"]:
-        generate_plots(config, controller)
+        generate_plots(config=config, controller=controller, frames=frames if len(frames) > 0 else None)

@@ -58,10 +58,9 @@ class InputPlanPlotter(Plotter):
             repeat=False,
         )
         self.ax.get_xaxis().set_major_locator(plt.MaxNLocator(nbins=10, integer=True, min_n_ticks=2))
-        self.ax.set_ylabel("Control action")
+        self.ax.set_ylabel("Control action, Iteration 0")
         self.ax.set_xlabel("MPC horizon step")
         self.ax.set_title("Input plans per control iteration")
-        # self.fig.tight_layout()
         if save_to_video:
             anim.save(
                 get_output_path(self._timestamp, "Q_logged.mp4"),
