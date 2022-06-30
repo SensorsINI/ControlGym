@@ -14,7 +14,7 @@ CONTROLLER_NAME, ENVIRONMENT_NAME = (
     config["environment_name"],
 )
 frames = []
-logger = get_logger(__name__, "INFO")
+logger = get_logger(__name__)
 
 if __name__ == "__main__":
     env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME])
@@ -39,7 +39,9 @@ if __name__ == "__main__":
         if done:
             env.reset()
 
-        logger.info(f"\nStep       : {step}\nObservation: {obs}\nAction     : {action}\n")
+        logger.debug(
+            f"\nStep       : {step}\nObservation: {obs}\nAction     : {action}\n"
+        )
         obs = new_obs
 
     # Close the env
@@ -47,4 +49,8 @@ if __name__ == "__main__":
 
     # Generate plots
     if config["controllers"][config["controller_name"]]["controller_logging"]:
-        generate_plots(config=config, controller=controller, frames=frames if len(frames) > 0 else None)
+        generate_plots(
+            config=config,
+            controller=controller,
+            frames=frames if len(frames) > 0 else None,
+        )

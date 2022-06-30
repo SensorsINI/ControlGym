@@ -2,8 +2,7 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
-from gym.envs.classic_control.continuous_mountain_car import \
-    Continuous_MountainCarEnv
+from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 from gym.utils import seeding
 
 from Environments import EnvironmentBatched

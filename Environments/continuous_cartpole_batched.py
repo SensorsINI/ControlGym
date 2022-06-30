@@ -74,7 +74,7 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
             | (theta > self.theta_threshold_radians)
         )
 
-        reward = -(tf.abs(theta) + tf.abs(theta_dot) + tf.abs(x) + tf.abs(x_dot))
+        reward = -(tf.abs(theta) + tf.abs(theta_dot) + x**2 + x_dot**2)
         if self.steps_beyond_done is None:
             # Pole just fell!
             self.steps_beyond_done = 0

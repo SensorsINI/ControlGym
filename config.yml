@@ -1,8 +1,9 @@
 controller_name: ControllerAdamResampler
-environment_name: CustomEnvironments/MountainCarContinuous
+environment_name: CustomEnvironments/Pendulum
 num_iterations: 100
 render: rgb_array  # human, rgb_array or None
 debug: False
+logging_level: DEBUG
 
 environments:
   CustomEnvironments/CartPoleContinuous:

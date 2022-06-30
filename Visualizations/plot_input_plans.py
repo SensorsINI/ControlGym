@@ -56,7 +56,9 @@ class InputPlanPlotter(Plotter):
             blit=True,
             repeat=False,
         )
-        self.ax.get_xaxis().set_major_locator(plt.MaxNLocator(nbins=10, integer=True, min_n_ticks=2))
+        self.ax.get_xaxis().set_major_locator(
+            plt.MaxNLocator(nbins=10, integer=True, min_n_ticks=2)
+        )
         self.ax.set_ylabel("Control action, Iteration 0")
         self.ax.set_xlabel("MPC horizon step")
         self.ax.set_title("Input plans per control iteration")

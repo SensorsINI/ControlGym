@@ -38,7 +38,7 @@ class EnvironmentBatched:
         options: Optional[dict] = None,
     ) -> Tuple[np.ndarray, Optional[dict]]:
         return NotImplementedError()
-    
+
     def _set_up_rng(self, seed: int = None, actuator_noise: list[float] = None) -> None:
         self._actuator_noise = actuator_noise
         self._rng_np = Generator(SFC64(seed=0 if seed is None else seed))
@@ -47,7 +47,9 @@ class EnvironmentBatched:
         return (
             self._actuator_noise
             * (self.action_space.high - self.action_space.low)
-            * self._rng_np.standard_normal((self._batch_size, len(self._actuator_noise)), dtype=np.float32)
+            * self._rng_np.standard_normal(
+                (self._batch_size, len(self._actuator_noise)), dtype=np.float32
+            )
         )
 
     def _expand_arrays(

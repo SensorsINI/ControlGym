@@ -1,15 +1,23 @@
-from importlib import import_module
 import logging
 import os
+from importlib import import_module
 from pathlib import Path
+
+from yaml import FullLoader, load
+
+config = load(open("config.yml", "r"), Loader=FullLoader)
 
 
 def get_output_path(timestamp: str, filename: str):
-    folder = os.path.join("Output", f"{timestamp}_Experiment")
+    folder = os.path.join(
+        "Output",
+        f"{timestamp}_{config['controller_name']}_{config['environment_name']}",
+    )
     Path(folder).mkdir(parents=True, exist_ok=True)
     return os.path.join(folder, f"{timestamp}_{filename}")
 
 
+# Below is copied from CartPole repo
 class CustomFormatter(logging.Formatter):
     """Logging Formatter to add colors and count warning / errors"""
 
@@ -36,9 +44,9 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-def get_logger(name, level):
+def get_logger(name):
     logger = logging.getLogger(name)
-    logger.setLevel(getattr(import_module("logging"), level))
+    logger.setLevel(getattr(import_module("logging"), config["logging_level"]))
     # create console handler
     ch = logging.StreamHandler()
     ch.setFormatter(CustomFormatter())

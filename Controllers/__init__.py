@@ -40,9 +40,5 @@ class Controller:
 
     def _update_logs(self):
         if self._controller_logging:
-            self.Q_logged.append(
-                self.Q.numpy() if isinstance(self.Q, tf.Tensor) else self.Q
-            )
-            self.J_logged.append(
-                self.J.numpy() if isinstance(self.J, tf.Tensor) else self.J
-            )
+            self.Q_logged.append(self.Q.numpy() if hasattr(self.Q, "numpy") else self.Q)
+            self.J_logged.append(self.J.numpy() if hasattr(self.Q, "numpy") else self.J)
