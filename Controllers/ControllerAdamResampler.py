@@ -1,19 +1,19 @@
-from importlib import import_module
-
 import numpy as np
 import tensorflow as tf
 from gym import Env
 from gym.spaces import Box
 from yaml import FullLoader, load
 
-tf.config.run_functions_eagerly(True)
-
 from Controllers import Controller
+
+config = load(open("config.yml", "r"), Loader=FullLoader)
+if config["debug"]:
+    tf.config.run_functions_eagerly(True)
 
 
 class ControllerAdamResampler(Controller):
     def __init__(self, environment: Env, **controller_config) -> None:
-        super().__init__(environment)
+        super().__init__(environment, **controller_config)
 
         assert isinstance(self._env.action_space, Box)
 
@@ -65,14 +65,9 @@ class ControllerAdamResampler(Controller):
         rollout_trajectory[:, 0, :] = s.numpy()
         with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(Q)
-            traj_cost = tf.zeros([self._num_rollouts])
-            for horizon_step in range(self._horizon_steps):
-                new_obs, reward, done, info = self._predictor_environment.step(
-                    Q[:, horizon_step, tf.newaxis]
-                )
-                traj_cost -= reward
-                s = new_obs
-                rollout_trajectory[:, horizon_step + 1, :] = s.numpy()
+            traj_cost, rollout_trajectory = self._rollout_trajectories(
+                Q, rollout_trajectory
+            )
 
         dJ_dQ = tape.gradient(traj_cost, Q)
         dJ_dQ_max = tf.math.reduce_max(tf.abs(dJ_dQ), axis=1, keepdims=True)
@@ -87,17 +82,24 @@ class ControllerAdamResampler(Controller):
         )
         return Q_updated
 
-    def _retrieve_action(self, s0: np.ndarray):
-        self._predictor_environment.reset(state=s0)
-        final_traj_cost = tf.zeros([self._num_rollouts])
+    def _rollout_trajectories(self, Q: tf.Tensor, rollout_trajectory: tf.Tensor = None):
+        traj_cost = tf.zeros([self._num_rollouts])
         for horizon_step in range(self._horizon_steps):
             new_obs, reward, done, info = self._predictor_environment.step(
-                self.Q[:, horizon_step, tf.newaxis]
+                Q[:, horizon_step, tf.newaxis]
             )
-            final_traj_cost -= reward
+            traj_cost -= reward
             s = new_obs
+            if rollout_trajectory is not None:
+                rollout_trajectory[:, horizon_step + 1, :] = s.numpy()
 
-        sorted_cost = tf.argsort(final_traj_cost)
+        return traj_cost, rollout_trajectory
+
+    def _retrieve_action(self, s0: np.ndarray):
+        self._predictor_environment.reset(state=s0)
+        self.J, _ = self._rollout_trajectories(self.Q)
+
+        sorted_cost = tf.argsort(self.J)
         best_idx = sorted_cost[0 : self._select_best_k]
         Q_keep = tf.gather(self.Q, best_idx, axis=0)
 
@@ -188,6 +190,7 @@ class ControllerAdamResampler(Controller):
             )
 
         self.opt.set_weights([adam_weights[0], w_m, w_v])
+        self._update_logs()
         self.Q.assign(Q_new)
         self.iteration += 1
         return tf.expand_dims(u, 0).numpy()

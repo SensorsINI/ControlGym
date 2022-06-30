@@ -1,9 +1,22 @@
-controller_name: ControllerAdamResampler
-environment_name: CustomEnvironments/Pendulum
-num_iterations: 300
+controller_name: ControllerCemGradient
+environment_name: CustomEnvironments/MountainCarContinuous
+num_iterations: 5
+debug: False
+
+environments:
+  CustomEnvironments/CartPoleContinuous:
+    seed: 1234
+  
+  CustomEnvironments/MountainCarContinuous:
+    seed: 1234
+  
+  CustomEnvironments/Pendulum:
+    seed: 1234
+
 
 controllers:
   ControllerAdamResampler:
+    controller_logging: True
     SEED: 12345
     mpc_horizon: 3
     dt: 0.02
@@ -25,8 +38,9 @@ controllers:
     do_warmup: True
   
   ControllerCem:
+    controller_logging: True
     SEED: 12345
-    mpc_horizon: 3
+    mpc_horizon: 0.5
     dt: 0.02
     cem_outer_it: 5
     cem_rollouts: 100
@@ -39,8 +53,9 @@ controllers:
     cem_initial_action_variance: 0.5
   
   ControllerCemGradient:
+    controller_logging: True
     SEED: 12345
-    mpc_horizon: 3
+    mpc_horizon: 1
     dt: 0.02
     cem_outer_it: 5
     cem_rollouts: 100

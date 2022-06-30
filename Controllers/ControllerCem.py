@@ -1,19 +1,22 @@
 from copy import copy, deepcopy
 from importlib import import_module
 
-import tensorflow as tf
-
-tf.config.run_functions_eagerly(True)
 import numpy as np
+import tensorflow as tf
 from gym import Env, vector
 from numpy.random import default_rng
+from yaml import FullLoader, load
 
 from Controllers import Controller
+
+config = load(open("config.yml", "r"), Loader=FullLoader)
+if config["debug"]:
+    tf.config.run_functions_eagerly(True)
 
 
 class ControllerCem(Controller):
     def __init__(self, environment: Env, **controller_config) -> None:
-        super().__init__(environment)
+        super().__init__(environment, **controller_config)
 
         self._rng = default_rng(seed=controller_config["SEED"])
 
@@ -34,7 +37,6 @@ class ControllerCem(Controller):
             batch_size=self._num_rollouts
         )
 
-    @tf.function(jit_compile=True)
     def predict_and_cost(self, s: np.ndarray, Q: np.ndarray):
         # rollout trajectories and retrieve cost
         rollout_trajectory = np.empty(
@@ -59,21 +61,21 @@ class ControllerCem(Controller):
 
         for _ in range(0, self._outer_it):
             # generate random input sequence and clip to control limits
-            Q = np.tile(
+            self.Q = np.tile(
                 self.dist_mean, (self._num_rollouts, 1)
             ) + self.dist_stdev * self._rng.standard_normal(
                 size=(self._num_rollouts, self._horizon_steps), dtype=np.float32
             )
-            Q = np.clip(Q, -1.0, 1.0, dtype=np.float32)
-            Q = tf.convert_to_tensor(Q, dtype=tf.float32)
+            self.Q = np.clip(self.Q, -1.0, 1.0, dtype=np.float32)
+            self.Q = tf.convert_to_tensor(self.Q, dtype=tf.float32)
 
             # rollout the trajectories and get cost
-            traj_cost, rollout_trajectory = self.predict_and_cost(s, Q)
-            Q = Q.numpy()
+            self.J, rollout_trajectory = self.predict_and_cost(s, self.Q)
+            self.Q = self.Q.numpy()
             # sort the costs and find best k costs
-            sorted_cost = np.argsort(traj_cost)
+            sorted_cost = np.argsort(self.J)
             best_idx = sorted_cost[0 : self._best_k]
-            elite_Q = Q[best_idx, :]
+            elite_Q = self.Q[best_idx, :]
             # update the distribution for next inner loop
             self.dist_mean = np.mean(elite_Q, axis=0)
             self.dist_stdev = np.std(elite_Q, axis=0)
@@ -83,6 +85,7 @@ class ControllerCem(Controller):
         self.dist_stdev = np.append(
             self.dist_stdev[1:], np.sqrt(self._initial_action_variance)
         ).astype(np.float32)
+        self._update_logs()
         self.u = self.dist_mean[0]
         self.dist_mean = np.append(self.dist_mean[1:], 0).astype(np.float32)
         return np.array([self.u], dtype=np.float32)

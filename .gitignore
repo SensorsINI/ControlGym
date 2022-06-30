@@ -4,11 +4,14 @@
 *.pyc
 *.csv
 *.png
+*.svg
 *.txt
 *.ckpt.*
 *.pt
 *.env
 *.vscode
+*.prof
 /Modeling/SI_Toolkit/TF/NNI/NNI_Results
+/Output/
 
 /SI_Toolkit_ASF/Experiments/*

@@ -68,7 +68,6 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
             | (theta > self.theta_threshold_radians)
         )
 
-        # TODO: Review cost function here (changed from default to be differentiable)
         reward = -(tf.abs(theta) + tf.abs(theta_dot) + tf.abs(x) + tf.abs(x_dot))
         if self.steps_beyond_done is None:
             # Pole just fell!
