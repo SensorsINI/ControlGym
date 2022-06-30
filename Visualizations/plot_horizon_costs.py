@@ -4,8 +4,7 @@ import numpy as np
 from Visualizations import Plotter
 from Utilities.utils import get_output_path
 
-plt.style.use("_mpl-gallery")
-plt.rcParams.update({'figure.autolayout': True})
+plt.style.use(['science'])
 
 class HorizonCostPlotter(Plotter):
     def plot(self, costs: np.ndarray, save_to_image: bool = True):
@@ -20,11 +19,11 @@ class HorizonCostPlotter(Plotter):
             marker="x",
             alpha=0.4,
         )
-        self.ax.set_xticks(np.linspace(0, num_steps, 20, dtype=int))
+        self.ax.get_xaxis().set_major_locator(plt.MaxNLocator(nbins=10, integer=True, min_n_ticks=2))
         self.ax.set_ylabel("Total horizon cost")
         self.ax.set_xlabel("Control iteration")
         self.ax.set_title("Total cost of input plans per global control iteration")
-        self.fig.tight_layout()
+        # self.fig.tight_layout()
         if save_to_image:
             
             self.fig.savefig(get_output_path(self._timestamp, "J_logged.svg"), bbox_inches="tight")

@@ -6,8 +6,7 @@ import numpy as np
 from Visualizations import Plotter
 from Utilities.utils import get_output_path
 
-plt.style.use("_mpl-gallery")
-plt.rcParams.update({"figure.autolayout": True})
+plt.style.use(["science"])
 
 
 def _build_color_seq(n):
@@ -24,10 +23,9 @@ class InputPlanPlotter(Plotter):
         num_steps, num_samples, horizon_length = actions.shape
 
         c = _build_color_seq(num_samples)
-        max_cost = np.max(costs)
         lines = [
             self.ax.plot(
-                [], [], linestyle="-", linewidth=0.5, marker="x", alpha=1.0, color='b'
+                [], [], linestyle="-", linewidth=0.5, marker="x", alpha=1.0, color="b"
             )[0]
             for i in range(num_samples)
         ]
@@ -38,13 +36,15 @@ class InputPlanPlotter(Plotter):
             return lines
 
         def animate(k):
+            a, b = np.min(costs[k, :]), np.max(costs[k, :])
             for i, line in enumerate(lines):
                 line.set_data(
                     np.arange(horizon_length),
                     actions[k, i, :],
                 )
-                line.set_alpha(1.0 - float(costs[k, i] / max_cost))
+                line.set_alpha(1.0 - float((costs[k, i] - a) / (b - a)))
             self.ax.set_ylabel(f"Control action, Iteration {k}")
+            self.ax.set_xlim(0, horizon_length)
             self.ax.set_ylim(np.min(actions), np.max(actions))
             return lines
 
@@ -57,11 +57,11 @@ class InputPlanPlotter(Plotter):
             blit=True,
             repeat=False,
         )
-        self.ax.set_xticks(np.linspace(0, horizon_length, 20, dtype=int))
+        self.ax.get_xaxis().set_major_locator(plt.MaxNLocator(nbins=10, integer=True, min_n_ticks=2))
         self.ax.set_ylabel("Control action")
         self.ax.set_xlabel("MPC horizon step")
         self.ax.set_title("Input plans per control iteration")
-        self.fig.tight_layout()
+        # self.fig.tight_layout()
         if save_to_video:
             anim.save(
                 get_output_path(self._timestamp, "Q_logged.mp4"),

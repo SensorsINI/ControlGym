@@ -1,14 +1,11 @@
 import importlib
 import time
-from datetime import datetime
 
 import gym
-from yaml import FullLoader, load, dump
+from yaml import FullLoader, load
 
 from Environments import *
-from Visualizations.plot_horizon_costs import HorizonCostPlotter
-from Visualizations.plot_input_plans import InputPlanPlotter
-from Utilities.utils import get_output_path
+from Utilities.generate_plots import generate_plots
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAME, ENVIRONMENT_NAME = (
@@ -44,25 +41,5 @@ if __name__ == "__main__":
     env.close()
 
     # Generate plots
-    if config["controllers"][CONTROLLER_NAME]["controller_logging"]:
-        timestamp_str = datetime.now().strftime("%Y%m%d-%H%M%S")
-        controller_output = controller.get_outputs()
-        for n, a in controller_output.items():
-            with open(
-                get_output_path(timestamp_str, f"{n}.npy"),
-                "wb",
-            ) as f:
-                np.save(f, a)
-
-        horizon_cost_plotter = HorizonCostPlotter(timestamp_str=timestamp_str)
-        horizon_cost_plotter.plot(controller_output["J_logged"], save_to_image=True)
-
-        input_plan_plotter = InputPlanPlotter(timestamp_str=timestamp_str)
-        input_plan_plotter.plot(
-            controller_output["Q_logged"],
-            controller_output["J_logged"],
-            save_to_video=True,
-        )
-
-    with open(get_output_path(timestamp_str, "config.yml"), "w") as f:
-        dump(config, f)
+    if config["controllers"][config["controller_name"]]["controller_logging"]:
+        generate_plots(config, controller)

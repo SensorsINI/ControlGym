@@ -1,7 +1,5 @@
 from datetime import datetime
 
-import numpy as np
-
 
 class Plotter:
     def __init__(self, **kwargs) -> None:

@@ -58,7 +58,7 @@ class ControllerAdamResampler(Controller):
         Q = tf.clip_by_value(Q, self._env.action_space.low, self._env.action_space.high)
         return Q
 
-    def _grad_step(self, s: tf.Tensor, Q: tf.Tensor):
+    def _grad_step(self, s: tf.Tensor, Q: tf.Variable):
         rollout_trajectory = np.zeros(
             (self._num_rollouts, self._horizon_steps + 1, self._n), dtype=np.float32
         )
@@ -82,8 +82,8 @@ class ControllerAdamResampler(Controller):
         )
         return Q_updated
 
-    def _rollout_trajectories(self, Q: tf.Tensor, rollout_trajectory: tf.Tensor = None):
-        traj_cost = tf.zeros([self._num_rollouts])
+    def _rollout_trajectories(self, Q: tf.Variable, rollout_trajectory: np.ndarray = None):
+        traj_cost = tf.zeros([self._num_rollouts], dtype=tf.float32)
         for horizon_step in range(self._horizon_steps):
             new_obs, reward, done, info = self._predictor_environment.step(
                 Q[:, horizon_step, tf.newaxis]
@@ -95,13 +95,13 @@ class ControllerAdamResampler(Controller):
 
         return traj_cost, rollout_trajectory
 
-    def _retrieve_action(self, s0: np.ndarray):
+    def _retrieve_action(self, s0: np.ndarray, Q: tf.Variable):
         self._predictor_environment.reset(state=s0)
-        self.J, _ = self._rollout_trajectories(self.Q)
+        self.J, _ = self._rollout_trajectories(Q)
 
         sorted_cost = tf.argsort(self.J)
-        best_idx = sorted_cost[0 : self._select_best_k]
-        Q_keep = tf.gather(self.Q, best_idx, axis=0)
+        best_idx = sorted_cost[: self._select_best_k]
+        Q_keep = tf.gather(Q, best_idx, axis=0)
 
         self.dist_mean = tf.reduce_mean(Q_keep, axis=0, keepdims=True)
         self.dist_mean = tf.concat([self.dist_mean[:, 1:], tf.zeros([1, 1])], -1)
@@ -116,20 +116,24 @@ class ControllerAdamResampler(Controller):
         return Q_keep, best_idx
 
     def step(self, s: np.ndarray) -> np.ndarray:
+        # s: ndarray(n,)
         s0 = s.copy()
         self._predictor_environment.reset(s)
         s = self._predictor_environment.state
+        # s: Tensor(num_rollouts, n)
 
+        # If warm-start: Increase initial optimization steps
         iterations = self._outer_it
         if self.iteration == 0 and self._do_warmup:
             iterations *= self._horizon_steps
 
+        # Optimize input plans w.r.t. cost
         for _ in range(self._outer_it):
             Q_updated = self._grad_step(s, self.Q)
             self.Q.assign(Q_updated)
 
         # Final rollout
-        Q_keep, best_idx = self._retrieve_action(s0)
+        Q_keep, best_idx = self._retrieve_action(s0, self.Q)
         u = Q_keep[0, 0]
 
         # Adam variables: m, v (1st/2nd moment of the gradient computation)
@@ -174,19 +178,20 @@ class ControllerAdamResampler(Controller):
                 axis=0,
             )
         else:
+            Q_new = self.Q
             w_m = tf.concat(
                 [
                     adam_weights[1][:, 1:],
                     tf.zeros([self._num_rollouts, 1], dtype=tf.float32),
                 ],
-                axis=-1,
+                axis=1,
             )
             w_v = tf.concat(
                 [
                     adam_weights[2][:, 1:],
                     tf.zeros([self._num_rollouts, 1], dtype=tf.float32),
                 ],
-                axis=-1,
+                axis=1,
             )
 
         self.opt.set_weights([adam_weights[0], w_m, w_v])

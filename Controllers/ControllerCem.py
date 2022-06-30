@@ -1,9 +1,6 @@
-from copy import copy, deepcopy
-from importlib import import_module
-
 import numpy as np
 import tensorflow as tf
-from gym import Env, vector
+from gym import Env
 from numpy.random import default_rng
 from yaml import FullLoader, load
 
