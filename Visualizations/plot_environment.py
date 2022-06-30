@@ -30,5 +30,5 @@ class EnvironmentPlotter(Plotter):
         self.ax.get_yaxis().set_major_locator(plt.NullLocator())
         anim.save(
             get_output_path(self._timestamp, "environment.mp4"),
-            writer=animation.FFMpegWriter(fps=30),
+            writer=animation.FFMpegWriter(fps=15),
         )

@@ -3,7 +3,6 @@ from importlib import import_module
 import numpy as np
 import tensorflow as tf
 from gym import Env
-from gym.spaces.box import Box
 from yaml import FullLoader, load
 
 from Controllers import Controller
@@ -16,10 +15,6 @@ if config["debug"]:
 class ControllerCemGradient(Controller):
     def __init__(self, environment: Env, **controller_config) -> None:
         super().__init__(environment, **controller_config)
-
-        assert isinstance(self._env.action_space, Box)
-
-        self._rng = tf.random.Generator.from_seed(controller_config["SEED"])
 
         self._num_rollouts = controller_config["cem_rollouts"]
         self._horizon_steps = int(
@@ -39,7 +34,7 @@ class ControllerCemGradient(Controller):
         )
         self.u = 0.0
         self._predictor_environment = environment.unwrapped.__class__(
-            batch_size=self._num_rollouts
+            batch_size=self._num_rollouts, **environment.unwrapped.config
         )
 
     def _rollout_trajectories(self, Q: tf.Tensor, rollout_trajectory: tf.Tensor = None):
@@ -58,7 +53,7 @@ class ControllerCemGradient(Controller):
         # Sample input trajectories and clip
         self.Q = tf.tile(
             self.dist_mean, [self._num_rollouts, 1]
-        ) + self.dist_stdev * self._rng.normal(
+        ) + self.dist_stdev * self._rng_tf.normal(
             [self._num_rollouts, self._horizon_steps], dtype=tf.float32
         )
         self.Q = tf.clip_by_value(

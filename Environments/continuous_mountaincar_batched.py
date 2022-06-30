@@ -16,9 +16,11 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
     :type Continuous_MountainCarEnv: _type_
     """
 
-    def __init__(self, goal_velocity=0, batch_size=1):
+    def __init__(self, goal_velocity=0, batch_size=1, **kwargs):
         super().__init__(goal_velocity)
+        self.config = kwargs
         self._batch_size = batch_size
+        self._set_up_rng(**kwargs)
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor]
@@ -29,6 +31,10 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
         dict,
     ]:
         self.state, action = self._expand_arrays(self.state, action)
+
+        # Perturb action if not in planning mode
+        if self._batch_size == 1:
+            action += self._generate_actuator_noise()
 
         position, velocity = tf.unstack(self.state, axis=1)
         force = tf.clip_by_value(action[:, 0], self.min_action, self.max_action)

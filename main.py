@@ -17,7 +17,7 @@ frames = []
 logger = get_logger(__name__, "INFO")
 
 if __name__ == "__main__":
-    env = gym.make(ENVIRONMENT_NAME)
+    env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME])
     obs = env.reset(seed=config["environments"][ENVIRONMENT_NAME]["seed"])
 
     controller_module = importlib.import_module(f"Controllers.{CONTROLLER_NAME}")

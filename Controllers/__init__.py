@@ -1,6 +1,8 @@
 import numpy as np
+from numpy.random import Generator, SFC64
 import tensorflow as tf
 from gym import Env
+from gym.spaces.box import Box
 
 
 class Controller:
@@ -9,9 +11,12 @@ class Controller:
         environment: Env,
         **controller_config,
     ) -> None:
+        self._env = environment
+        assert isinstance(self._env.action_space, Box)
         self._n = environment.observation_space.shape[0]
         self._m = environment.action_space.shape[0]
-        self._env = environment
+        self._rng_np = Generator(SFC64(seed=controller_config["seed"]))
+        self._rng_tf = tf.random.Generator.from_seed(controller_config["seed"])
         self._controller_logging = controller_config["controller_logging"]
         self.Q_logged = []
         self.J_logged = []

@@ -18,11 +18,10 @@ def _build_color_seq(n):
 class InputPlanPlotter(Plotter):
     def plot(self, actions: np.ndarray, costs: np.ndarray, save_to_video: bool = True):
         if self.ax is None:
-            self.fig, self.ax = plt.subplots(figsize=(10, 8))
+            self.fig, self.ax = plt.subplots(figsize=(6, 4))
         self.ax.clear()
         num_steps, num_samples, horizon_length = actions.shape
 
-        c = _build_color_seq(num_samples)
         lines = [
             self.ax.plot(
                 [], [], linestyle="-", linewidth=0.5, marker="x", alpha=1.0, color="b"
@@ -64,7 +63,7 @@ class InputPlanPlotter(Plotter):
         if save_to_video:
             anim.save(
                 get_output_path(self._timestamp, "Q_logged.mp4"),
-                writer=animation.FFMpegWriter(fps=1),
+                writer=animation.FFMpegWriter(fps=15),
             )
         else:
             self.fig.show()

@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 from gym import Env
-from gym.spaces import Box
 from yaml import FullLoader, load
 
 from Controllers import Controller
@@ -14,10 +13,6 @@ if config["debug"]:
 class ControllerAdamResampler(Controller):
     def __init__(self, environment: Env, **controller_config) -> None:
         super().__init__(environment, **controller_config)
-
-        assert isinstance(self._env.action_space, Box)
-
-        self._rng = tf.random.Generator.from_seed(controller_config["SEED"])
 
         self._num_rollouts = controller_config["cem_rollouts"]
         self._horizon_steps = int(
@@ -48,11 +43,11 @@ class ControllerAdamResampler(Controller):
         )
 
         self._predictor_environment = environment.unwrapped.__class__(
-            batch_size=self._num_rollouts
+            batch_size=self._num_rollouts, **environment.unwrapped.config
         )
 
     def _sample_inputs(self, num_trajectories: int):
-        Q = tf.sqrt(self._initial_action_variance) * self._rng.normal(
+        Q = tf.sqrt(self._initial_action_variance) * self._rng_tf.normal(
             [num_trajectories, self._horizon_steps], dtype=tf.float32
         )
         Q = tf.clip_by_value(Q, self._env.action_space.low, self._env.action_space.high)
@@ -82,7 +77,9 @@ class ControllerAdamResampler(Controller):
         )
         return Q_updated
 
-    def _rollout_trajectories(self, Q: tf.Variable, rollout_trajectory: np.ndarray = None):
+    def _rollout_trajectories(
+        self, Q: tf.Variable, rollout_trajectory: np.ndarray = None
+    ):
         traj_cost = tf.zeros([self._num_rollouts], dtype=tf.float32)
         for horizon_step in range(self._horizon_steps):
             new_obs, reward, done, info = self._predictor_environment.step(

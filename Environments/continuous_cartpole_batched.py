@@ -10,12 +10,14 @@ from Environments import EnvironmentBatched
 
 
 class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
-    def __init__(self, batch_size=1):
+    def __init__(self, batch_size=1, **kwargs):
         super().__init__()
+        self.config = kwargs
         self.action_space = spaces.Box(
             low=-self.force_mag, high=self.force_mag, shape=(1,), dtype=np.float32
         )
         self._batch_size = batch_size
+        self._set_up_rng(**kwargs)
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor]
@@ -26,6 +28,10 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
         dict,
     ]:
         self.state, action = self._expand_arrays(self.state, action)
+
+        # Perturb action if not in planning mode
+        if self._batch_size == 1:
+            action += self._generate_actuator_noise()
 
         err_msg = f"{action!r} ({type(action)}) invalid"
         assert np.all([self.action_space.contains(a) for a in action.numpy()]), err_msg

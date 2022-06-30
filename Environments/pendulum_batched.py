@@ -12,12 +12,14 @@ _PI = tf.constant(np.pi, dtype=tf.float32)
 
 
 class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
-    def __init__(self, g=10, batch_size=1):
+    def __init__(self, g=10, batch_size=1, **kwargs):
         super().__init__(g)
-        self._batch_size = batch_size
-
+        self.config = kwargs
         high = np.array([np.pi, self.max_speed], dtype=np.float32)
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
+
+        self._batch_size = batch_size
+        self._set_up_rng(**kwargs)
 
     def _angle_normalize(self, x):
         return ((x + _PI) % (2 * _PI)) - _PI
@@ -31,6 +33,10 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
         dict,
     ]:
         self.state, action = self._expand_arrays(self.state, action)
+
+        # Perturb action if not in planning mode
+        if self._batch_size == 1:
+            action += self._generate_actuator_noise()
 
         th, thdot = tf.unstack(self.state, axis=1)  # th := theta
 

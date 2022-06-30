@@ -24,7 +24,6 @@ class HorizonCostPlotter(Plotter):
         self.ax.set_xlabel("Control iteration")
         self.ax.set_title("Total cost of input plans per global control iteration")
         if save_to_image:
-            
             self.fig.savefig(get_output_path(self._timestamp, "J_logged.svg"), bbox_inches="tight")
         else:
             self.fig.show()

@@ -15,8 +15,6 @@ class ControllerCem(Controller):
     def __init__(self, environment: Env, **controller_config) -> None:
         super().__init__(environment, **controller_config)
 
-        self._rng = default_rng(seed=controller_config["SEED"])
-
         self._num_rollouts = controller_config["cem_rollouts"]
         self._horizon_steps = int(
             controller_config["mpc_horizon"] / controller_config["dt"]
@@ -31,7 +29,7 @@ class ControllerCem(Controller):
             (1, self._horizon_steps)
         )
         self._predictor_environment = environment.unwrapped.__class__(
-            batch_size=self._num_rollouts
+            batch_size=self._num_rollouts, **environment.unwrapped.config
         )
 
     def predict_and_cost(self, s: np.ndarray, Q: np.ndarray):
@@ -60,7 +58,7 @@ class ControllerCem(Controller):
             # generate random input sequence and clip to control limits
             self.Q = np.tile(
                 self.dist_mean, (self._num_rollouts, 1)
-            ) + self.dist_stdev * self._rng.standard_normal(
+            ) + self.dist_stdev * self._rng_np.standard_normal(
                 size=(self._num_rollouts, self._horizon_steps), dtype=np.float32
             )
             self.Q = np.clip(self.Q, -1.0, 1.0, dtype=np.float32)
