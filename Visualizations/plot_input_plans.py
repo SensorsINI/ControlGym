@@ -28,7 +28,7 @@ class InputPlanPlotter(Plotter):
                 nrows=1,
                 ncols=2,
                 figsize=(8, 4),
-                gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.1},
+                gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.15},
             )
         for ax in self.axs:
             ax.clear()
@@ -57,7 +57,7 @@ class InputPlanPlotter(Plotter):
                     np.arange(horizon_length),
                     actions[k, i, :],
                 )
-                line.set_alpha((1.0 - float((costs[k, i] - a) / (b - a)))**2)
+                line.set_alpha((1.0 - float((costs[k, i] - a) / (b - a))) ** 2)
                 if costs[k, i] == a:
                     line.set_color("r")
                     line.set_markerfacecolor("r")
@@ -96,6 +96,8 @@ class InputPlanPlotter(Plotter):
         self.axs[1].get_xaxis().set_major_locator(plt.NullLocator())
         self.axs[1].get_yaxis().set_major_locator(plt.NullLocator())
         self.axs[1].set_title(f"Environment")
+
+        self._display_some_config()
 
         if save_to_video:
             anim.save(

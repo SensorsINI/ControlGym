@@ -10,7 +10,9 @@ plt.style.use(["science"])
 class HorizonCostPlotter(Plotter):
     def plot(self, costs: np.ndarray, save_to_image: bool = True):
         if self.ax is None:
-            self.fig, self.ax = plt.subplots(figsize=(10, 8))
+            self.fig, self.ax = plt.subplots(
+                figsize=(10, 8), gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.1}
+            )
         self.ax.clear()
         num_steps, num_samples = costs.shape
         self.ax.scatter(
@@ -26,6 +28,9 @@ class HorizonCostPlotter(Plotter):
         self.ax.set_ylabel("Total horizon cost")
         self.ax.set_xlabel("Control iteration")
         self.ax.set_title("Total cost of input plans per global control iteration")
+
+        self._display_some_config()
+
         if save_to_image:
             self.fig.savefig(
                 get_output_path(self._timestamp, "J_logged.svg"), bbox_inches="tight"

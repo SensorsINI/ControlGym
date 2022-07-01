@@ -27,19 +27,21 @@ def generate_plots(
             "wb",
         ) as f:
             np.save(f, a)
-        
+
     logger.info("Creating summary plot...")
-    horizon_cost_plotter = SummaryPlotter(timestamp_str=timestamp_str)
-    horizon_cost_plotter.plot(controller_output["s_logged"], controller_output["u_logged"], save_to_image=True)
+    horizon_cost_plotter = SummaryPlotter(timestamp=timestamp_str, config=config)
+    horizon_cost_plotter.plot(
+        controller_output["s_logged"], controller_output["u_logged"], save_to_image=True
+    )
     logger.info("...done.")
 
     logger.info("Creating horizon cost plot...")
-    horizon_cost_plotter = HorizonCostPlotter(timestamp_str=timestamp_str)
+    horizon_cost_plotter = HorizonCostPlotter(timestamp=timestamp_str, config=config)
     horizon_cost_plotter.plot(controller_output["J_logged"], save_to_image=True)
     logger.info("...done.")
 
     logger.info("Creating input plan animation...")
-    input_plan_plotter = InputPlanPlotter(timestamp_str=timestamp_str)
+    input_plan_plotter = InputPlanPlotter(timestamp=timestamp_str, config=config)
     input_plan_plotter.plot(
         controller_output["Q_logged"],
         controller_output["J_logged"],
