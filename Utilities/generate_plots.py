@@ -2,7 +2,6 @@ from datetime import datetime
 
 import numpy as np
 from Controllers import Controller
-from Visualizations.plot_environment import EnvironmentPlotter
 from Visualizations.plot_horizon_costs import HorizonCostPlotter
 from Visualizations.plot_input_plans import InputPlanPlotter
 from yaml import dump
@@ -38,14 +37,7 @@ def generate_plots(
     input_plan_plotter.plot(
         controller_output["Q_logged"],
         controller_output["J_logged"],
+        frames,
         save_to_video=True,
     )
     logger.info("...done.")
-
-    if frames is not None:
-        logger.info("Creating environment animation...")
-        environment_plotter = EnvironmentPlotter(timestamp_str=timestamp_str)
-        environment_plotter.plot(frames)
-        logger.info("...done.")
-    else:
-        logger.info("Environment not rendered to file.")

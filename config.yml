@@ -1,23 +1,22 @@
 controller_name: ControllerAdamResampler
 environment_name: CustomEnvironments/Pendulum
 num_iterations: 100
-render: rgb_array  # human, rgb_array or None
+render_for_humans: False
 debug: False
 logging_level: DEBUG
 
 environments:
   CustomEnvironments/CartPoleContinuous:
     seed: 1234
-    actuator_noise: [0.1]  # stdev, can set to 0.0
-  
+    actuator_noise: [0.1] # stdev, can set to 0.0
+
   CustomEnvironments/MountainCarContinuous:
     seed: 1234
-    actuator_noise: [0.1]  # stdev
-  
+    actuator_noise: [0.1] # stdev
+
   CustomEnvironments/Pendulum:
     seed: 1234
-    actuator_noise: [0.1]  # stdev
-
+    actuator_noise: [0.1] # stdev
 
 controllers:
   ControllerAdamResampler:
@@ -41,7 +40,7 @@ controllers:
     cem_initial_action_variance: 0.5
     resamp_every: 1
     do_warmup: True
-  
+
   ControllerCem:
     controller_logging: True
     seed: 12345
@@ -56,7 +55,7 @@ controllers:
     cem_best_k: 5
     cem_LR: 0.1
     cem_initial_action_variance: 0.5
-  
+
   ControllerCemGradient:
     controller_logging: True
     seed: 12345

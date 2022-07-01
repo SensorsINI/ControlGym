@@ -50,8 +50,7 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
         done = (position >= self.goal_position) & (velocity >= self.goal_velocity)
 
         reward = tf.sin(3 * position)
-        # reward = np.zeros_like(position)
-        reward += 100.0 * tf.cast(done, dtype=tf.float32)
+        reward += 100.0 * tf.cast(done, dtype=tf.float32)  # This part is not differentiable
         reward -= tf.pow(action[:, 0], 2) * 0.1
 
         self.state = tf.squeeze(tf.stack([position, velocity], axis=1))

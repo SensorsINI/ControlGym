@@ -11,7 +11,7 @@ config = load(open("config.yml", "r"), Loader=FullLoader)
 def get_output_path(timestamp: str, filename: str):
     folder = os.path.join(
         "Output",
-        f"{timestamp}_{config['controller_name']}_{config['environment_name']}",
+        f"{timestamp}_{config['controller_name']}_{config['environment_name']}".replace("/", "_"),
     )
     Path(folder).mkdir(parents=True, exist_ok=True)
     return os.path.join(folder, f"{timestamp}_{filename}")

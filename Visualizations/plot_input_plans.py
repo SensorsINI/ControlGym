@@ -16,18 +16,33 @@ def _build_color_seq(n):
 
 
 class InputPlanPlotter(Plotter):
-    def plot(self, actions: np.ndarray, costs: np.ndarray, save_to_video: bool = True):
-        if self.ax is None:
-            self.fig, self.ax = plt.subplots(figsize=(6, 4))
-        self.ax.clear()
+    def plot(
+        self,
+        actions: np.ndarray,
+        costs: np.ndarray,
+        frames: list[np.ndarray],
+        save_to_video: bool = True,
+    ):
+        if self.axs is None:
+            self.fig, self.axs = plt.subplots(
+                nrows=1,
+                ncols=2,
+                figsize=(8, 4),
+                gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.1},
+            )
+        for ax in self.axs:
+            ax.clear()
+            ax.set_box_aspect(1)
+
         num_steps, num_samples, horizon_length = actions.shape
 
         lines = [
-            self.ax.plot(
+            self.axs[0].plot(
                 [], [], linestyle="-", linewidth=0.5, marker="x", alpha=1.0, color="b"
             )[0]
             for i in range(num_samples)
         ]
+        im = self.axs[1].imshow(frames[0], animated=True)
 
         def init_animation():
             for line in lines:
@@ -35,6 +50,7 @@ class InputPlanPlotter(Plotter):
             return lines
 
         def animate(k):
+            # Left side: Plot cost evolution
             a, b = np.min(costs[k, :]), np.max(costs[k, :])
             for i, line in enumerate(lines):
                 line.set_data(
@@ -42,10 +58,23 @@ class InputPlanPlotter(Plotter):
                     actions[k, i, :],
                 )
                 line.set_alpha(1.0 - float((costs[k, i] - a) / (b - a)))
-            self.ax.set_ylabel(f"Control action, Iteration {k}")
-            self.ax.set_xlim(0, horizon_length)
-            self.ax.set_ylim(np.min(actions), np.max(actions))
-            return lines
+                if costs[k, i] == a:
+                    line.set_color("r")
+                    line.set_markerfacecolor("r")
+                    line.set_zorder(3)
+                else:
+                    line.set_color("b")
+                    line.set_markerfacecolor("b")
+                    line.set_zorder(2)
+            self.axs[0].set_xlim(0, horizon_length)
+            self.axs[0].set_ylim(np.min(actions), np.max(actions))
+
+            # Right side: Plot state of environment
+            im.set_array(frames[k])
+
+            # Set figure title
+            self.fig.suptitle(f"Frame {k}")
+            return [im] + lines
 
         anim = animation.FuncAnimation(
             fig=self.fig,
@@ -56,12 +85,18 @@ class InputPlanPlotter(Plotter):
             blit=True,
             repeat=False,
         )
-        self.ax.get_xaxis().set_major_locator(
+
+        self.axs[0].get_xaxis().set_major_locator(
             plt.MaxNLocator(nbins=10, integer=True, min_n_ticks=2)
         )
-        self.ax.set_ylabel("Control action, Iteration 0")
-        self.ax.set_xlabel("MPC horizon step")
-        self.ax.set_title("Input plans per control iteration")
+        self.axs[0].set_ylabel("Control action")
+        self.axs[0].set_xlabel("MPC horizon step")
+        self.axs[0].set_title("Input plans per control iteration")
+
+        self.axs[1].get_xaxis().set_major_locator(plt.NullLocator())
+        self.axs[1].get_yaxis().set_major_locator(plt.NullLocator())
+        self.axs[1].set_title(f"Environment")
+
         if save_to_video:
             anim.save(
                 get_output_path(self._timestamp, "Q_logged.mp4"),

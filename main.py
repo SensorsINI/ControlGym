@@ -28,10 +28,10 @@ if __name__ == "__main__":
     for step in range(config["num_iterations"]):
         action = controller.step(obs)
         new_obs, reward, done, info = env.step(action)
-        if config["render"] == "human":
-            env.render(mode=config["render"])
-        elif config["render"] == "rgb_array":
-            frames.append(env.render(mode=config["render"]))
+        if config["render_for_humans"]:
+            env.render(mode="human")
+        if config["controllers"][config["controller_name"]]["controller_logging"]:
+            frames.append(env.render(mode="rgb_array"))
 
         time.sleep(0.001)
 
