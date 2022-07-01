@@ -18,8 +18,8 @@ class Controller:
         self._rng_np = Generator(SFC64(seed=controller_config["seed"]))
         self._rng_tf = tf.random.Generator.from_seed(controller_config["seed"])
         self._controller_logging = controller_config["controller_logging"]
-        self.Q_logged = []
-        self.J_logged = []
+        self._save_vars = ["Q_logged", "J_logged", "s_logged", "u_logged"]
+        self.logs = {s: [] for s in self._save_vars}
 
     def step(self, s: np.ndarray) -> np.ndarray:
         raise NotImplementedError()
@@ -33,12 +33,9 @@ class Controller:
         :return: A dictionary of numpy arrays
         :rtype: dict[np.ndarray]
         """
-        return {
-            "Q_logged": np.stack(self.Q_logged, axis=0),
-            "J_logged": np.stack(self.J_logged, axis=0),
-        }
+        return {k: np.stack(v, axis=0) for k, v in self.logs.items()}
 
     def _update_logs(self):
         if self._controller_logging:
-            self.Q_logged.append(self.Q.numpy() if hasattr(self.Q, "numpy") else self.Q)
-            self.J_logged.append(self.J.numpy() if hasattr(self.Q, "numpy") else self.J)
+            for name, var in zip(self._save_vars, [self.Q, self.J, self.s, self.u]):
+                self.logs[name].append(var.numpy() if hasattr(var, "numpy") else var)

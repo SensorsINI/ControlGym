@@ -1,0 +1,59 @@
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import numpy as np
+
+from Visualizations import Plotter
+from Utilities.utils import get_output_path
+
+plt.style.use(["science"])
+
+
+class SummaryPlotter(Plotter):
+    def plot(self, states: np.ndarray, actions: np.ndarray, save_to_image: bool = True):
+        assert states.shape[0] == actions.shape[0]
+
+        num_steps, n = states.shape
+        _, m = actions.shape
+
+        if self.axs is None:
+            self.fig = plt.figure(constrained_layout=True, figsize=(10, 8))
+            self.gs = gridspec.GridSpec(nrows=2, ncols=m*n, figure=self.fig)
+            self.axs = [[], []]
+            for i in range(n):
+                self.axs[0].append(self.fig.add_subplot(self.gs[0, i*m]))
+            for i in range(m):
+                self.axs[1].append(self.fig.add_subplot(self.gs[1, i*n]))
+        for ax in [_x1 for _x2 in self.axs for _x1 in _x2]:
+            ax.clear()
+        
+        for i in range(n):
+            self.axs[0][i].plot(
+                np.arange(num_steps),
+                states[:, i],
+                linestyle="-", linewidth=0.5, marker="o", markersize=2, alpha=1.0, color="b"
+            )
+        for i in range(m):
+            self.axs[1][i].plot(
+                np.arange(num_steps),
+                actions[:, i],
+                linestyle="-", linewidth=0.5, marker="o", markersize=2, alpha=1.0, color="b"
+            )
+        
+        for i in range(2):
+            for j, ax in enumerate(self.axs[i]):
+                ax.get_xaxis().set_major_locator(
+                    plt.MaxNLocator(nbins=10, integer=True, min_n_ticks=2)
+                )
+                if i == 0:
+                    ax.set_ylabel(f"$x_{j}$")
+                elif i == 1:
+                    ax.set_ylabel(f"$u_{j}$")
+                ax.set_xlabel("Iteration")            
+            
+        self.fig.suptitle("State 's' and Action 'u' Evolution")
+        if save_to_image:
+            self.fig.savefig(
+                get_output_path(self._timestamp, "summary_logged.svg"), bbox_inches="tight"
+            )
+        else:
+            self.fig.show()

@@ -117,7 +117,7 @@ class ControllerAdamResampler(Controller):
 
     def step(self, s: np.ndarray) -> np.ndarray:
         # s: ndarray(n,)
-        s0 = s.copy()
+        self.s = s.copy()
         self._predictor_environment.reset(s)
         s = self._predictor_environment.get_state()
         # s: Tensor(num_rollouts, n)
@@ -133,8 +133,8 @@ class ControllerAdamResampler(Controller):
             self.Q.assign(Q_updated)
 
         # Final rollout
-        Q_keep, best_idx = self._retrieve_action(s0, self.Q)
-        u = Q_keep[0, 0]
+        Q_keep, best_idx = self._retrieve_action(self.s, self.Q)
+        self.u = tf.expand_dims(Q_keep[0, 0], 0).numpy()
 
         # Adam variables: m, v (1st/2nd moment of the gradient computation)
         adam_weights = self.opt.get_weights()
@@ -198,4 +198,4 @@ class ControllerAdamResampler(Controller):
         self._update_logs()
         self.Q.assign(Q_new)
         self.iteration += 1
-        return tf.expand_dims(u, 0).numpy()
+        return self.u

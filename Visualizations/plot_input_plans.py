@@ -57,7 +57,7 @@ class InputPlanPlotter(Plotter):
                     np.arange(horizon_length),
                     actions[k, i, :],
                 )
-                line.set_alpha(1.0 - float((costs[k, i] - a) / (b - a)))
+                line.set_alpha((1.0 - float((costs[k, i] - a) / (b - a)))**2)
                 if costs[k, i] == a:
                     line.set_color("r")
                     line.set_markerfacecolor("r")

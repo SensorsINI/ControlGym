@@ -31,7 +31,6 @@ class ControllerCemGradient(Controller):
         self.dist_stdev = tf.sqrt(self._initial_action_variance) * tf.ones(
             [1, self._horizon_steps], dtype=tf.float32
         )
-        self.u = 0.0
         self._predictor_environment = EulerPredictor(
             environment.unwrapped.__class__(
                 batch_size=self._num_rollouts, **environment.unwrapped.config
@@ -101,6 +100,7 @@ class ControllerCemGradient(Controller):
         self.dist_stdev = tf.math.reduce_std(Q_keep, axis=0, keepdims=True)
 
     def step(self, s: np.ndarray) -> np.ndarray:
+        self.s = s.copy()
         self._predictor_environment.reset(s)
         s = self._predictor_environment.get_state()
 
@@ -111,9 +111,9 @@ class ControllerCemGradient(Controller):
         self.dist_stdev = tf.concat(
             [self.dist_stdev[:, 1:], tf.sqrt([[self._initial_action_variance]])], -1
         )
-        u = self.dist_mean[0, 0]
+        self.u = tf.expand_dims(self.dist_mean[0, 0], 0).numpy()
         self._update_logs()
         self.dist_mean = tf.concat(
             [self.dist_mean[:, 1:], tf.constant(0.0, shape=[1, 1])], -1
         )
-        return tf.expand_dims(u, 0).numpy()
+        return self.u

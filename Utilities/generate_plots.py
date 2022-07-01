@@ -7,6 +7,7 @@ from Visualizations.plot_input_plans import InputPlanPlotter
 from yaml import dump
 
 from Utilities.utils import get_logger, get_output_path
+from Visualizations.plot_summary import SummaryPlotter
 
 logger = get_logger(__name__)
 
@@ -26,6 +27,11 @@ def generate_plots(
             "wb",
         ) as f:
             np.save(f, a)
+        
+    logger.info("Creating summary plot...")
+    horizon_cost_plotter = SummaryPlotter(timestamp_str=timestamp_str)
+    horizon_cost_plotter.plot(controller_output["s_logged"], controller_output["u_logged"], save_to_image=True)
+    logger.info("...done.")
 
     logger.info("Creating horizon cost plot...")
     horizon_cost_plotter = HorizonCostPlotter(timestamp_str=timestamp_str)
