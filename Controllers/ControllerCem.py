@@ -5,6 +5,7 @@ from numpy.random import default_rng
 from yaml import FullLoader, load
 
 from Controllers import Controller
+from Predictors.predictor_euler import EulerPredictor
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 if config["debug"]:
@@ -28,8 +29,10 @@ class ControllerCem(Controller):
         self.dist_stdev = np.sqrt(self._initial_action_variance) * np.ones(
             (1, self._horizon_steps)
         )
-        self._predictor_environment = environment.unwrapped.__class__(
-            batch_size=self._num_rollouts, **environment.unwrapped.config
+        self._predictor_environment = EulerPredictor(
+            environment.unwrapped.__class__(
+                batch_size=self._num_rollouts, **environment.unwrapped.config
+            )
         )
 
     def predict_and_cost(self, s: np.ndarray, Q: np.ndarray):
@@ -52,7 +55,7 @@ class ControllerCem(Controller):
 
     def step(self, s: np.ndarray) -> np.ndarray:
         self._predictor_environment.reset(state=s)
-        s = self._predictor_environment.state
+        s = self._predictor_environment.get_state()
 
         for _ in range(0, self._outer_it):
             # generate random input sequence and clip to control limits

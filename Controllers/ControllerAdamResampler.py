@@ -4,6 +4,7 @@ from gym import Env
 from yaml import FullLoader, load
 
 from Controllers import Controller
+from Predictors.predictor_euler import EulerPredictor
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 if config["debug"]:
@@ -42,8 +43,10 @@ class ControllerAdamResampler(Controller):
             epsilon=controller_config["grad_epsilon"],
         )
 
-        self._predictor_environment = environment.unwrapped.__class__(
-            batch_size=self._num_rollouts, **environment.unwrapped.config
+        self._predictor_environment = EulerPredictor(
+            environment.unwrapped.__class__(
+                batch_size=self._num_rollouts, **environment.unwrapped.config
+            )
         )
 
     def _sample_inputs(self, num_trajectories: int):
@@ -116,7 +119,7 @@ class ControllerAdamResampler(Controller):
         # s: ndarray(n,)
         s0 = s.copy()
         self._predictor_environment.reset(s)
-        s = self._predictor_environment.state
+        s = self._predictor_environment.get_state()
         # s: Tensor(num_rollouts, n)
 
         # If warm-start: Increase initial optimization steps

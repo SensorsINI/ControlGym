@@ -1,8 +1,7 @@
-from importlib import import_module
-
 import numpy as np
 import tensorflow as tf
 from gym import Env
+from Predictors.predictor_euler import EulerPredictor
 from yaml import FullLoader, load
 
 from Controllers import Controller
@@ -33,8 +32,10 @@ class ControllerCemGradient(Controller):
             [1, self._horizon_steps], dtype=tf.float32
         )
         self.u = 0.0
-        self._predictor_environment = environment.unwrapped.__class__(
-            batch_size=self._num_rollouts, **environment.unwrapped.config
+        self._predictor_environment = EulerPredictor(
+            environment.unwrapped.__class__(
+                batch_size=self._num_rollouts, **environment.unwrapped.config
+            )
         )
 
     def _rollout_trajectories(self, Q: tf.Tensor, rollout_trajectory: tf.Tensor = None):
@@ -101,7 +102,7 @@ class ControllerCemGradient(Controller):
 
     def step(self, s: np.ndarray) -> np.ndarray:
         self._predictor_environment.reset(s)
-        s = self._predictor_environment.state
+        s = self._predictor_environment.get_state()
 
         for _ in range(self._outer_it):
             self._predict_and_cost(s)
