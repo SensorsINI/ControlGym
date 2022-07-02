@@ -1,28 +1,25 @@
-num_experiments: 1
-controller_name: ControllerCemGradientBharadhwaj
+num_experiments: 3
+controller_name: ControllerAdamResampler
 environment_name: CustomEnvironments/Pendulum
-num_iterations: 50
+num_iterations: 5
 render_for_humans: False
 debug: False
 logging_level: DEBUG
+seed_entropy: 1234
 
 environments:
   CustomEnvironments/CartPoleContinuous:
-    seed: 1234
     actuator_noise: [0.0] # stdev, can be set to 0.0
 
   CustomEnvironments/MountainCarContinuous:
-    seed: 1234
     actuator_noise: [0.0] # stdev
 
   CustomEnvironments/Pendulum:
-    seed: 1234
     actuator_noise: [0.5] # stdev
 
 controllers:
   ControllerAdamResampler:
     controller_logging: True
-    seed: 12345
     mpc_horizon: .5
     dt: 0.02
     cem_outer_it: 5
@@ -44,7 +41,6 @@ controllers:
 
   ControllerCem:
     controller_logging: True
-    seed: 12345
     mpc_horizon: 0.5
     dt: 0.02
     cem_outer_it: 5
@@ -59,7 +55,6 @@ controllers:
 
   ControllerCemGradient:
     controller_logging: True
-    seed: 12345
     mpc_horizon: .5
     dt: 0.02
     cem_outer_it: 5
@@ -76,7 +71,6 @@ controllers:
   
   ControllerCemGradientBharadhwaj:
     controller_logging: True
-    seed: 12345
     cem_rollouts: 20
     mpc_horizon: .5
     dt: 0.02

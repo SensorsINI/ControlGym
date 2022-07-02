@@ -8,15 +8,24 @@ from yaml import FullLoader, load
 config = load(open("config.yml", "r"), Loader=FullLoader)
 
 
-def get_output_path(timestamp: str, filename: str):
-    folder = os.path.join(
-        "Output",
-        f"{timestamp}_{config['controller_name']}_{config['environment_name']}".replace(
-            "/", "_"
-        ),
-    )
-    Path(folder).mkdir(parents=True, exist_ok=True)
-    return os.path.join(folder, f"{timestamp}_{filename}")
+class OutputPath:
+    RUN_NUM = None
+
+    @classmethod
+    def get_output_path(cls, timestamp: str, filename: str, suffix: str):
+        folder = os.path.join(
+            "Output",
+            f"{timestamp}_{config['controller_name']}_{config['environment_name']}".replace(
+                "/", "_"
+            ),
+        )
+        Path(folder).mkdir(parents=True, exist_ok=True)
+        return os.path.join(
+            folder,
+            f"{timestamp}_{filename}{suffix}"
+            if cls.RUN_NUM is None
+            else f"{timestamp}_{filename}_{cls.RUN_NUM}{suffix}",
+        )
 
 
 # Below is copied from CartPole repo

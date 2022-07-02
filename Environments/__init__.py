@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import tensorflow as tf
 from gym.envs.registration import register
-from numpy.random import SFC64, Generator, SeedSequence
+from numpy.random import SFC64, Generator
 from Utilities.utils import get_logger
 
 log = get_logger(__name__)
@@ -14,12 +14,13 @@ ENV_REGISTRY = {
     "CustomEnvironments/Pendulum": "Environments.pendulum_batched:PendulumEnv_Batched",
 }
 
-for identifier, entry_point in ENV_REGISTRY.items():
-    register(
-        id=identifier,
-        entry_point=entry_point,
-        max_episode_steps=None,
-    )
+def register_envs():
+    for identifier, entry_point in ENV_REGISTRY.items():
+        register(
+            id=identifier,
+            entry_point=entry_point,
+            max_episode_steps=None,
+        )
 
 
 class EnvironmentBatched:
@@ -47,9 +48,7 @@ class EnvironmentBatched:
             seed = 0
             log.warn(f"Environment set up with no seed specified. Setting to {seed}.")
 
-        seed_seq = SeedSequence(seed)
-        seed = seed_seq.entropy
-        self._np_random = Generator(SFC64(seed_seq))
+        self._np_random = Generator(SFC64(seed))
 
     def _generate_actuator_noise(self):
         return (

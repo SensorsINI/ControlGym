@@ -15,7 +15,7 @@ class Controller:
         assert isinstance(self._env.action_space, Box)
         self._n = environment.observation_space.shape[0]
         self._m = environment.action_space.shape[0]
-        self._rng_np = Generator(SFC64(seed=controller_config["seed"]))
+        self._rng_np = Generator(SFC64(controller_config["seed"]))
         self._rng_tf = tf.random.Generator.from_seed(controller_config["seed"])
         self._controller_logging = controller_config["controller_logging"]
         self._save_vars = ["Q_logged", "J_logged", "s_logged", "u_logged"]

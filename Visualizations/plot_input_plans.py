@@ -4,7 +4,7 @@ import matplotlib.animation as animation
 import numpy as np
 
 from Visualizations import Plotter
-from Utilities.utils import get_output_path
+from Utilities.utils import OutputPath
 
 plt.style.use(["science"])
 
@@ -101,7 +101,7 @@ class InputPlanPlotter(Plotter):
 
         if save_to_video:
             anim.save(
-                get_output_path(self._timestamp, "Q_logged.mp4"),
+                OutputPath.get_output_path(self._timestamp, "Q_logged", ".mp4"),
                 writer=animation.FFMpegWriter(fps=15),
             )
         else:

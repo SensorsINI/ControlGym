@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from Visualizations import Plotter
-from Utilities.utils import get_output_path
+from Utilities.utils import OutputPath
 
 plt.style.use(["science"])
 
@@ -33,7 +33,8 @@ class HorizonCostPlotter(Plotter):
 
         if save_to_image:
             self.fig.savefig(
-                get_output_path(self._timestamp, "J_logged.svg"), bbox_inches="tight"
+                OutputPath.get_output_path(self._timestamp, "J_logged", ".svg"),
+                bbox_inches="tight",
             )
         else:
             self.fig.show()
