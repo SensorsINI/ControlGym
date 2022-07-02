@@ -1,9 +1,12 @@
 from typing import Optional, Tuple, Union
 
 import numpy as np
-from numpy.random import Generator, SFC64
 import tensorflow as tf
 from gym.envs.registration import register
+from numpy.random import SFC64, Generator, SeedSequence
+from Utilities.utils import get_logger
+
+log = get_logger(__name__)
 
 ENV_REGISTRY = {
     "CustomEnvironments/CartPoleContinuous": "Environments.continuous_cartpole_batched:Continuous_CartPoleEnv_Batched",
@@ -39,15 +42,20 @@ class EnvironmentBatched:
     ) -> Tuple[np.ndarray, Optional[dict]]:
         return NotImplementedError()
 
-    def _set_up_rng(self, seed: int = None, actuator_noise: list[float] = None) -> None:
-        self._actuator_noise = actuator_noise
-        self._rng_np = Generator(SFC64(seed=0 if seed is None else seed))
+    def _set_up_rng(self, seed: int = None) -> None:
+        if seed is None:
+            seed = 0
+            log.warn(f"Environment set up with no seed specified. Setting to {seed}.")
+
+        seed_seq = SeedSequence(seed)
+        seed = seed_seq.entropy
+        self._np_random = Generator(SFC64(seed_seq))
 
     def _generate_actuator_noise(self):
         return (
             self._actuator_noise
             * (self.action_space.high - self.action_space.low)
-            * self._rng_np.standard_normal(
+            * self.np_random.standard_normal(
                 (self._batch_size, len(self._actuator_noise)), dtype=np.float32
             )
         )

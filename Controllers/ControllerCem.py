@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 from gym import Env
-from numpy.random import default_rng
 from yaml import FullLoader, load
 
 from Controllers import Controller

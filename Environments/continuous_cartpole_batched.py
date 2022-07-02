@@ -4,7 +4,6 @@ import numpy as np
 import tensorflow as tf
 from gym import logger, spaces
 from gym.envs.classic_control.cartpole import CartPoleEnv
-from gym.utils import seeding
 
 from Environments import EnvironmentBatched
 
@@ -17,7 +16,8 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
             low=-self.force_mag, high=self.force_mag, shape=(1,), dtype=np.float32
         )
         self._batch_size = batch_size
-        self._set_up_rng(**kwargs)
+        self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
+        self._set_up_rng(kwargs["seed"])
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor]
@@ -102,7 +102,7 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
         options: Optional[dict] = None,
     ) -> Tuple[np.ndarray, Optional[dict]]:
         if seed is not None:
-            self._np_random, seed = seeding.np_random(seed)
+            self._set_up_rng(seed)
 
         if state is None:
             if self._batch_size == 1:

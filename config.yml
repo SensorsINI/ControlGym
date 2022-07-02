@@ -1,6 +1,7 @@
-controller_name: ControllerAdamResampler
+num_experiments: 1
+controller_name: ControllerCemGradientBharadhwaj
 environment_name: CustomEnvironments/Pendulum
-num_iterations: 100
+num_iterations: 50
 render_for_humans: False
 debug: False
 logging_level: DEBUG
@@ -8,15 +9,15 @@ logging_level: DEBUG
 environments:
   CustomEnvironments/CartPoleContinuous:
     seed: 1234
-    actuator_noise: [0.1] # stdev, can set to 0.0
+    actuator_noise: [0.0] # stdev, can be set to 0.0
 
   CustomEnvironments/MountainCarContinuous:
     seed: 1234
-    actuator_noise: [0.1] # stdev
+    actuator_noise: [0.0] # stdev
 
   CustomEnvironments/Pendulum:
     seed: 1234
-    actuator_noise: [0.1] # stdev
+    actuator_noise: [0.5] # stdev
 
 controllers:
   ControllerAdamResampler:
@@ -25,7 +26,7 @@ controllers:
     mpc_horizon: .5
     dt: 0.02
     cem_outer_it: 5
-    cem_rollouts: 100
+    cem_rollouts: 200
     cem_predictor_type: EulerTF
     cem_stdev_min: 0.1
     cem_R: 1
@@ -47,7 +48,7 @@ controllers:
     mpc_horizon: 0.5
     dt: 0.02
     cem_outer_it: 5
-    cem_rollouts: 100
+    cem_rollouts: 200
     cem_predictor_type: EulerTF
     cem_stdev_min: 0.1
     cem_R: 1
@@ -62,7 +63,7 @@ controllers:
     mpc_horizon: .5
     dt: 0.02
     cem_outer_it: 5
-    cem_rollouts: 100
+    cem_rollouts: 200
     cem_predictor_type: EulerTF
     cem_stdev_min: 0.1
     cem_R: 1
@@ -72,3 +73,16 @@ controllers:
     max_grad: 1000
     grad_alpha: 0.05
     cem_initial_action_variance: 0.5
+  
+  ControllerCemGradientBharadhwaj:
+    controller_logging: True
+    seed: 12345
+    cem_rollouts: 20
+    mpc_horizon: .5
+    dt: 0.02
+    cem_outer_it: 20
+    cem_best_k: 10
+    max_grad: 50
+    grad_learning_rate: 0.1
+
+
