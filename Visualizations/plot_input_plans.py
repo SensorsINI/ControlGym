@@ -34,7 +34,7 @@ class InputPlanPlotter(Plotter):
             ax.clear()
             ax.set_box_aspect(1)
 
-        num_steps, num_samples, horizon_length = actions.shape
+        num_steps, num_samples, horizon_length = np.squeeze(actions).shape
 
         lines = [
             self.axs[0].plot(
@@ -57,7 +57,7 @@ class InputPlanPlotter(Plotter):
                     np.arange(horizon_length),
                     actions[k, i, :],
                 )
-                line.set_alpha((1.0 - float((costs[k, i] - a) / (b - a))) ** 2)
+                line.set_alpha((1.0 - float((costs[k, i] - a) / max(0.01, b - a))) ** 2)
                 if costs[k, i] == a:
                     line.set_color("r")
                     line.set_markerfacecolor("r")

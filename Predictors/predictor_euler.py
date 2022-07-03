@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
+import torch
 from Environments import EnvironmentBatched
 from Predictors import Predictor
 from Utilities.utils import get_logger
@@ -16,9 +17,9 @@ class EulerPredictor(Predictor):
         self._env = environment
 
     def step(
-        self, action: Union[np.ndarray, tf.Tensor]
+        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor],
+        Union[np.ndarray, tf.Tensor, torch.Tensor],
         Union[np.ndarray, float],
         Union[np.ndarray, bool],
         dict,
@@ -35,8 +36,8 @@ class EulerPredictor(Predictor):
     ) -> Tuple[np.ndarray, Optional[dict]]:
         return self._env.reset(state, seed, return_info, options)
 
-    def train(self, dataset: Union[np.ndarray, tf.Tensor]) -> None:
+    def train(self, dataset: Union[np.ndarray, tf.Tensor, torch.Tensor]) -> None:
         logger.info("No training required for Euler predictor.")
 
-    def get_state(self) -> Union[np.ndarray, tf.Tensor]:
+    def get_state(self) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
         return self._env.state

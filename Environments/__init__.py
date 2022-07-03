@@ -1,7 +1,9 @@
+from importlib import import_module
 from typing import Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
+import torch
 from gym.envs.registration import register
 from numpy.random import SFC64, Generator
 from Utilities.utils import get_logger
@@ -14,6 +16,7 @@ ENV_REGISTRY = {
     "CustomEnvironments/Pendulum": "Environments.pendulum_batched:PendulumEnv_Batched",
 }
 
+
 def register_envs():
     for identifier, entry_point in ENV_REGISTRY.items():
         register(
@@ -21,13 +24,64 @@ def register_envs():
             entry_point=entry_point,
             max_episode_steps=None,
         )
+    
+LIBS = {
+    "numpy": {
+        "reshape": np.reshape,
+        "to_numpy": lambda x: np.array(x),
+        "to_tensor": lambda x, t: x.astype(t),
+        "unstack": lambda x, axis: list(np.moveaxis(x, axis, 0)),
+        "clip": np.clip,
+        "sin": np.sin,
+        "cos": np.cos,
+        "squeeze": np.squeeze,
+        "unsqueeze": np.expand_dims,
+        "stack": np.stack,
+        "cast": lambda x, t: x.astype(t),
+        "float32": np.float32,
+        "tile": np.tile,
+        "zeros": np.zeros,
+    },
+    "tensorflow": {
+        "reshape": tf.reshape,
+        "to_numpy": lambda x: x.numpy(),
+        "to_tensor": lambda x, t: tf.convert_to_tensor(x, dtype=t),
+        "unstack": lambda x, axis: tf.unstack(x, axis=axis),
+        "clip": tf.clip_by_value,
+        "sin": tf.sin,
+        "cos": tf.cos,
+        "squeeze": tf.squeeze,
+        "unsqueeze": tf.expand_dims,
+        "stack": tf.stack,
+        "cast": lambda x, t: tf.cast(x, dtype=t),
+        "float32": tf.float32,
+        "tile": tf.tile,
+        "zeros": tf.zeros,
+    },
+    "pytorch": {
+        "reshape": torch.reshape,
+        "to_numpy": lambda x: x.cpu().detach().numpy(),
+        "to_tensor": lambda x, t: torch.as_tensor(x, dtype=t),
+        "unstack": lambda x, dim: torch.unbind(x, dim=dim),
+        "clip": torch.clamp,
+        "sin": torch.sin,
+        "cos": torch.cos,
+        "squeeze": torch.squeeze,
+        "unsqueeze": torch.unsqueeze,
+        "stack": torch.stack,
+        "cast": lambda x, t: x.type(t),
+        "float32": torch.float32,
+        "tile": torch.tile,
+        "zeros": torch.zeros,
+    }
+}
 
 
 class EnvironmentBatched:
     def step(
-        self, action: Union[np.ndarray, tf.Tensor]
+        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor],
+        Union[np.ndarray, tf.Tensor, torch.Tensor],
         Union[np.ndarray, float],
         Union[np.ndarray, bool],
         dict,
@@ -60,25 +114,67 @@ class EnvironmentBatched:
         )
 
     def _expand_arrays(
-        self, state: Union[np.ndarray, tf.Tensor], action: Union[np.ndarray, tf.Tensor]
+        self,
+        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
     ):
         if action.ndim < 2:
-            action = tf.reshape(
-                action, [self._batch_size, sum(self.action_space.shape)]
+            action = self._lib["reshape"](
+                action, (self._batch_size, sum(self.action_space.shape))
             )
         if state.ndim < 2:
-            state = tf.reshape(
-                state, [self._batch_size, sum(self.observation_space.shape)]
+            state = self._lib["reshape"](
+                state, (self._batch_size, sum(self.observation_space.shape))
             )
         return state, action
 
     def _get_reset_return_val(self, return_info: bool = False):
         if self._batch_size == 1:
-            self.state = tf.squeeze(self.state).numpy()
+            self.state = self._lib["to_numpy"](self._lib["squeeze"](self.state))
 
-        ret_val = (
-            self.state.numpy() if isinstance(self.state, tf.Tensor) else self.state
-        )
+        ret_val = self._lib["to_numpy"](self.state)
         if return_info:
             ret_val = tuple((ret_val, {}))
         return ret_val
+    
+    def set_computation_library(self, computation_lib: str):
+        try:
+            self._lib = LIBS[computation_lib]
+        except KeyError as error:
+            log.exception(error)
+
+    # Overloading properties/methods for Bharadhwaj implementation
+    @property
+    def a_size(self):
+        return self.action_space.shape[0]
+
+    def reset_state(self, batch_size):
+        self.reset()
+
+    @property
+    def B(self):
+        return self._batch_size
+
+    def rollout(self, actions, return_traj=False):
+        # Uncoditional action sequence rollout
+        # actions: shape: TxBxA (time, batch, action)
+        assert actions.dim() == 3
+        assert actions.size(1) == self.B, "{}, {}".format(actions.size(1), self.B)
+        assert actions.size(2) == self.a_size
+        T = actions.size(0)
+        rs = []
+        ss = []
+
+        total_r = torch.zeros(self.B, requires_grad=True, device=actions.device)
+        for i in range(T):
+            # Reshape for step function: BxTxA
+            s, r, _, _ = self.step(actions[i])
+            rs.append(r)
+            ss.append(s)
+            total_r = total_r + r
+            # if(done):
+            #     break
+        if return_traj:
+            return rs, ss
+        else:
+            return total_r

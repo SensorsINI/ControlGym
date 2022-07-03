@@ -42,10 +42,12 @@ class ControllerAdamResampler(Controller):
             beta_2=controller_config["grad_beta_2"],
             epsilon=controller_config["grad_epsilon"],
         )
-
+        
+        _planning_env_config = environment.unwrapped.config.copy()
+        _planning_env_config.update({"computation_lib": "tensorflow"})
         self._predictor_environment = EulerPredictor(
             environment.unwrapped.__class__(
-                batch_size=self._num_rollouts, **environment.unwrapped.config
+                batch_size=self._num_rollouts, **_planning_env_config
             )
         )
 

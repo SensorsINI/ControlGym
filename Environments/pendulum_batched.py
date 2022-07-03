@@ -2,16 +2,15 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
+import torch
 from gym import spaces
 from gym.envs.classic_control.pendulum import PendulumEnv, angle_normalize
 
 from Environments import EnvironmentBatched
 
-_PI = tf.constant(np.pi, dtype=tf.float32)
-
 
 class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
-    def __init__(self, g=10, batch_size=1, **kwargs):
+    def __init__(self, g=10, batch_size=1, computation_lib="numpy", **kwargs):
         super().__init__(g)
         self.config = kwargs
         high = np.array([np.pi, self.max_speed], dtype=np.float32)
@@ -21,13 +20,16 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
         self._set_up_rng(kwargs["seed"])
 
+        self.set_computation_library(computation_lib)
+
     def _angle_normalize(self, x):
-        return ((x + _PI) % (2 * _PI)) - _PI
+        _pi = self._lib["to_tensor"](np.array(np.pi), self._lib["float32"])
+        return ((x + _pi) % (2 * _pi)) - _pi
 
     def step(
-        self, action: Union[np.ndarray, tf.Tensor]
+        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor],
+        Union[np.ndarray, tf.Tensor, torch.Tensor],
         Union[np.ndarray, float],
         Union[np.ndarray, bool],
         dict,
@@ -38,29 +40,44 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
         if self._batch_size == 1:
             action += self._generate_actuator_noise()
 
-        th, thdot = tf.unstack(self.state, axis=1)  # th := theta
+        th, thdot = self._lib["unstack"](self.state, 1)  # th := theta
 
         g = self.g
         m = self.m
         l = self.l
         dt = self.dt
 
-        action = tf.clip_by_value(action, -self.max_torque, self.max_torque)[:, 0]
+        action = self._lib["clip"](
+            action,
+            self._lib["to_tensor"](np.array(-self.max_torque), self._lib["float32"]),
+            self._lib["to_tensor"](np.array(self.max_torque), self._lib["float32"]),
+        )[:, 0]
         self.last_action = action  # for rendering
         costs = (
             self._angle_normalize(th) ** 2 + 0.1 * thdot**2 + 0.001 * (action**2)
         )
 
         newthdot = (
-            thdot + (3 * g / (2 * l) * tf.sin(th) + 3.0 / (m * l**2) * action) * dt
+            thdot
+            + (3 * g / (2 * l) * self._lib["sin"](th) + 3.0 / (m * l**2) * action)
+            * dt
         )
-        newthdot = tf.clip_by_value(newthdot, -self.max_speed, self.max_speed)
+        newthdot = self._lib["clip"](
+            newthdot,
+            self._lib["to_tensor"](np.array(-self.max_speed), self._lib["float32"]),
+            self._lib["to_tensor"](np.array(self.max_speed), self._lib["float32"]),
+        )
         newth = th + newthdot * dt
 
-        self.state = tf.squeeze(tf.stack([newth, newthdot], axis=1))
+        self.state = self._lib["squeeze"](self._lib["stack"]([newth, newthdot], 1))
 
         if self._batch_size == 1:
-            return tf.squeeze(self.state).numpy(), -float(costs), False, {}
+            return (
+                self._lib["to_numpy"](self._lib["squeeze"](self.state)),
+                -float(costs),
+                False,
+                {},
+            )
 
         return self.state, -costs, False, {}
 
@@ -79,13 +96,13 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
                 high = np.array([np.pi, 1])
             else:
                 high = np.tile(np.array([np.pi, 1]), (self._batch_size, 1))
-            self.state = tf.convert_to_tensor(
-                self.np_random.uniform(low=-high, high=high), dtype=tf.float32
+            self.state = self._lib["to_tensor"](
+                self.np_random.uniform(low=-high, high=high), self._lib["float32"]
             )
         else:
             if state.ndim < 2:
-                state = tf.expand_dims(state, axis=0)
-            self.state = tf.tile(state, (self._batch_size, 1))
+                state = self._lib["unsqueeze"](self._lib["to_tensor"](state, self._lib["float32"]), 0)
+            self.state = self._lib["tile"](state, (self._batch_size, 1))
 
         self.last_u = None
 
