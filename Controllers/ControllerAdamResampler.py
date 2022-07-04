@@ -20,7 +20,7 @@ class ControllerAdamResampler(Controller):
             controller_config["mpc_horizon"] / controller_config["dt"]
         )
         self._outer_it = controller_config["cem_outer_it"]
-        self._max_grad = controller_config["max_grad"]
+        self._grad_max = controller_config["grad_max"]
         self._select_best_k = controller_config["cem_best_k"]
         self._initial_action_variance = tf.constant(
             controller_config["cem_initial_action_variance"], dtype=tf.float32
@@ -71,10 +71,10 @@ class ControllerAdamResampler(Controller):
 
         dJ_dQ = tape.gradient(traj_cost, Q)
         dJ_dQ_max = tf.math.reduce_max(tf.abs(dJ_dQ), axis=1, keepdims=True)
-        mask = dJ_dQ_max > self._max_grad
+        mask = dJ_dQ_max > self._grad_max
         dJ_dQ_clipped = tf.cast(~mask, dtype=tf.float32) * dJ_dQ + tf.cast(
             mask, dtype=tf.float32
-        ) * self._max_grad * (dJ_dQ / dJ_dQ_max)
+        ) * self._grad_max * (dJ_dQ / dJ_dQ_max)
 
         self.opt.apply_gradients(zip([dJ_dQ_clipped], [Q]))
         Q_updated = tf.clip_by_value(

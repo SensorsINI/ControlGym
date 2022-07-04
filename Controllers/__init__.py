@@ -38,4 +38,4 @@ class Controller:
     def _update_logs(self):
         if self._controller_logging:
             for name, var in zip(self._save_vars, [self.Q, self.J, self.s, self.u]):
-                self.logs[name].append(var.numpy() if hasattr(var, "numpy") else var)
+                self.logs[name].append(var.numpy().copy() if hasattr(var, "numpy") else var.copy())

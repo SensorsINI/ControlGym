@@ -27,13 +27,13 @@ def generate_plots(
     logger.info("Creating summary plot...")
     horizon_cost_plotter = SummaryPlotter(timestamp=timestamp, config=config)
     horizon_cost_plotter.plot(
-        controller_output["s_logged"], controller_output["u_logged"], save_to_image=True
+        controller_output["s_logged"], controller_output["u_logged"], save_to_image=config["save_plots_to_file"]
     )
     logger.info("...done.")
 
     logger.info("Creating horizon cost plot...")
     horizon_cost_plotter = HorizonCostPlotter(timestamp=timestamp, config=config)
-    horizon_cost_plotter.plot(controller_output["J_logged"], save_to_image=True)
+    horizon_cost_plotter.plot(controller_output["J_logged"], save_to_image=config["save_plots_to_file"])
     logger.info("...done.")
 
     logger.info("Creating input plan animation...")
@@ -42,6 +42,6 @@ def generate_plots(
         controller_output["Q_logged"],
         controller_output["J_logged"],
         frames,
-        save_to_video=True,
+        save_to_video=config["save_plots_to_file"],
     )
     logger.info("...done.")

@@ -3,7 +3,7 @@ import torch
 from Environments import EnvironmentBatched
 
 # Import original paper's code
-from mpc.gradcem import GradCEMPlan
+from Controllers.External.gradcem import GradCEMPlan
 
 from Controllers import Controller
 
@@ -18,7 +18,6 @@ class ControllerCemGradientBharadhwaj(Controller):
         )
         self._opt_iters = controller_config["cem_outer_it"]
         self._select_best_k = controller_config["cem_best_k"]
-        self._max_grad = controller_config["max_grad"]
 
         _planning_env_config = environment.unwrapped.config.copy()
         _planning_env_config.update({"computation_lib": "pytorch"})
@@ -34,6 +33,10 @@ class ControllerCemGradientBharadhwaj(Controller):
             env=self._planning_env,
             device=torch.device("cpu"),
             grad_clip=True,
+            learning_rate=controller_config["grad_learning_rate"],
+            grad_max=controller_config["grad_max"],
+            sgd_momentum=controller_config["grad_sgd_momentum"],
+            grad_epsilon=controller_config["grad_epsilon"],
         )
 
     def step(self, s: np.ndarray) -> np.ndarray:
@@ -46,10 +49,8 @@ class ControllerCemGradientBharadhwaj(Controller):
             return_plan_each_iter=True,
         )
         # Select last optim iteration result of Q
-        self.Q, self.J = (
-            self.Q[-1].detach().numpy().swapaxes(0, 1),
-            self.J.detach().numpy(),
-        )
+        self.Q = self.Q[-1].swapaxes(0, 1)
+        
         # Q: (batch_size x horizon_length x action_space)
         # J: (batch_size)
         self.u = self.Q[np.argmin(self.J), 0, :]
