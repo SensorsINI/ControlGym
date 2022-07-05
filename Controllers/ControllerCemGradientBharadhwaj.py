@@ -1,3 +1,4 @@
+from importlib import import_module
 import numpy as np
 import torch
 from Environments import EnvironmentBatched
@@ -21,8 +22,14 @@ class ControllerCemGradientBharadhwaj(Controller):
 
         _planning_env_config = environment.unwrapped.config.copy()
         _planning_env_config.update({"computation_lib": "pytorch"})
-        self._planning_env = environment.unwrapped.__class__(
-            batch_size=self._num_rollouts, **_planning_env_config
+        self._predictor_environment = getattr(
+            import_module(f"Predictors.{controller_config['predictor']}"),
+            controller_config["predictor"],
+        )(
+            environment.unwrapped.__class__(
+                batch_size=self._num_rollouts, **_planning_env_config
+            ),
+            controller_config["seed"],
         )
 
         self._controller = GradCEMPlan(
@@ -30,7 +37,7 @@ class ControllerCemGradientBharadhwaj(Controller):
             opt_iters=self._opt_iters,
             samples=self._num_rollouts,
             top_samples=self._select_best_k,
-            env=self._planning_env,
+            env=self._predictor_environment,
             device=torch.device("cpu"),
             grad_clip=True,
             learning_rate=controller_config["grad_learning_rate"],
@@ -40,7 +47,7 @@ class ControllerCemGradientBharadhwaj(Controller):
         )
 
     def step(self, s: np.ndarray) -> np.ndarray:
-        # self._planning_env.reset(s)
+        # self._predictor_environment.reset(s)
 
         self.Q, self.J = self._controller.forward(
             s=s,
@@ -50,7 +57,7 @@ class ControllerCemGradientBharadhwaj(Controller):
         )
         # Select last optim iteration result of Q
         self.Q = self.Q[-1].swapaxes(0, 1)
-        
+
         # Q: (batch_size x horizon_length x action_space)
         # J: (batch_size)
         self.u = self.Q[np.argmin(self.J), 0, :]

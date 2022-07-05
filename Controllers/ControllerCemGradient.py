@@ -1,7 +1,7 @@
+from importlib import import_module
 import numpy as np
 import tensorflow as tf
 from gym import Env
-from Predictors.predictor_euler import EulerPredictor
 from yaml import FullLoader, load
 
 from Controllers import Controller
@@ -31,13 +31,17 @@ class ControllerCemGradient(Controller):
         self.dist_stdev = tf.sqrt(self._initial_action_variance) * tf.ones(
             [1, self._horizon_steps], dtype=tf.float32
         )
-        
+
         _planning_env_config = environment.unwrapped.config.copy()
         _planning_env_config.update({"computation_lib": "tensorflow"})
-        self._predictor_environment = EulerPredictor(
+        self._predictor_environment = getattr(
+            import_module(f"Predictors.{controller_config['predictor']}"),
+            controller_config["predictor"],
+        )(
             environment.unwrapped.__class__(
                 batch_size=self._num_rollouts, **_planning_env_config
-            )
+            ),
+            controller_config["seed"],
         )
 
     def _rollout_trajectories(self, Q: tf.Tensor, rollout_trajectory: tf.Tensor = None):

@@ -64,14 +64,12 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
             ~((position == self.min_position) & (velocity < 0)), self._lib["float32"]
         )
 
-        done = (position >= self.goal_position) & (velocity >= self.goal_velocity)
+        self.state = self._lib["stack"]([position, velocity], 1)
 
-        reward = self._lib["sin"](3 * position)
-        # This part is not differentiable:
-        reward += 100.0 * self._lib["cast"](done, self._lib["float32"])
-        reward -= (action[:, 0] ** 2) * 0.1
+        done = self.is_done(self.state)
+        reward = self.get_reward(self.state, action)
 
-        self.state = self._lib["squeeze"](self._lib["stack"]([position, velocity], 1))
+        self.state = self._lib["squeeze"](self.state)
 
         if self._batch_size == 1:
             return (
@@ -114,7 +112,9 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
                 )
         else:
             if state.ndim < 2:
-                state = self._lib["unsqueeze"](self._lib["to_tensor"](state, self._lib["float32"]), 0)
+                state = self._lib["unsqueeze"](
+                    self._lib["to_tensor"](state, self._lib["float32"]), 0
+                )
             self.state = self._lib["tile"](state, (self._batch_size, 1))
 
         return self._get_reset_return_val()
@@ -124,3 +124,15 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
             return super().render(mode)
         else:
             raise NotImplementedError("Rendering not implemented for batched mode")
+
+    def is_done(self, state):
+        position, velocity = self._lib["unstack"](self.state, 1)
+        return (position >= self.goal_position) & (velocity >= self.goal_velocity)
+
+    def get_reward(self, state, action):
+        position, velocity = self._lib["unstack"](self.state, 1)
+        reward = self._lib["sin"](3 * position)
+        # This part is not differentiable:
+        reward += 100.0 * self._lib["cast"](self.is_done(state), self._lib["float32"])
+        reward -= (action[:, 0] ** 2) * 0.1
+        return reward

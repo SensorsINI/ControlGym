@@ -37,14 +37,16 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
             action += self._generate_actuator_noise()
 
         err_msg = f"{action!r} ({type(action)}) invalid"
-        assert np.all(
-            [self.action_space.contains(a) for a in self._lib["to_numpy"](action)]
-        ), err_msg
+        # assert np.all(
+        #     [self.action_space.contains(a) for a in self._lib["to_numpy"](action)]
+        # ), err_msg
         assert self.state is not None, "Call reset before using step method."
 
         x, x_dot, theta, theta_dot = self._lib["unstack"](self.state, 1)
         force = self._lib["clip"](
-            action[:, 0], self._lib["to_tensor"](self.action_space.low, self._lib["float32"]), self._lib["to_tensor"](self.action_space.high, self._lib["float32"])
+            action[:, 0],
+            self._lib["to_tensor"](self.action_space.low, self._lib["float32"]),
+            self._lib["to_tensor"](self.action_space.high, self._lib["float32"]),
         )
         costheta = self._lib["cos"](theta)
         sintheta = self._lib["sin"](theta)
@@ -70,22 +72,16 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
             theta_dot = theta_dot + self.tau * thetaacc
             theta = theta + self.tau * theta_dot
 
-        self.state = self._lib["squeeze"](
-            self._lib["stack"]([x, x_dot, theta, theta_dot], 1)
-        )
+        self.state = self._lib["stack"]([x, x_dot, theta, theta_dot], 1)
 
-        done = (
-            (x < -self.x_threshold)
-            | (x > self.x_threshold)
-            | (theta < -self.theta_threshold_radians)
-            | (theta > self.theta_threshold_radians)
-        )
+        done = self.is_done(self.state)
+        reward = self.get_reward(self.state, action)
 
-        reward = -(theta**2 + theta_dot**2 + x**2 + x_dot**2)
+        self.state = self._lib["squeeze"](self.state)
+
         if self.steps_beyond_done is None:
             # Pole just fell!
             self.steps_beyond_done = 0
-            reward += self._lib["cast"](done, self._lib["float32"])
         else:
             if self.steps_beyond_done == 0:
                 logger.warn(
@@ -126,9 +122,27 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
                 )
         else:
             if state.ndim < 2:
-                state = self._lib["unsqueeze"](self._lib["to_tensor"](state, self._lib["float32"]), 0)
+                state = self._lib["unsqueeze"](
+                    self._lib["to_tensor"](state, self._lib["float32"]), 0
+                )
             self.state = self._lib["tile"](state, (self._batch_size, 1))
 
         self.steps_beyond_done = None
 
         return self._get_reset_return_val()
+
+    def is_done(self, state):
+        x, x_dot, theta, theta_dot = self._lib["unstack"](state, 1)
+        return (
+            (x < -self.x_threshold)
+            | (x > self.x_threshold)
+            | (theta < -self.theta_threshold_radians)
+            | (theta > self.theta_threshold_radians)
+        )
+
+    def get_reward(self, state, action):
+        x, x_dot, theta, theta_dot = self._lib["unstack"](state, 1)
+        reward = -(theta**2 + theta_dot**2 + 100 * (x**2) + x_dot**2)
+        if self.steps_beyond_done is None:
+            reward += self._lib["cast"](self.is_done(state), self._lib["float32"])
+        return reward

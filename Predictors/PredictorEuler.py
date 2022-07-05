@@ -3,18 +3,15 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import tensorflow as tf
 import torch
-from Environments import EnvironmentBatched
-from Predictors import Predictor
 from Utilities.utils import get_logger
+
+from Predictors import Predictor
 
 logger = get_logger(__name__)
 
 
-class EulerPredictor(Predictor):
+class PredictorEuler(Predictor):
     """Predictor which utilizes the environment's actual dynamics equation"""
-
-    def __init__(self, environment: EnvironmentBatched) -> None:
-        self._env = environment
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]

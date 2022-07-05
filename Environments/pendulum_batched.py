@@ -53,9 +53,6 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
             self._lib["to_tensor"](np.array(self.max_torque), self._lib["float32"]),
         )[:, 0]
         self.last_action = action  # for rendering
-        costs = (
-            self._angle_normalize(th) ** 2 + 0.1 * thdot**2 + 0.001 * (action**2)
-        )
 
         newthdot = (
             thdot
@@ -69,17 +66,22 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
         )
         newth = th + newthdot * dt
 
-        self.state = self._lib["squeeze"](self._lib["stack"]([newth, newthdot], 1))
+        self.state = self._lib["stack"]([newth, newthdot], 1)
+
+        done = self.is_done(self.state)
+        reward = self.get_reward(self.state, action)
+
+        self.state = self._lib["squeeze"](self.state)
 
         if self._batch_size == 1:
             return (
                 self._lib["to_numpy"](self._lib["squeeze"](self.state)),
-                -float(costs),
-                False,
+                float(reward),
+                done,
                 {},
             )
 
-        return self.state, -costs, False, {}
+        return self.state, reward, done, {}
 
     def reset(
         self,
@@ -101,12 +103,24 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
             )
         else:
             if state.ndim < 2:
-                state = self._lib["unsqueeze"](self._lib["to_tensor"](state, self._lib["float32"]), 0)
+                state = self._lib["unsqueeze"](
+                    self._lib["to_tensor"](state, self._lib["float32"]), 0
+                )
             self.state = self._lib["tile"](state, (self._batch_size, 1))
 
         self.last_u = None
 
         return self._get_reset_return_val()
+
+    def is_done(self, state):
+        return False
+
+    def get_reward(self, state, action):
+        th, thdot = self._lib["unstack"](self.state, 1)
+        costs = (
+            self._angle_normalize(th) ** 2 + 0.1 * thdot**2 + 0.001 * (action**2)
+        )
+        return -costs
 
     # def render(self, mode="human"):
     #     if self._batch_size == 1:

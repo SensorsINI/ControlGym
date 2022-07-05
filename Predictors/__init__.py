@@ -1,14 +1,32 @@
-from typing import Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union
+
+from Environments import EnvironmentBatched
+
+from numpy.random import Generator, SFC64
 
 import numpy as np
 import tensorflow as tf
+import torch
 
 
-class Predictor:
+class Predictor(object):
+    def __init__(self, environment: EnvironmentBatched, seed: int) -> None:
+        self._env = environment
+        self._rng = Generator(SFC64(seed))
+    
+    def __getattribute__(self, name: str) -> Any:
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError as error:
+            try:
+                return object.__getattribute__(self._env, name)
+            except AttributeError:
+                raise error
+
     def step(
-        self, action: Union[np.ndarray, tf.Tensor]
+        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor],
+        Union[np.ndarray, tf.Tensor, torch.Tensor],
         Union[np.ndarray, float],
         Union[np.ndarray, bool],
         dict,
@@ -24,8 +42,8 @@ class Predictor:
     ) -> Tuple[np.ndarray, Optional[dict]]:
         raise NotImplementedError()
 
-    def train(self, dataset: Union[np.ndarray, tf.Tensor]) -> None:
+    def train(self, dataset: Union[np.ndarray, tf.Tensor, torch.Tensor]) -> None:
         raise NotImplementedError()
 
-    def get_state(self) -> Union[np.ndarray, tf.Tensor]:
+    def get_state(self) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
         raise NotImplementedError()

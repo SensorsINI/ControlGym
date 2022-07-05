@@ -1,10 +1,10 @@
+from importlib import import_module
 import numpy as np
 import tensorflow as tf
 from gym import Env
 from yaml import FullLoader, load
 
 from Controllers import Controller
-from Predictors.predictor_euler import EulerPredictor
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 if config["debug"]:
@@ -42,13 +42,17 @@ class ControllerAdamResampler(Controller):
             beta_2=controller_config["grad_beta_2"],
             epsilon=controller_config["grad_epsilon"],
         )
-        
+
         _planning_env_config = environment.unwrapped.config.copy()
         _planning_env_config.update({"computation_lib": "tensorflow"})
-        self._predictor_environment = EulerPredictor(
+        self._predictor_environment = getattr(
+            import_module(f"Predictors.{controller_config['predictor']}"),
+            controller_config["predictor"],
+        )(
             environment.unwrapped.__class__(
                 batch_size=self._num_rollouts, **_planning_env_config
-            )
+            ),
+            controller_config["seed"],
         )
 
     def _sample_inputs(self, num_trajectories: int):

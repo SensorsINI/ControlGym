@@ -2,8 +2,21 @@ import torch
 from torch import optim
 
 
-class GradCEMPlan():  # jit.ScriptModule):
-    def __init__(self, planning_horizon, opt_iters, samples, top_samples, env, device, grad_clip=True, learning_rate=0.1, grad_max=1.0, sgd_momentum=0.0, grad_epsilon=1.0e-6):
+class GradCEMPlan:  # jit.ScriptModule):
+    def __init__(
+        self,
+        planning_horizon,
+        opt_iters,
+        samples,
+        top_samples,
+        env,
+        device,
+        grad_clip=True,
+        learning_rate=0.1,
+        grad_max=1.0,
+        sgd_momentum=0.0,
+        grad_epsilon=1.0e-6,
+    ):
         super().__init__()
         self.set_env(env)
         self.H = planning_horizon
@@ -32,7 +45,12 @@ class GradCEMPlan():  # jit.ScriptModule):
         a_std = torch.ones(self.H, B, 1, self.a_size, device=self.device)
 
         # Sample actions (T x (B*K) x A)
-        actions = torch.clip(a_mu + a_std * torch.randn(self.H, B, self.K, self.a_size, device=self.device), torch.as_tensor(self.env.action_space.low), torch.as_tensor(self.env.action_space.high)).view(self.H, B * self.K, self.a_size)
+        actions = torch.clip(
+            a_mu
+            + a_std * torch.randn(self.H, B, self.K, self.a_size, device=self.device),
+            torch.as_tensor(self.env.action_space.low),
+            torch.as_tensor(self.env.action_space.high),
+        ).view(self.H, B * self.K, self.a_size)
         actions = torch.tensor(actions, requires_grad=True)
 
         # optimizer = optim.SGD([actions], lr=self.learning_rate, momentum=self.sgd_momentum)
@@ -54,37 +72,72 @@ class GradCEMPlan():  # jit.ScriptModule):
             if self.grad_clip:
                 epsilon = self.grad_epsilon
                 grad_max_norm = self.grad_max
-                actions_grad_norm = actions.grad.norm(2.0,dim=2,keepdim=True)+epsilon
+                actions_grad_norm = (
+                    actions.grad.norm(2.0, dim=2, keepdim=True) + epsilon
+                )
                 # print("before clip", actions.grad.max().cpu().numpy())
 
                 # Normalize by that
                 actions.grad.data.div_(actions_grad_norm)
-                actions.grad.data.mul_(actions_grad_norm.clamp(min=0, max=grad_max_norm))
+                actions.grad.data.mul_(
+                    actions_grad_norm.clamp(min=0, max=grad_max_norm)
+                )
                 # print("after clip", actions.grad.max().cpu().numpy())
 
             optimizer.step()
 
-            _, topk = returns.reshape(B, self.K).topk(self.top_K, dim=1, largest=True, sorted=False)
-            topk += self.K * torch.arange(0, B, dtype=torch.int64, device=topk.device).unsqueeze(dim=1)
-            best_actions = actions[:, topk.view(-1)].reshape(self.H, B, self.top_K, self.a_size)
+            _, topk = returns.reshape(B, self.K).topk(
+                self.top_K, dim=1, largest=True, sorted=False
+            )
+            topk += self.K * torch.arange(
+                0, B, dtype=torch.int64, device=topk.device
+            ).unsqueeze(dim=1)
+            best_actions = actions[:, topk.view(-1)].reshape(
+                self.H, B, self.top_K, self.a_size
+            )
             a_mu = best_actions.mean(dim=2, keepdim=True)
             # Added clipping to preserve minimum exploration stdev
-            a_std = torch.clip(best_actions.std(dim=2, unbiased=False, keepdim=True), 0.1, 100)
+            a_std = torch.clip(
+                best_actions.std(dim=2, unbiased=False, keepdim=True), 0.1, 100
+            )
 
             if return_plan_each_iter:
-                _, topk = returns.reshape(B, self.K).topk(1, dim=1, largest=True, sorted=False)
+                _, topk = returns.reshape(B, self.K).topk(
+                    1, dim=1, largest=True, sorted=False
+                )
                 best_plan = actions[:, topk[0]].reshape(self.H, B, self.a_size).detach()
-                plan_each_iter.append(torch.clip(actions, torch.as_tensor(self.env.action_space.low), torch.as_tensor(self.env.action_space.high)).cpu().detach().numpy())
+                plan_each_iter.append(
+                    torch.clip(
+                        actions,
+                        torch.as_tensor(self.env.action_space.low),
+                        torch.as_tensor(self.env.action_space.high),
+                    )
+                    .cpu()
+                    .detach()
+                    .numpy()
+                )
 
             # There must be cleaner way to do this
-            k_resamp = self.K-self.top_K
-            _, botn_k = returns.reshape(B, self.K).topk(k_resamp, dim=1, largest=False, sorted=False)
-            botn_k += self.K * torch.arange(0, B, dtype=torch.int64, device=self.device).unsqueeze(dim=1)
+            k_resamp = self.K - self.top_K
+            _, botn_k = returns.reshape(B, self.K).topk(
+                k_resamp, dim=1, largest=False, sorted=False
+            )
+            botn_k += self.K * torch.arange(
+                0, B, dtype=torch.int64, device=self.device
+            ).unsqueeze(dim=1)
 
-            resample_actions = (a_mu + a_std * torch.randn(self.H, B, k_resamp, self.a_size, device=self.device)).view(self.H, B * k_resamp, self.a_size)
+            resample_actions = (
+                a_mu
+                + a_std
+                * torch.randn(self.H, B, k_resamp, self.a_size, device=self.device)
+            ).view(self.H, B * k_resamp, self.a_size)
             actions.data[:, botn_k.view(-1)] = resample_actions.data
 
-        actions = torch.clip(actions, torch.as_tensor(self.env.action_space.low), torch.as_tensor(self.env.action_space.high))
+        actions = torch.clip(
+            actions,
+            torch.as_tensor(self.env.action_space.low),
+            torch.as_tensor(self.env.action_space.high),
+        )
         actions = actions.detach()
         # Re-fit belief to the K best action sequences
         _, topk = returns.reshape(B, self.K).topk(1, dim=1, largest=True, sorted=False)
@@ -97,27 +150,32 @@ class GradCEMPlan():  # jit.ScriptModule):
         else:
             return best_plan[0]
 
+
 if __name__ == "__main__":
     from test_energy import get_test_energy2d_env
+
     B = 1
     K = 100
     top_K = 10
-    t_env = get_test_energy2d_env(B*K)
+    t_env = get_test_energy2d_env(B * K)
     H = 1
-    planner = GradCEMPlan(H, 10, K, top_K, t_env, device=torch.device('cpu'))
+    planner = GradCEMPlan(H, 10, K, top_K, t_env, device=torch.device("cpu"))
     action = planner.forward(B)
     action = action.cpu().numpy()
 
     import matplotlib.pyplot as plt
-    N = 30
-    x = torch.linspace(-1,1,N)
-    y = torch.linspace(-1,1,N)
-    X, Y = torch.meshgrid(x,y)
-    actions_grid = torch.stack((X,Y),dim=-1)
-    # print(actions_grid)
-    energies = t_env.func(actions_grid.reshape(-1,2))
 
-    plt.pcolormesh(X.numpy(), Y.numpy(), -energies.reshape(N,N).numpy(), cmap="coolwarm")
-    plt.contour(X.numpy(), Y.numpy(), -energies.reshape(N,N).numpy(), cmap="seismic")
+    N = 30
+    x = torch.linspace(-1, 1, N)
+    y = torch.linspace(-1, 1, N)
+    X, Y = torch.meshgrid(x, y)
+    actions_grid = torch.stack((X, Y), dim=-1)
+    # print(actions_grid)
+    energies = t_env.func(actions_grid.reshape(-1, 2))
+
+    plt.pcolormesh(
+        X.numpy(), Y.numpy(), -energies.reshape(N, N).numpy(), cmap="coolwarm"
+    )
+    plt.contour(X.numpy(), Y.numpy(), -energies.reshape(N, N).numpy(), cmap="seismic")
     plt.scatter(action[:, 0], action[:, 1])
     plt.show()

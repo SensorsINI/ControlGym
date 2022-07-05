@@ -24,7 +24,8 @@ def register_envs():
             entry_point=entry_point,
             max_episode_steps=None,
         )
-    
+
+
 LIBS = {
     "numpy": {
         "reshape": np.reshape,
@@ -73,7 +74,7 @@ LIBS = {
         "float32": torch.float32,
         "tile": torch.tile,
         "zeros": torch.zeros,
-    }
+    },
 }
 
 
@@ -103,6 +104,12 @@ class EnvironmentBatched:
             log.warn(f"Environment set up with no seed specified. Setting to {seed}.")
 
         self._np_random = Generator(SFC64(seed))
+
+    def is_done(self, state):
+        return NotImplementedError()
+
+    def get_reward(self, state, action):
+        return NotImplementedError()
 
     def _generate_actuator_noise(self):
         return (
@@ -136,7 +143,7 @@ class EnvironmentBatched:
         if return_info:
             ret_val = tuple((ret_val, {}))
         return ret_val
-    
+
     def set_computation_library(self, computation_lib: str):
         try:
             self._lib = LIBS[computation_lib]
