@@ -40,7 +40,7 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
         if self._batch_size == 1:
             action += self._generate_actuator_noise()
 
-        position, velocity = self._lib["unstack"](self.state, 1)
+        position, velocity = self._lib["unstack"](self.state, 2, 1)
         force = self._lib["clip"](
             action[:, 0],
             self._lib["to_tensor"](np.array(self.min_action), self._lib["float32"]),
@@ -111,7 +111,7 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
                     1,
                 )
         else:
-            if state.ndim < 2:
+            if self._lib["ndim"](state) < 2:
                 state = self._lib["unsqueeze"](
                     self._lib["to_tensor"](state, self._lib["float32"]), 0
                 )
@@ -126,11 +126,11 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
             raise NotImplementedError("Rendering not implemented for batched mode")
 
     def is_done(self, state):
-        position, velocity = self._lib["unstack"](self.state, 1)
+        position, velocity = self._lib["unstack"](self.state, 2, 1)
         return (position >= self.goal_position) & (velocity >= self.goal_velocity)
 
     def get_reward(self, state, action):
-        position, velocity = self._lib["unstack"](self.state, 1)
+        position, velocity = self._lib["unstack"](self.state, 2, 1)
         reward = self._lib["sin"](3 * position)
         # This part is not differentiable:
         reward += 100.0 * self._lib["cast"](self.is_done(state), self._lib["float32"])

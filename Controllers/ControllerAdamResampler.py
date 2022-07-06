@@ -2,13 +2,9 @@ from importlib import import_module
 import numpy as np
 import tensorflow as tf
 from gym import Env
-from yaml import FullLoader, load
 
 from Controllers import Controller
-
-config = load(open("config.yml", "r"), Loader=FullLoader)
-if config["debug"]:
-    tf.config.run_functions_eagerly(True)
+from Utilities.utils import Compile
 
 
 class ControllerAdamResampler(Controller):
@@ -55,6 +51,7 @@ class ControllerAdamResampler(Controller):
             controller_config["seed"],
         )
 
+    @Compile
     def _sample_inputs(self, num_trajectories: int):
         Q = tf.sqrt(self._initial_action_variance) * self._rng_tf.normal(
             [num_trajectories, self._horizon_steps], dtype=tf.float32
@@ -62,11 +59,27 @@ class ControllerAdamResampler(Controller):
         Q = tf.clip_by_value(Q, self._env.action_space.low, self._env.action_space.high)
         return Q
 
+    @Compile
+    def _rollout_trajectories(
+        self, Q: tf.Variable, rollout_trajectory: tf.Tensor = None
+    ):
+        traj_cost = tf.zeros([self._num_rollouts], dtype=tf.float32)
+        for horizon_step in range(self._horizon_steps):
+            new_obs, reward, done, info = self._predictor_environment.step(
+                Q[:, horizon_step, tf.newaxis]
+            )
+            traj_cost -= reward
+            s = new_obs
+            if rollout_trajectory is not None:
+                rollout_trajectory = tf.stop_gradient(
+                    tf.concat([rollout_trajectory, tf.expand_dims(s, axis=1)], axis=1)
+                )
+
+        return traj_cost, rollout_trajectory
+
+    @Compile
     def _grad_step(self, s: tf.Tensor, Q: tf.Variable):
-        rollout_trajectory = np.zeros(
-            (self._num_rollouts, self._horizon_steps + 1, self._n), dtype=np.float32
-        )
-        rollout_trajectory[:, 0, :] = s.numpy()
+        rollout_trajectory = tf.expand_dims(s, axis=1)
         with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(Q)
             traj_cost, rollout_trajectory = self._rollout_trajectories(
@@ -86,21 +99,6 @@ class ControllerAdamResampler(Controller):
         )
         return Q_updated
 
-    def _rollout_trajectories(
-        self, Q: tf.Variable, rollout_trajectory: np.ndarray = None
-    ):
-        traj_cost = tf.zeros([self._num_rollouts], dtype=tf.float32)
-        for horizon_step in range(self._horizon_steps):
-            new_obs, reward, done, info = self._predictor_environment.step(
-                Q[:, horizon_step, tf.newaxis]
-            )
-            traj_cost -= reward
-            s = new_obs
-            if rollout_trajectory is not None:
-                rollout_trajectory[:, horizon_step + 1, :] = s.numpy()
-
-        return traj_cost, rollout_trajectory
-
     def _retrieve_action(self, s0: np.ndarray, Q: tf.Variable):
         self._predictor_environment.reset(state=s0)
         self.J, _ = self._rollout_trajectories(Q)
@@ -116,7 +114,11 @@ class ControllerAdamResampler(Controller):
             self.dist_stdev, self._minimal_action_stdev, 10.0
         )
         self.dist_stdev = tf.concat(
-            [self.dist_stdev[:, 1:], [[tf.sqrt(self._initial_action_variance)]]], -1
+            [
+                self.dist_stdev[:, 1:],
+                tf.sqrt(self._initial_action_variance)[tf.newaxis, tf.newaxis],
+            ],
+            axis=1,
         )
 
         return Q_keep, best_idx

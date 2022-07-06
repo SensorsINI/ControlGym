@@ -2,6 +2,8 @@ import logging
 import os
 from importlib import import_module
 from pathlib import Path
+import platform
+import tensorflow as tf
 
 from yaml import FullLoader, load
 
@@ -63,3 +65,17 @@ def get_logger(name):
     ch.setFormatter(CustomFormatter())
     logger.addHandler(ch)
     return logger
+
+
+### Below is copied from CartPole repo
+
+
+if config["debug"]:
+    Compile = lambda func: func
+else:
+    if (
+        platform.machine() == "arm64" and platform.system() == "Darwin"
+    ):  # For M1 Apple processor
+        Compile = tf.function
+    else:
+        Compile = lambda func: tf.function(func=func, jit_compile=True)

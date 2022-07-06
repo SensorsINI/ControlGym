@@ -42,7 +42,7 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
         # ), err_msg
         assert self.state is not None, "Call reset before using step method."
 
-        x, x_dot, theta, theta_dot = self._lib["unstack"](self.state, 1)
+        x, x_dot, theta, theta_dot = self._lib["unstack"](self.state, 4, 1)
         force = self._lib["clip"](
             action[:, 0],
             self._lib["to_tensor"](self.action_space.low, self._lib["float32"]),
@@ -103,7 +103,7 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
         seed: Optional[int] = None,
         return_info: bool = False,
         options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
+    ) -> Tuple[Union[np.ndarray, tf.Tensor, torch.Tensor], Optional[dict]]:
         if seed is not None:
             self._set_up_rng(seed)
 
@@ -121,7 +121,7 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
                     self._lib["float32"],
                 )
         else:
-            if state.ndim < 2:
+            if self._lib["ndim"](state) < 2:
                 state = self._lib["unsqueeze"](
                     self._lib["to_tensor"](state, self._lib["float32"]), 0
                 )
@@ -132,7 +132,7 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
         return self._get_reset_return_val()
 
     def is_done(self, state):
-        x, x_dot, theta, theta_dot = self._lib["unstack"](state, 1)
+        x, x_dot, theta, theta_dot = self._lib["unstack"](state, 4, 1)
         return (
             (x < -self.x_threshold)
             | (x > self.x_threshold)
@@ -141,8 +141,8 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
         )
 
     def get_reward(self, state, action):
-        x, x_dot, theta, theta_dot = self._lib["unstack"](state, 1)
-        reward = -(theta**2 + theta_dot**2 + 100 * (x**2) + x_dot**2)
+        x, x_dot, theta, theta_dot = self._lib["unstack"](state, 4, 1)
+        reward = -(theta**2 + theta_dot**2 + 10 * (x**2) + x_dot**2)
         if self.steps_beyond_done is None:
             reward += self._lib["cast"](self.is_done(state), self._lib["float32"])
         return reward

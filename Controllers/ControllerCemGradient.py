@@ -5,10 +5,7 @@ from gym import Env
 from yaml import FullLoader, load
 
 from Controllers import Controller
-
-config = load(open("config.yml", "r"), Loader=FullLoader)
-if config["debug"]:
-    tf.config.run_functions_eagerly(True)
+from Utilities.utils import Compile
 
 
 class ControllerCemGradient(Controller):
@@ -44,6 +41,7 @@ class ControllerCemGradient(Controller):
             controller_config["seed"],
         )
 
+    @Compile
     def _rollout_trajectories(self, Q: tf.Tensor, rollout_trajectory: tf.Tensor = None):
         traj_cost = tf.zeros([self._num_rollouts])
         for horizon_step in range(self._horizon_steps):
@@ -53,10 +51,13 @@ class ControllerCemGradient(Controller):
             traj_cost -= reward
             s = new_obs
             if rollout_trajectory is not None:
-                rollout_trajectory[:, horizon_step + 1, :] = s.numpy()
+                rollout_trajectory = tf.stop_gradient(
+                    tf.concat([rollout_trajectory, tf.expand_dims(s, axis=1)], axis=1)
+                )
         return traj_cost, rollout_trajectory
 
-    def _predict_and_cost(self, s: tf.Tensor):
+    @Compile
+    def _predict_and_cost(self, s: tf.Tensor) -> tf.Tensor:
         # Sample input trajectories and clip
         self.Q = tf.tile(
             self.dist_mean, [self._num_rollouts, 1]
@@ -70,10 +71,7 @@ class ControllerCemGradient(Controller):
         # Rollout trajectories, record gradients
         with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(self.Q)
-            rollout_trajectory = np.zeros(
-                [self._num_rollouts, self._horizon_steps + 1, self._n], dtype=np.float32
-            )
-            rollout_trajectory[:, 0, :] = s.numpy()
+            rollout_trajectory = tf.expand_dims(s, axis=1)
             self.J, rollout_trajectory = self._rollout_trajectories(
                 self.Q, rollout_trajectory
             )
@@ -93,8 +91,11 @@ class ControllerCemGradient(Controller):
             self.Q, self._env.action_space.low, self._env.action_space.high
         )
 
+        return self.Q, rollout_trajectory
+
+    def _final_rollout(self, s0: np.ndarray):
         # Final rollout
-        self._predictor_environment.reset(state=rollout_trajectory[0, 0, :].copy())
+        self._predictor_environment.reset(state=s0)
         self.J, _ = self._rollout_trajectories(self.Q)
 
         # Sort for best costs
@@ -112,7 +113,8 @@ class ControllerCemGradient(Controller):
         s = self._predictor_environment.get_state()
 
         for _ in range(self._outer_it):
-            self._predict_and_cost(s)
+            self.Q, rollout_trajectory = self._predict_and_cost(s)
+            self._final_rollout(self.s.copy())
 
         self.dist_stdev = tf.clip_by_value(self.dist_stdev, 0.1, 10)
         self.dist_stdev = tf.concat(

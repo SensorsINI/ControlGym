@@ -40,7 +40,7 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
         if self._batch_size == 1:
             action += self._generate_actuator_noise()
 
-        th, thdot = self._lib["unstack"](self.state, 1)  # th := theta
+        th, thdot = self._lib["unstack"](self.state, 2, 1)  # th := theta
 
         g = self.g
         m = self.m
@@ -102,7 +102,7 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
                 self.np_random.uniform(low=-high, high=high), self._lib["float32"]
             )
         else:
-            if state.ndim < 2:
+            if self._lib["ndim"](state) < 2:
                 state = self._lib["unsqueeze"](
                     self._lib["to_tensor"](state, self._lib["float32"]), 0
                 )
@@ -116,7 +116,7 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
         return False
 
     def get_reward(self, state, action):
-        th, thdot = self._lib["unstack"](self.state, 1)
+        th, thdot = self._lib["unstack"](self.state, 2, 1)
         costs = (
             self._angle_normalize(th) ** 2 + 0.1 * thdot**2 + 0.001 * (action**2)
         )

@@ -31,7 +31,8 @@ LIBS = {
         "reshape": np.reshape,
         "to_numpy": lambda x: np.array(x),
         "to_tensor": lambda x, t: x.astype(t),
-        "unstack": lambda x, axis: list(np.moveaxis(x, axis, 0)),
+        "unstack": lambda x, num, axis: list(np.moveaxis(x, axis, 0)),
+        "ndim": np.ndim,
         "clip": np.clip,
         "sin": np.sin,
         "cos": np.cos,
@@ -47,7 +48,8 @@ LIBS = {
         "reshape": tf.reshape,
         "to_numpy": lambda x: x.numpy(),
         "to_tensor": lambda x, t: tf.convert_to_tensor(x, dtype=t),
-        "unstack": lambda x, axis: tf.unstack(x, axis=axis),
+        "unstack": lambda x, num, axis: tf.unstack(x, num=num, axis=axis),
+        "ndim": tf.rank,
         "clip": tf.clip_by_value,
         "sin": tf.sin,
         "cos": tf.cos,
@@ -63,7 +65,8 @@ LIBS = {
         "reshape": torch.reshape,
         "to_numpy": lambda x: x.cpu().detach().numpy(),
         "to_tensor": lambda x, t: torch.as_tensor(x, dtype=t),
-        "unstack": lambda x, dim: torch.unbind(x, dim=dim),
+        "unstack": lambda x, num, dim: torch.unbind(x, dim=dim),
+        "ndim": lambda x: x.ndim,
         "clip": torch.clamp,
         "sin": torch.sin,
         "cos": torch.cos,
@@ -125,11 +128,11 @@ class EnvironmentBatched:
         state: Union[np.ndarray, tf.Tensor, torch.Tensor],
         action: Union[np.ndarray, tf.Tensor, torch.Tensor],
     ):
-        if action.ndim < 2:
+        if self._lib["ndim"](action) < 2:
             action = self._lib["reshape"](
                 action, (self._batch_size, sum(self.action_space.shape))
             )
-        if state.ndim < 2:
+        if self._lib["ndim"](state) < 2:
             state = self._lib["reshape"](
                 state, (self._batch_size, sum(self.observation_space.shape))
             )
@@ -139,10 +142,9 @@ class EnvironmentBatched:
         if self._batch_size == 1:
             self.state = self._lib["to_numpy"](self._lib["squeeze"](self.state))
 
-        ret_val = self._lib["to_numpy"](self.state)
         if return_info:
-            ret_val = tuple((ret_val, {}))
-        return ret_val
+            return tuple((self.state, {}))
+        return self.state
 
     def set_computation_library(self, computation_lib: str):
         try:

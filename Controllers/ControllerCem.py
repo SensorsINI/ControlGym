@@ -2,13 +2,8 @@ from importlib import import_module
 import numpy as np
 import tensorflow as tf
 from gym import Env
-from yaml import FullLoader, load
 
 from Controllers import Controller
-
-config = load(open("config.yml", "r"), Loader=FullLoader)
-if config["debug"]:
-    tf.config.run_functions_eagerly(True)
 
 
 class ControllerCem(Controller):

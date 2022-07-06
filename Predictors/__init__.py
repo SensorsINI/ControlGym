@@ -13,7 +13,7 @@ class Predictor(object):
     def __init__(self, environment: EnvironmentBatched, seed: int) -> None:
         self._env = environment
         self._rng = Generator(SFC64(seed))
-    
+
     def __getattribute__(self, name: str) -> Any:
         try:
             return object.__getattribute__(self, name)
