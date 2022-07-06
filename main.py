@@ -25,16 +25,17 @@ if seed_entropy is None:
     seed_entropy = int(timestamp.timestamp())
     logger.info("No seed entropy specified. Setting to posix timestamp.")
 
-seeds = SeedSequence(entropy=seed_entropy).generate_state(config["num_experiments"])
+seed_sequences = SeedSequence(entropy=seed_entropy).spawn(config["num_experiments"])
 timestamp = timestamp.strftime("%Y%m%d-%H%M%S")
 
 if __name__ == "__main__":
     for i in range(config["num_experiments"]):
-        config["environments"][ENVIRONMENT_NAME].update({"seed": int(seeds[i])})
+        seeds = seed_sequences[i].generate_state(3)
+        config["environments"][ENVIRONMENT_NAME].update({"seed": int(seeds[0])})
         env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME])
-        obs = env.reset(seed=int(seeds[i]))
+        obs = env.reset(seed=int(seeds[1]))
 
-        config["controllers"][CONTROLLER_NAME].update({"seed": int(seeds[i])})
+        config["controllers"][CONTROLLER_NAME].update({"seed": int(seeds[2])})
         controller_module = importlib.import_module(f"Controllers.{CONTROLLER_NAME}")
         controller = getattr(controller_module, CONTROLLER_NAME)(
             env, **config["controllers"][CONTROLLER_NAME]
