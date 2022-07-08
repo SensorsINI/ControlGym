@@ -38,7 +38,14 @@ if __name__ == "__main__":
         config["controllers"][CONTROLLER_NAME].update({"seed": int(seeds[2])})
         controller_module = importlib.import_module(f"Controllers.{CONTROLLER_NAME}")
         controller = getattr(controller_module, CONTROLLER_NAME)(
-            env, **(config["controllers"][CONTROLLER_NAME] | {k: config["controllers"][k] for k in ["controller_logging", "mpc_horizon", "dt", "predictor"]})
+            env,
+            **(
+                config["controllers"][CONTROLLER_NAME]
+                | {
+                    k: config["controllers"][k]
+                    for k in ["controller_logging", "mpc_horizon", "dt", "predictor"]
+                }
+            ),
         )
 
         frames = []
