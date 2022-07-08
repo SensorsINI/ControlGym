@@ -36,7 +36,7 @@ class PredictorGaussianError(Predictor):
         # Compute true model prediction
         state, _, _, info = self._env.step(action)
 
-        state += self.stdev * self._rng.standard_normal(state.shape, dtype=state.dtype)
+        state += self.stdev * self._env.lib.standard_normal(self._rng, state.shape)
         reward = self._env.get_reward(state, action)
         done = self._env.is_done(state)
 

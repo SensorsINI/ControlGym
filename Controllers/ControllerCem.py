@@ -4,6 +4,7 @@ import tensorflow as tf
 from gym import Env
 
 from Controllers import Controller
+from Environments import TensorFlowLibrary
 
 
 class ControllerCem(Controller):
@@ -25,7 +26,7 @@ class ControllerCem(Controller):
         )
 
         _planning_env_config = environment.unwrapped.config.copy()
-        _planning_env_config.update({"computation_lib": "tensorflow"})
+        _planning_env_config.update({"computation_lib": TensorFlowLibrary})
         self._predictor_environment = getattr(
             import_module(f"Predictors.{controller_config['predictor']}"),
             controller_config["predictor"],

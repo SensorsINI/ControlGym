@@ -1,7 +1,7 @@
 from importlib import import_module
 import numpy as np
 import torch
-from Environments import EnvironmentBatched
+from Environments import EnvironmentBatched, PyTorchLibrary
 
 # Import original paper's code
 from Controllers.External.gradcem import GradCEMPlan
@@ -21,7 +21,7 @@ class ControllerCemGradientBharadhwaj(Controller):
         self._select_best_k = controller_config["cem_best_k"]
 
         _planning_env_config = environment.unwrapped.config.copy()
-        _planning_env_config.update({"computation_lib": "pytorch"})
+        _planning_env_config.update({"computation_lib": PyTorchLibrary})
         self._predictor_environment = getattr(
             import_module(f"Predictors.{controller_config['predictor']}"),
             controller_config["predictor"],

@@ -5,7 +5,7 @@ import tensorflow as tf
 import torch
 from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
-from Environments import EnvironmentBatched
+from Environments import EnvironmentBatched, NumpyLibrary
 
 
 class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainCarEnv):
@@ -16,7 +16,7 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
     """
 
     def __init__(
-        self, goal_velocity=0, batch_size=1, computation_lib="numpy", **kwargs
+        self, goal_velocity=0, batch_size=1, computation_lib=NumpyLibrary, **kwargs
     ):
         super().__init__(goal_velocity)
         self.config = kwargs
@@ -40,40 +40,41 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
         if self._batch_size == 1:
             action += self._generate_actuator_noise()
 
-        position, velocity = self._lib["unstack"](self.state, 2, 1)
-        force = self._lib["clip"](
+        position, velocity = self.lib.unstack(self.state, 2, 1)
+        force = self.lib.clip(
             action[:, 0],
-            self._lib["to_tensor"](np.array(self.min_action), self._lib["float32"]),
-            self._lib["to_tensor"](np.array(self.max_action), self._lib["float32"]),
+            self.lib.to_tensor(np.array(self.min_action), self.lib.float32),
+            self.lib.to_tensor(np.array(self.max_action), self.lib.float32),
         )
 
-        velocity += force * self.power - 0.0025 * self._lib["cos"](3 * position)
-        velocity = self._lib["clip"](
-            velocity,
-            self._lib["to_tensor"](np.array(-self.max_speed), self._lib["float32"]),
-            self._lib["to_tensor"](np.array(self.max_speed), self._lib["float32"]),
+        velocity_new = velocity + force * self.power - 0.0025 * self.lib.cos(3 * position)
+        velocity = self.lib.clip(
+            velocity_new,
+            self.lib.to_tensor(np.array(-self.max_speed), self.lib.float32),
+            self.lib.to_tensor(np.array(self.max_speed), self.lib.float32),
         )
 
-        position += velocity
-        position = self._lib["clip"](
-            position,
-            self._lib["to_tensor"](np.array(self.min_position), self._lib["float32"]),
-            self._lib["to_tensor"](np.array(self.max_position), self._lib["float32"]),
+        position_new = position + velocity
+        position = self.lib.clip(
+            position_new,
+            self.lib.to_tensor(np.array(self.min_position), self.lib.float32),
+            self.lib.to_tensor(np.array(self.max_position), self.lib.float32),
         )
-        velocity *= self._lib["cast"](
-            ~((position == self.min_position) & (velocity < 0)), self._lib["float32"]
+        velocity_updated = velocity * self.lib.cast(
+            ~((position == self.min_position) & (velocity < 0)), self.lib.float32
         )
+        velocity = velocity_updated
 
-        self.state = self._lib["stack"]([position, velocity], 1)
+        self.state = self.lib.stack([position, velocity], 1)
 
         done = self.is_done(self.state)
         reward = self.get_reward(self.state, action)
 
-        self.state = self._lib["squeeze"](self.state)
+        self.state = self.lib.squeeze(self.state)
 
         if self._batch_size == 1:
             return (
-                self._lib["to_numpy"](self._lib["squeeze"](self.state)),
+                self.lib.to_numpy(self.lib.squeeze(self.state)),
                 float(reward),
                 bool(done),
                 {},
@@ -93,29 +94,29 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
 
         if state is None:
             if self._batch_size == 1:
-                self.state = self._lib["to_tensor"](
+                self.state = self.lib.to_tensor(
                     np.array([self.np_random.uniform(low=-0.6, high=-0.4), 0]),
-                    self._lib["float32"],
+                    self.lib.float32,
                 )
             else:
-                self.state = self._lib["stack"](
+                self.state = self.lib.stack(
                     [
-                        self._lib["to_tensor"](
+                        self.lib.to_tensor(
                             self.np_random.uniform(
                                 low=-0.6, high=-0.4, size=(self._batch_size,)
                             ),
-                            self._lib["float32"],
+                            self.lib.float32,
                         ),
-                        self._lib["zeros"]((self._batch_size,)),
+                        self.lib.zeros((self._batch_size,)),
                     ],
                     1,
                 )
         else:
-            if self._lib["ndim"](state) < 2:
-                state = self._lib["unsqueeze"](
-                    self._lib["to_tensor"](state, self._lib["float32"]), 0
+            if self.lib.ndim(state) < 2:
+                state = self.lib.unsqueeze(
+                    self.lib.to_tensor(state, self.lib.float32), 0
                 )
-            self.state = self._lib["tile"](state, (self._batch_size, 1))
+            self.state = self.lib.tile(state, (self._batch_size, 1))
 
         return self._get_reset_return_val()
 
@@ -126,13 +127,13 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
             raise NotImplementedError("Rendering not implemented for batched mode")
 
     def is_done(self, state):
-        position, velocity = self._lib["unstack"](self.state, 2, 1)
+        position, velocity = self.lib.unstack(self.state, 2, 1)
         return (position >= self.goal_position) & (velocity >= self.goal_velocity)
 
     def get_reward(self, state, action):
-        position, velocity = self._lib["unstack"](self.state, 2, 1)
-        reward = self._lib["sin"](3 * position)
+        position, velocity = self.lib.unstack(self.state, 2, 1)
+        reward = self.lib.sin(3 * position)
         # This part is not differentiable:
-        reward += 100.0 * self._lib["cast"](self.is_done(state), self._lib["float32"])
+        reward += 100.0 * self.lib.cast(self.is_done(state), self.lib.float32)
         reward -= (action[:, 0] ** 2) * 0.1
         return reward

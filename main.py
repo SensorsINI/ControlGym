@@ -38,7 +38,7 @@ if __name__ == "__main__":
         config["controllers"][CONTROLLER_NAME].update({"seed": int(seeds[2])})
         controller_module = importlib.import_module(f"Controllers.{CONTROLLER_NAME}")
         controller = getattr(controller_module, CONTROLLER_NAME)(
-            env, **config["controllers"][CONTROLLER_NAME]
+            env, **(config["controllers"][CONTROLLER_NAME] | {k: config["controllers"][k] for k in ["controller_logging", "mpc_horizon", "dt", "predictor"]})
         )
 
         frames = []
@@ -47,7 +47,7 @@ if __name__ == "__main__":
             new_obs, reward, done, info = env.step(action)
             if config["render_for_humans"]:
                 env.render(mode="human")
-            if config["controllers"][config["controller_name"]]["controller_logging"]:
+            if config["controllers"]["controller_logging"]:
                 frames.append(env.render(mode="rgb_array"))
 
             time.sleep(0.001)
@@ -68,7 +68,7 @@ if __name__ == "__main__":
         if config["num_experiments"] > 1:
             OutputPath.RUN_NUM = i + 1
 
-        if config["controllers"][CONTROLLER_NAME]["controller_logging"]:
+        if config["controllers"]["controller_logging"]:
             generate_plots(
                 config=config,
                 controller=controller,

@@ -1,5 +1,6 @@
 import torch
 from torch import optim
+from Utilities.utils import CompileTorch
 
 
 class GradCEMPlan:  # jit.ScriptModule):
@@ -35,7 +36,7 @@ class GradCEMPlan:  # jit.ScriptModule):
         if self.env is not None:
             self.a_size = env.a_size
 
-    # @jit.script_method
+    # @CompileTorch
     def forward(self, s, batch_size, return_plan=False, return_plan_each_iter=False):
         # Here batch is strictly if multiple Plans should be performed!
         B = batch_size
