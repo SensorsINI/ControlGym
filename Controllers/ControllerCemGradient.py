@@ -2,10 +2,9 @@ from importlib import import_module
 import numpy as np
 import tensorflow as tf
 from gym import Env
-from yaml import FullLoader, load
 
 from Controllers import Controller
-from Utilities.utils import Compile
+from Utilities.utils import CompileTF
 
 
 class ControllerCemGradient(Controller):
@@ -41,7 +40,7 @@ class ControllerCemGradient(Controller):
             controller_config["seed"],
         )
 
-    @Compile
+    @CompileTF
     def _rollout_trajectories(self, Q: tf.Tensor, rollout_trajectory: tf.Tensor = None):
         traj_cost = tf.zeros([self._num_rollouts])
         for horizon_step in range(self._horizon_steps):
@@ -56,7 +55,7 @@ class ControllerCemGradient(Controller):
                 )
         return traj_cost, rollout_trajectory
 
-    @Compile
+    @CompileTF
     def _predict_and_cost(self, s: tf.Tensor) -> tf.Tensor:
         # Sample input trajectories and clip
         self.Q = tf.tile(

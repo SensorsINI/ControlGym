@@ -4,6 +4,7 @@ from importlib import import_module
 from pathlib import Path
 import platform
 import tensorflow as tf
+import torch
 
 from yaml import FullLoader, load
 
@@ -71,11 +72,13 @@ def get_logger(name):
 
 
 if config["debug"]:
-    Compile = lambda func: func
+    CompileTF = lambda func: func
+    CompileTorch = lambda func: func
 else:
     if (
         platform.machine() == "arm64" and platform.system() == "Darwin"
     ):  # For M1 Apple processor
-        Compile = tf.function
+        CompileTF = tf.function
     else:
-        Compile = lambda func: tf.function(func=func, jit_compile=True)
+        CompileTF = lambda func: tf.function(func=func, jit_compile=True)
+    CompileTorch = torch.jit.script

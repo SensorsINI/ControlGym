@@ -4,7 +4,7 @@ import tensorflow as tf
 from gym import Env
 
 from Controllers import Controller
-from Utilities.utils import Compile
+from Utilities.utils import CompileTF
 
 
 class ControllerAdamResampler(Controller):
@@ -51,7 +51,7 @@ class ControllerAdamResampler(Controller):
             controller_config["seed"],
         )
 
-    @Compile
+    @CompileTF
     def _sample_inputs(self, num_trajectories: int):
         Q = tf.sqrt(self._initial_action_variance) * self._rng_tf.normal(
             [num_trajectories, self._horizon_steps], dtype=tf.float32
@@ -59,7 +59,7 @@ class ControllerAdamResampler(Controller):
         Q = tf.clip_by_value(Q, self._env.action_space.low, self._env.action_space.high)
         return Q
 
-    @Compile
+    @CompileTF
     def _rollout_trajectories(
         self, Q: tf.Variable, rollout_trajectory: tf.Tensor = None
     ):
@@ -77,7 +77,7 @@ class ControllerAdamResampler(Controller):
 
         return traj_cost, rollout_trajectory
 
-    @Compile
+    @CompileTF
     def _grad_step(self, s: tf.Tensor, Q: tf.Variable):
         rollout_trajectory = tf.expand_dims(s, axis=1)
         with tf.GradientTape(watch_accessed_variables=False) as tape:
