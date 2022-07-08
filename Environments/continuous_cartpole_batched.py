@@ -18,9 +18,9 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
         )
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
-        self._set_up_rng(kwargs["seed"])
 
         self.set_computation_library(computation_lib)
+        self._set_up_rng(kwargs["seed"])
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
@@ -109,16 +109,12 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
 
         if state is None:
             if self._batch_size == 1:
-                self.state = self.lib.to_tensor(
-                    self.np_random.uniform(low=-0.05, high=0.05, size=(4,)),
-                    self.lib.float32,
+                self.state = (
+                    self.lib.uniform(self.rng, (4,), -0.05, 0.05, self.lib.float32),
                 )
             else:
-                self.state = self.lib.to_tensor(
-                    self.np_random.uniform(
-                        low=-0.05, high=0.05, size=(self._batch_size, 4)
-                    ),
-                    self.lib.float32,
+                self.state = self.lib.uniform(
+                    self.rng, (self._batch_size, 4), -0.05, 0.05, self.lib.float32
                 )
         else:
             if self.lib.ndim(state) < 2:

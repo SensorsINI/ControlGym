@@ -1,5 +1,4 @@
-from importlib import import_module
-from typing import Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
@@ -26,29 +25,37 @@ def register_envs():
         )
 
 
+TensorType = Union[np.ndarray, tf.Tensor, torch.Tensor]
+RandomGeneratorType = Union[Generator, tf.random.Generator, torch.Generator]
+
+
 class ComputationLibrary:
-    reshape = None
-    to_numpy = None
-    to_tensor = None
-    unstack = None
-    ndim = None
-    clip = None
-    sin = None
-    cos = None
-    squeeze = None
-    unsqueeze = None
-    stack = None
-    cast = None
-    float32 = None
-    tile = None
-    zeros = None
-    create_rng = None
-    standard_normal = None
+    reshape: Callable[[TensorType, tuple[int]], TensorType] = None
+    to_numpy: Callable[[TensorType], np.ndarray] = None
+    to_tensor: Callable[[TensorType, float], TensorType] = None
+    unstack: Callable[[TensorType, int, int], list[TensorType]] = None
+    ndim: Callable[[TensorType], int] = None
+    clip: Callable[[TensorType, float, float], TensorType] = None
+    sin: Callable[[TensorType], TensorType] = None
+    cos: Callable[[TensorType], TensorType] = None
+    squeeze: Callable[[TensorType], TensorType] = None
+    unsqueeze: Callable[[TensorType, int], TensorType] = None
+    stack: Callable[[list[TensorType], int], TensorType] = None
+    cast: Callable[[TensorType, float], TensorType] = None
+    float32: Callable[[], float] = None
+    tile: Callable[[TensorType, tuple[int]], TensorType] = None
+    zeros: Callable[[tuple[int]], TensorType] = None
+    create_rng: Callable[[int], RandomGeneratorType] = None
+    standard_normal: Callable[[RandomGeneratorType, tuple[int]], TensorType] = None
+    uniform: Callable[
+        [RandomGeneratorType, tuple[int], TensorType, TensorType, float], TensorType
+    ] = None
+
 
 class NumpyLibrary(ComputationLibrary):
-    reshape = np.reshape
+    reshape = lambda x, shape: np.reshape(x, shape)
     to_numpy = lambda x: np.array(x)
-    to_tensor = lambda x, t: x.astype(t)
+    to_tensor = lambda x, t: np.array(x, dtype=t)
     unstack = lambda x, num, axis: list(np.moveaxis(x, axis, 0))
     ndim = np.ndim
     clip = np.clip
@@ -62,7 +69,11 @@ class NumpyLibrary(ComputationLibrary):
     tile = np.tile
     zeros = np.zeros
     create_rng = lambda seed: Generator(SFC64(seed))
-    standard_normal = lambda generator, shape: generator.standard_normal(shape)
+    standard_normal = lambda generator, shape: generator.standard_normal(size=shape)
+    uniform = lambda generator, shape, low, high, dtype: generator.uniform(
+        low=low, high=high, size=shape
+    ).astype(dtype)
+
 
 class TensorFlowLibrary(ComputationLibrary):
     reshape = tf.reshape
@@ -82,6 +93,10 @@ class TensorFlowLibrary(ComputationLibrary):
     zeros = tf.zeros
     create_rng = lambda seed: tf.random.Generator.from_seed(seed)
     standard_normal = lambda generator, shape: generator.normal(shape)
+    uniform = lambda generator, shape, low, high, dtype: generator.uniform(
+        shape, minval=low, maxval=high, dtype=dtype
+    )
+
 
 class PyTorchLibrary(ComputationLibrary):
     reshape = torch.reshape
@@ -102,6 +117,11 @@ class PyTorchLibrary(ComputationLibrary):
     create_rng = lambda seed: torch.Generator().manual_seed(seed)
     standard_normal = lambda generator, shape: torch.normal(
         torch.zeros(shape), 1.0, generator=generator
+    )
+    uniform = (
+        lambda generator, shape, low, high, dtype: (high - low)
+        * torch.rand(*shape, generator=generator, dtype=dtype)
+        + low
     )
 
 
@@ -130,7 +150,7 @@ class EnvironmentBatched:
             seed = 0
             log.warn(f"Environment set up with no seed specified. Setting to {seed}.")
 
-        self._np_random = Generator(SFC64(seed))
+        self.rng = self.lib.create_rng(seed)
 
     def is_done(self, state):
         return NotImplementedError()
@@ -142,8 +162,8 @@ class EnvironmentBatched:
         return (
             self._actuator_noise
             * (self.action_space.high - self.action_space.low)
-            * self.np_random.standard_normal(
-                (self._batch_size, len(self._actuator_noise)), dtype=np.float32
+            * self.lib.standard_normal(
+                self.rng, (self._batch_size, len(self._actuator_noise))
             )
         )
 

@@ -22,9 +22,9 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
         self.config = kwargs
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
-        self._set_up_rng(kwargs["seed"])
 
         self.set_computation_library(computation_lib)
+        self._set_up_rng(kwargs["seed"])
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
@@ -47,7 +47,9 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
             self.lib.to_tensor(np.array(self.max_action), self.lib.float32),
         )
 
-        velocity_new = velocity + force * self.power - 0.0025 * self.lib.cos(3 * position)
+        velocity_new = (
+            velocity + force * self.power - 0.0025 * self.lib.cos(3 * position)
+        )
         velocity = self.lib.clip(
             velocity_new,
             self.lib.to_tensor(np.array(-self.max_speed), self.lib.float32),
@@ -95,17 +97,14 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
         if state is None:
             if self._batch_size == 1:
                 self.state = self.lib.to_tensor(
-                    np.array([self.np_random.uniform(low=-0.6, high=-0.4), 0]),
+                    [self.lib.uniform(self.rng, (), -0.6, -0.4, self.lib.float32), 0],
                     self.lib.float32,
                 )
             else:
                 self.state = self.lib.stack(
                     [
-                        self.lib.to_tensor(
-                            self.np_random.uniform(
-                                low=-0.6, high=-0.4, size=(self._batch_size,)
-                            ),
-                            self.lib.float32,
+                        self.lib.uniform(
+                            self.rng, (self._batch_size,), -0.6, -0.4, self.lib.float32
                         ),
                         self.lib.zeros((self._batch_size,)),
                     ],

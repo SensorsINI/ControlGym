@@ -18,9 +18,9 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
 
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
-        self._set_up_rng(kwargs["seed"])
 
         self.set_computation_library(computation_lib)
+        self._set_up_rng(kwargs["seed"])
 
     def _angle_normalize(self, x):
         _pi = self.lib.to_tensor(np.array(np.pi), self.lib.float32)
@@ -56,8 +56,7 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
 
         newthdot = (
             thdot
-            + (3 * g / (2 * l) * self.lib.sin(th) + 3.0 / (m * l**2) * action)
-            * dt
+            + (3 * g / (2 * l) * self.lib.sin(th) + 3.0 / (m * l**2) * action) * dt
         )
         newthdot = self.lib.clip(
             newthdot,
@@ -98,9 +97,7 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
                 high = np.array([np.pi, 1])
             else:
                 high = np.tile(np.array([np.pi, 1]), (self._batch_size, 1))
-            self.state = self.lib.to_tensor(
-                self.np_random.uniform(low=-high, high=high), self.lib.float32
-            )
+            self.state = self.lib.uniform(self.rng, (), -high, high, self.lib.float32)
         else:
             if self.lib.ndim(state) < 2:
                 state = self.lib.unsqueeze(
