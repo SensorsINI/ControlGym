@@ -54,7 +54,6 @@ class ControllerAdamResampler(Controller):
             controller_config["seed"],
         )
 
-    # @CompileTF
     def _sample_inputs(self, shape: tuple[int]):
         Q = tf.sqrt(self._initial_action_variance) * self._rng_tf.normal(
             shape, dtype=tf.float32
@@ -62,34 +61,37 @@ class ControllerAdamResampler(Controller):
         Q = tf.clip_by_value(Q, self._env.action_space.low, self._env.action_space.high)
         return Q
 
-    @CompileTF
-    def _rollout_trajectories(
-        self, Q: tf.Variable, rollout_trajectory: tf.Tensor = None
-    ):
+    def _rollout_trajectories(self, Q: tf.Variable, record_trajectory: bool = False):
         traj_cost = tf.zeros([self._num_rollouts], dtype=tf.float32)
+        s = self._predictor_environment.get_state()
+        rollout_trajectory = tf.TensorArray(tf.float32, size=self._horizon_steps + 1)
+        rollout_trajectory = rollout_trajectory.write(0, tf.stop_gradient(s))
         for horizon_step in range(self._horizon_steps):
+            tf.autograph.experimental.set_loop_options(
+                shape_invariants=(traj_cost, [self._num_rollouts])
+            )
             new_obs, reward, done, info = self._predictor_environment.step(
-                Q[:, horizon_step, tf.newaxis]
+                tf.gather(Q, horizon_step, axis=1)
             )
             traj_cost -= reward
             s = new_obs
-            if rollout_trajectory is not None:
-                rollout_trajectory = tf.stop_gradient(
-                    tf.concat([rollout_trajectory, tf.expand_dims(s, axis=1)], axis=1)
+            if record_trajectory:
+                rollout_trajectory = rollout_trajectory.write(
+                    horizon_step + 1, tf.stop_gradient(s)
                 )
 
-        return traj_cost, rollout_trajectory
+        return traj_cost, rollout_trajectory.stack()
 
     @CompileTF
     def _grad_step(self, s: tf.Tensor, Q: tf.Variable):
-        rollout_trajectory = tf.expand_dims(s, axis=1)
+        self._predictor_environment.reset(self.s)
         with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(Q)
             traj_cost, rollout_trajectory = self._rollout_trajectories(
-                Q, rollout_trajectory
+                Q, record_trajectory=True
             )
-
         dJ_dQ = tape.gradient(traj_cost, Q)
+
         dJ_dQ_max = tf.math.reduce_max(tf.abs(dJ_dQ), axis=1, keepdims=True)
         mask = dJ_dQ_max > self._grad_max
         dJ_dQ_clipped = tf.cast(~mask, dtype=tf.float32) * dJ_dQ + tf.cast(
@@ -101,7 +103,7 @@ class ControllerAdamResampler(Controller):
             Q, self._env.action_space.low, self._env.action_space.high
         )
         return Q_updated
-
+   
     def _retrieve_action(self, s0: np.ndarray, Q: tf.Variable):
         self._predictor_environment.reset(state=s0)
         self.J, _ = self._rollout_trajectories(Q)
