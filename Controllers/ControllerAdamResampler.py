@@ -31,7 +31,9 @@ class ControllerAdamResampler(Controller):
             [1, self._horizon_steps], dtype=tf.float32
         )
 
-        self.Q = tf.Variable(self._sample_inputs(self._num_rollouts))
+        self.Q = tf.Variable(
+            self._sample_inputs((self._num_rollouts, self._horizon_steps))
+        )
         self.iteration = 0
         self.opt = tf.keras.optimizers.Adam(
             learning_rate=controller_config["grad_alpha"],
@@ -52,10 +54,10 @@ class ControllerAdamResampler(Controller):
             controller_config["seed"],
         )
 
-    @CompileTF
-    def _sample_inputs(self, num_trajectories: int):
+    # @CompileTF
+    def _sample_inputs(self, shape: tuple[int]):
         Q = tf.sqrt(self._initial_action_variance) * self._rng_tf.normal(
-            [num_trajectories, self._horizon_steps], dtype=tf.float32
+            shape, dtype=tf.float32
         )
         Q = tf.clip_by_value(Q, self._env.action_space.low, self._env.action_space.high)
         return Q
@@ -149,8 +151,22 @@ class ControllerAdamResampler(Controller):
         adam_weights = self.opt.get_weights()
         if self.iteration % self._resamp_every == 0:
             Q_new = tf.concat(
-                [self._sample_inputs(self._num_rollouts - self._select_best_k), Q_keep],
-                axis=0,
+                [
+                    tf.concat(
+                        [
+                            self._sample_inputs(
+                                (
+                                    self._num_rollouts - self._select_best_k,
+                                    self._horizon_steps - 1,
+                                )
+                            ),
+                            Q_keep[:, 1:],
+                        ],
+                        axis=0,
+                    ),
+                    self._sample_inputs((self._num_rollouts, 1)),
+                ],
+                axis=1,
             )
             # Shift Adam weights of kept trajectories by one
             # Set all new Adam weights to 0
@@ -187,7 +203,13 @@ class ControllerAdamResampler(Controller):
                 axis=0,
             )
         else:
-            Q_new = self.Q
+            Q_new = tf.concat(
+                [
+                    self.Q[:, 1:],
+                    self._sample_inputs((self._horizon_steps, 1)),
+                ],
+                axis=1,
+            )
             w_m = tf.concat(
                 [
                     adam_weights[1][:, 1:],
