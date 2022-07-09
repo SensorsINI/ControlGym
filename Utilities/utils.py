@@ -80,5 +80,6 @@ else:
     ):  # For M1 Apple processor
         CompileTF = tf.function
     else:
-        CompileTF = lambda func: tf.function(func=func, jit_compile=True)
+        # jit_compile = True uses nondeterministic random seeds, see https://tensorflow.org/xla/known_issues
+        CompileTF = lambda func: tf.function(func=func)
     CompileTorch = torch.jit.script
