@@ -13,6 +13,7 @@ class Predictor(object):
     def __init__(self, environment: EnvironmentBatched, seed: int) -> None:
         self._env = environment
         self._rng = self._env.lib.create_rng(seed)
+        self.n_obs = sum(self._env.observation_space.shape)
 
     def __getattribute__(self, name: str) -> Any:
         try:
