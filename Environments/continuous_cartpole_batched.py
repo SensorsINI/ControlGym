@@ -138,7 +138,7 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
 
     def get_reward(self, state, action):
         x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, 1)
-        reward = -(theta**2 + theta_dot**2 + 10 * (x**2) + x_dot**2)
+        reward = -(100*(theta**2) + theta_dot**2 + (x**2) + x_dot**2)
         if self.steps_beyond_done is None:
             reward += self.lib.cast(self.is_done(state), self.lib.float32)
         return reward

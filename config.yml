@@ -1,5 +1,5 @@
 num_experiments: 1
-controller_name: ControllerCemGradient
+controller_name: ControllerAdamResampler
 environment_name: CustomEnvironments/MountainCarContinuous
 num_iterations: 200
 render_for_humans: False
@@ -29,8 +29,8 @@ controllers:
   predictor: PredictorEuler
 
   ControllerAdamResampler:
-    cem_outer_it: 5
-    cem_rollouts: 200
+    cem_outer_it: 30
+    cem_rollouts: 30
     cem_stdev_min: 0.1
     cem_R: 1
     cem_ccrc_weight: 1

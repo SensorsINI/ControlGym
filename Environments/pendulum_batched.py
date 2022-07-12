@@ -97,7 +97,7 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
                 high = np.array([np.pi, 1])
             else:
                 high = np.tile(np.array([np.pi, 1]), (self._batch_size, 1))
-            self.state = self.lib.uniform(self.rng, (), -high, high, self.lib.float32)
+            self.state = self.lib.uniform(self.rng, high.shape, -high, high, self.lib.float32)
         else:
             if self.lib.ndim(state) < 2:
                 state = self.lib.unsqueeze(

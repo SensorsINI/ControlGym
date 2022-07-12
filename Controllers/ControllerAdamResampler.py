@@ -67,9 +67,6 @@ class ControllerAdamResampler(Controller):
         rollout_trajectory = tf.TensorArray(tf.float32, size=self._horizon_steps + 1)
         rollout_trajectory = rollout_trajectory.write(0, tf.stop_gradient(s))
         for horizon_step in range(self._horizon_steps):
-            tf.autograph.experimental.set_loop_options(
-                shape_invariants=(traj_cost, [self._num_rollouts])
-            )
             new_obs, reward, done, info = self._predictor_environment.step(
                 tf.gather(Q, horizon_step, axis=1)
             )
@@ -82,7 +79,7 @@ class ControllerAdamResampler(Controller):
 
         return traj_cost, rollout_trajectory.stack()
 
-    @CompileTF
+    # @CompileTF
     def _grad_step(self, s: tf.Tensor, Q: tf.Variable):
         self._predictor_environment.reset(self.s)
         with tf.GradientTape(watch_accessed_variables=False) as tape:
