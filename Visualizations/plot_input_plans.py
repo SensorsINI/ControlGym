@@ -20,7 +20,7 @@ class InputPlanPlotter(Plotter):
         self,
         actions: np.ndarray,
         costs: np.ndarray,
-        frames: list[np.ndarray],
+        frames: "list[np.ndarray]",
         save_to_video: bool = True,
     ):
         if self.axs is None:

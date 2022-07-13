@@ -30,25 +30,25 @@ RandomGeneratorType = Union[Generator, tf.random.Generator, torch.Generator]
 
 
 class ComputationLibrary:
-    reshape: Callable[[TensorType, tuple[int]], TensorType] = None
+    reshape: Callable[[TensorType, "tuple[int]"], TensorType] = None
     to_numpy: Callable[[TensorType], np.ndarray] = None
     to_tensor: Callable[[TensorType, float], TensorType] = None
-    unstack: Callable[[TensorType, int, int], list[TensorType]] = None
+    unstack: Callable[[TensorType, int, int], "list[TensorType]"] = None
     ndim: Callable[[TensorType], int] = None
     clip: Callable[[TensorType, float, float], TensorType] = None
     sin: Callable[[TensorType], TensorType] = None
     cos: Callable[[TensorType], TensorType] = None
     squeeze: Callable[[TensorType], TensorType] = None
     unsqueeze: Callable[[TensorType, int], TensorType] = None
-    stack: Callable[[list[TensorType], int], TensorType] = None
+    stack: Callable[["list[TensorType]", int], TensorType] = None
     cast: Callable[[TensorType, float], TensorType] = None
     float32: Callable[[], float] = None
-    tile: Callable[[TensorType, tuple[int]], TensorType] = None
-    zeros: Callable[[tuple[int]], TensorType] = None
+    tile: Callable[[TensorType, "tuple[int]"], TensorType] = None
+    zeros: Callable[["tuple[int]"], TensorType] = None
     create_rng: Callable[[int], RandomGeneratorType] = None
-    standard_normal: Callable[[RandomGeneratorType, tuple[int]], TensorType] = None
+    standard_normal: Callable[[RandomGeneratorType, "tuple[int]"], TensorType] = None
     uniform: Callable[
-        [RandomGeneratorType, tuple[int], TensorType, TensorType, float], TensorType
+        [RandomGeneratorType, "tuple[int]", TensorType, TensorType, float], TensorType
     ] = None
 
 

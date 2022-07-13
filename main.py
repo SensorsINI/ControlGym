@@ -1,14 +1,20 @@
 import importlib
+import os
 import time
 from datetime import datetime
 
 import gym
-from yaml import FullLoader, load, dump
+import pygame
+from numpy.random import SeedSequence
+from yaml import FullLoader, dump, load
 
 from Environments import register_envs
 from Utilities.generate_plots import generate_plots
 from Utilities.utils import OutputPath, get_logger
-from numpy.random import SeedSequence
+
+if not pygame.display.get_init():
+    # Set dummy output device when machine is headless
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAME, ENVIRONMENT_NAME = (
@@ -39,13 +45,13 @@ if __name__ == "__main__":
         controller_module = importlib.import_module(f"Controllers.{CONTROLLER_NAME}")
         controller = getattr(controller_module, CONTROLLER_NAME)(
             env,
-            **(
-                config["controllers"][CONTROLLER_NAME]
-                | {
+            **{
+                **config["controllers"][CONTROLLER_NAME],
+                **{
                     k: config["controllers"][k]
                     for k in ["controller_logging", "mpc_horizon", "dt", "predictor"]
-                }
-            ),
+                },
+            },
         )
 
         frames = []

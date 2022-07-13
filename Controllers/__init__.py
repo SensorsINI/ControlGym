@@ -27,11 +27,11 @@ class Controller:
     def controller_reset(self) -> None:
         raise NotImplementedError()
 
-    def get_outputs(self) -> dict[np.ndarray]:
+    def get_outputs(self) -> "dict[str, np.ndarray]":
         """Retrieve a dictionary of controller outputs. These could be saved traces of input plans or the like.
 
         :return: A dictionary of numpy arrays
-        :rtype: dict[np.ndarray]
+        :rtype: dict[str, np.ndarray]
         """
         return {k: np.stack(v, axis=0) for k, v in self.logs.items()}
 

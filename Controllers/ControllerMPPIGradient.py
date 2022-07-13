@@ -53,7 +53,7 @@ class ControllerMPPIGradient(Controller):
             controller_config["seed"],
         )
 
-    def _sample_inputs(self, shape: tuple[int]):
+    def _sample_inputs(self, shape: "tuple[int]"):
         Q = tf.sqrt(self._initial_action_variance) * self._rng_tf.normal(
             shape, dtype=tf.float32
         )

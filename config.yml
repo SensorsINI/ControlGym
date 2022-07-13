@@ -1,9 +1,9 @@
 num_experiments: 1
-controller_name: ControllerAdamResampler
+controller_name: ControllerMPPIGradient
 environment_name: CustomEnvironments/MountainCarContinuous
-num_iterations: 200
+num_iterations: 150
 render_for_humans: False
-save_plots_to_file: False
+save_plots_to_file: True
 debug: False  # Debugging mode turns off compilation/graph mode
 logging_level: DEBUG
 seed_entropy: 1234
@@ -47,11 +47,11 @@ controllers:
   
   ControllerMPPIGradient:
     cem_outer_it: 10
-    cem_rollouts: 30
+    cem_rollouts: 10
     cem_stdev_min: 0.05
     cem_R: 1
     cem_ccrc_weight: 1
-    cem_best_k: 0
+    cem_best_k: 5
     cem_LR: 0.1
     grad_max: 5
     grad_alpha: 0.05

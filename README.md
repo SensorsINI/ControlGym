@@ -10,3 +10,10 @@ Main features:
 
 * [OpenAI Gym on GitHub](https://github.com/openai/gym)
 * [Brockman et al. 2016, OpenAI Gym](https://arxiv.org/abs/1606.01540)
+
+
+### Required Installs
+
+* `pip install -r requirements.txt`
+* ffmpeg
+* latex

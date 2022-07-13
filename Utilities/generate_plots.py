@@ -14,7 +14,7 @@ def generate_plots(
     config: dict,
     controller: Controller,
     timestamp: str,
-    frames: list[np.ndarray] = None,
+    frames: "list[np.ndarray]" = None,
 ):
     controller_output = controller.get_outputs()
     for n, a in controller_output.items():
