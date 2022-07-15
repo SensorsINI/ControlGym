@@ -8,3 +8,5 @@ git+https://github.com/homangab/gradcem@master#egg=mpc
 torch
 torchvision
 pyyaml
+
+-r ./CartPoleSimulation/requirements.txt
