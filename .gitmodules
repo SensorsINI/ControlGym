@@ -1,0 +1,6 @@
+[submodule "SI_Toolkit"]
+	path = SI_Toolkit
+	url = git@github.com:SensorsINI/SI_Toolkit.git
+[submodule "CartPoleSimulation"]
+	path = CartPoleSimulation
+	url = git@github.com:SensorsINI/CartPoleSimulation.git
