@@ -24,7 +24,9 @@ class ControllerCartPoleSimulationImport(Controller):
     def step(self, s: np.ndarray) -> np.ndarray:
         # self._predictor_environment.reset(s)
 
-        self.u = self._controller.step(s)
+        self.u = np.array(self._controller.step(s))
+        if self.u.ndim == 0:
+            self.u = self.u[np.newaxis]
         self.Q = self._controller.Q.copy()
         self.J = self._controller.J.copy()
 
