@@ -9,15 +9,17 @@ class Controller:
     def __init__(
         self,
         environment: Env,
-        **controller_config,
+        seed: int,
+        controller_logging: bool,
+        **kwargs,
     ) -> None:
         self._env = environment
         assert isinstance(self._env.action_space, Box)
         self._n = environment.observation_space.shape[0]
         self._m = environment.action_space.shape[0]
-        self._rng_np = Generator(SFC64(controller_config["seed"]))
-        self._rng_tf = tf.random.Generator.from_seed(controller_config["seed"])
-        self._controller_logging = controller_config["controller_logging"]
+        self._rng_np = Generator(SFC64(seed))
+        self._rng_tf = tf.random.Generator.from_seed(seed)
+        self._controller_logging = controller_logging
         self._save_vars = ["Q_logged", "J_logged", "s_logged", "u_logged"]
         self.logs = {s: [] for s in self._save_vars}
 
