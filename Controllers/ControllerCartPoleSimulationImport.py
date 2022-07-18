@@ -10,6 +10,7 @@ class ControllerCartPoleSimulationImport(Controller):
     def __init__(self, environment: EnvironmentBatched, **controller_config) -> None:
         super().__init__(environment, **controller_config)
         controller_name = controller_config["controller"]
+        controller_config[controller_name].update({"seed": controller_config["seed"]})
         
         environment.set_computation_library(TensorFlowLibrary if controller_name[-2:] == "tf" else NumpyLibrary)
 
