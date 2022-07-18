@@ -2,6 +2,7 @@ import importlib
 import os
 import time
 from datetime import datetime
+from copy import deepcopy
 
 import gym
 import pygame
@@ -51,7 +52,7 @@ if __name__ == "__main__":
                     k: config["controllers"][k]
                     for k in ["controller_logging", "mpc_horizon", "dt", "predictor"]
                 },
-                **{"environment": env},
+                **{"environment": deepcopy(env)},
                 **config["environments"][ENVIRONMENT_NAME],
             },
         )

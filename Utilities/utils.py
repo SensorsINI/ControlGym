@@ -16,6 +16,8 @@ class OutputPath:
 
     @classmethod
     def get_output_path(cls, timestamp: str, filename: str, suffix: str):
+        if config['controller_name'] == "ControllerCartPoleSimulationImport":
+            config['controller_name'] = config["ControllerCartPoleSimulationImport"]["controller"].replace("-", "_")
         folder = os.path.join(
             "Output",
             f"{timestamp}_{config['controller_name']}_{config['environment_name']}".replace(

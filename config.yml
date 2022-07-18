@@ -1,6 +1,6 @@
 num_experiments: 1
 controller_name: ControllerCartPoleSimulationImport
-environment_name: CustomEnvironments/CartPoleContinuous
+environment_name: CustomEnvironments/MountainCarContinuous
 num_iterations: 150
 render_for_humans: False
 save_plots_to_file: True
@@ -95,7 +95,7 @@ controllers:
     grad_epsilon: 1.0e-6
   
   ControllerCartPoleSimulationImport:
-    controller: cem-naive-grad-tf                      # Specify controller class from within CartPoleSimulation
+    controller: cem-tf                    # Specify controller class from within CartPoleSimulation
     cem-tf:
       seed: "None"                          # If "None", random seed based on datetime is used
       dt: 0.02                              # sec
@@ -105,7 +105,7 @@ controllers:
       predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
       predictor_intermediate_steps: 10
       CEM_NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0' # Applies only if predictor type is NeuralNet
-      cem_stdev_min: 0.1
+      cem_stdev_min: 0.05
       cem_R: 1
       cem_ccrc_weight: 1
       cem_best_k: 4
@@ -183,8 +183,8 @@ controllers:
       SQRTRHOINV_mc: 0.002                  # Sampling variance
       NU_mc: 20.0                           # Exploration variance
       GAMMA: 1.00                           # Future cost discount
-      LR: 1000                              # Learning rate for adaption of variance, !!! Set to 0 to retrieve a mppi version in accordance with mppi paper
-      STDEV_min: 0.01                       # Maximal variance for sampling
+      LR: 1.0e-2                            # Learning rate for adaption of variance, !!! Set to 0 to retrieve a mppi version in accordance with mppi paper
+      STDEV_min: 0.1                        # Minimal variance for sampling
       STDEV_max: 10                         # Minimal sampling variance for sampling
       max_grad_norm: 100000                 # max norm of gradient such that ||gradient||_2
     mppi:
