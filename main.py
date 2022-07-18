@@ -10,7 +10,7 @@ from yaml import FullLoader, dump, load
 
 from Environments import register_envs
 from Utilities.generate_plots import generate_plots
-from Utilities.utils import OutputPath, get_logger
+from Utilities.utils import OutputPath, SeedMemory, get_logger
 
 if not pygame.display.get_init():
     # Set dummy output device when machine is headless
@@ -37,20 +37,22 @@ timestamp = timestamp.strftime("%Y%m%d-%H%M%S")
 if __name__ == "__main__":
     for i in range(config["num_experiments"]):
         seeds = seed_sequences[i].generate_state(3)
+        SeedMemory.seeds = seeds
         config["environments"][ENVIRONMENT_NAME].update({"seed": int(seeds[0])})
-        env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME])
+        env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME], render_mode="human" if config["render_for_humans"] else "rgb_array")
         obs = env.reset(seed=int(seeds[1]))
 
         config["controllers"][CONTROLLER_NAME].update({"seed": int(seeds[2])})
         controller_module = importlib.import_module(f"Controllers.{CONTROLLER_NAME}")
         controller = getattr(controller_module, CONTROLLER_NAME)(
-            env,
             **{
                 **config["controllers"][CONTROLLER_NAME],
                 **{
                     k: config["controllers"][k]
                     for k in ["controller_logging", "mpc_horizon", "dt", "predictor"]
                 },
+                **{"environment": env},
+                **config["environments"][ENVIRONMENT_NAME],
             },
         )
 
@@ -58,10 +60,10 @@ if __name__ == "__main__":
         for step in range(config["num_iterations"]):
             action = controller.step(obs)
             new_obs, reward, done, info = env.step(action)
-            if config["render_for_humans"]:
-                env.render(mode="human")
             if config["controllers"]["controller_logging"]:
-                frames.append(env.render(mode="rgb_array"))
+                frames.append(env.render())
+            elif config["render_for_humans"]:
+                env.render()
 
             time.sleep(0.001)
 

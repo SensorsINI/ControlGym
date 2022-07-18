@@ -6,12 +6,15 @@ import torch
 from gym import spaces
 from gym.envs.classic_control.pendulum import PendulumEnv, angle_normalize
 
-from Environments import EnvironmentBatched, NumpyLibrary
+from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
 
 
-class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
-    def __init__(self, g=10, batch_size=1, computation_lib=NumpyLibrary, **kwargs):
-        super().__init__(g)
+class pendulum_batched(EnvironmentBatched, PendulumEnv):
+    num_actions = 1
+    num_states = 2
+
+    def __init__(self, g=10, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs):
+        super().__init__(render_mode=render_mode, g=g)
         self.config = kwargs
         high = np.array([np.pi, self.max_speed], dtype=np.float32)
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
@@ -21,6 +24,7 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
+        self.cost_functions = cost_functions(self)
 
     def _angle_normalize(self, x):
         _pi = self.lib.to_tensor(np.array(np.pi), self.lib.float32)
@@ -103,7 +107,10 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
                 state = self.lib.unsqueeze(
                     self.lib.to_tensor(state, self.lib.float32), 0
                 )
-            self.state = self.lib.tile(state, (self._batch_size, 1))
+            if self.lib.shape(state)[0] == 1:
+                self.state = self.lib.tile(state, (self._batch_size, 1))
+            else:
+                self.state = state
 
         self.last_u = None
 
@@ -113,9 +120,10 @@ class PendulumEnv_Batched(EnvironmentBatched, PendulumEnv):
         return False
 
     def get_reward(self, state, action):
-        th, thdot = self.lib.unstack(self.state, 2, 1)
+        state, action = self._expand_arrays(state, action)
+        th, thdot = self.lib.unstack(state, 2, 1)
         costs = (
-            self._angle_normalize(th) ** 2 + 0.1 * thdot**2 + 0.001 * (action**2)
+            self._angle_normalize(th) ** 2 + 0.1 * thdot**2 + 0.001 * (action[:, 0]**2)
         )
         return -costs
 

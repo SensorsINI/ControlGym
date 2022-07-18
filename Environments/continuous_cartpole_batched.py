@@ -6,12 +6,15 @@ import torch
 from gym import logger, spaces
 from gym.envs.classic_control.cartpole import CartPoleEnv
 
-from Environments import EnvironmentBatched, NumpyLibrary
+from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
 
 
-class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
-    def __init__(self, batch_size=1, computation_lib=NumpyLibrary, **kwargs):
-        super().__init__()
+class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
+    num_actions = 1
+    num_states = 4
+
+    def __init__(self, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs):
+        super().__init__(render_mode=render_mode)
         self.config = kwargs
         self.action_space = spaces.Box(
             low=-self.force_mag, high=self.force_mag, shape=(1,), dtype=np.float32
@@ -21,6 +24,7 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
+        self.cost_functions = cost_functions(self)
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
@@ -121,7 +125,10 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
                 state = self.lib.unsqueeze(
                     self.lib.to_tensor(state, self.lib.float32), 0
                 )
-            self.state = self.lib.tile(state, (self._batch_size, 1))
+            if self.lib.shape(state)[0] == 1:
+                self.state = self.lib.tile(state, (self._batch_size, 1))
+            else:
+                self.state = state
 
         self.steps_beyond_done = None
 
@@ -137,6 +144,7 @@ class Continuous_CartPoleEnv_Batched(EnvironmentBatched, CartPoleEnv):
         )
 
     def get_reward(self, state, action):
+        state, action = self._expand_arrays(state, action)
         x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, 1)
         reward = -(100*(theta**2) + theta_dot**2 + (x**2) + x_dot**2)
         if self.steps_beyond_done is None:

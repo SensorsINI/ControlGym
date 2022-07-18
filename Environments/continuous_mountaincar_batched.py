@@ -5,26 +5,29 @@ import tensorflow as tf
 import torch
 from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
-from Environments import EnvironmentBatched, NumpyLibrary
+from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
 
 
-class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainCarEnv):
+class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarEnv):
     """Accepts batches of data to environment
 
     :param Continuous_MountainCarEnv: _description_
     :type Continuous_MountainCarEnv: _type_
     """
+    num_actions = 1
+    num_states = 2
 
     def __init__(
-        self, goal_velocity=0, batch_size=1, computation_lib=NumpyLibrary, **kwargs
+        self, goal_velocity=0, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs
     ):
-        super().__init__(goal_velocity)
+        super().__init__(render_mode=render_mode, goal_velocity=goal_velocity)
         self.config = kwargs
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
+        self.cost_functions = cost_functions(self)
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
@@ -115,22 +118,26 @@ class Continuous_MountainCarEnv_Batched(EnvironmentBatched, Continuous_MountainC
                 state = self.lib.unsqueeze(
                     self.lib.to_tensor(state, self.lib.float32), 0
                 )
-            self.state = self.lib.tile(state, (self._batch_size, 1))
+            if self.lib.shape(state)[0] == 1:
+                self.state = self.lib.tile(state, (self._batch_size, 1))
+            else:
+                self.state = state
 
         return self._get_reset_return_val()
 
     def render(self, mode="human"):
         if self._batch_size == 1:
-            return super().render(mode)
+            return super().render()
         else:
             raise NotImplementedError("Rendering not implemented for batched mode")
 
     def is_done(self, state):
-        position, velocity = self.lib.unstack(self.state, 2, 1)
+        position, velocity = self.lib.unstack(state, 2, 1)
         return (position >= self.goal_position) & (velocity >= self.goal_velocity)
 
     def get_reward(self, state, action):
-        position, velocity = self.lib.unstack(self.state, 2, 1)
+        state, action = self._expand_arrays(state, action)
+        position, velocity = self.lib.unstack(state, 2, 1)
         reward = self.lib.sin(3 * position)
         # This part is not differentiable:
         reward += 100.0 * self.lib.cast(self.is_done(state), self.lib.float32)

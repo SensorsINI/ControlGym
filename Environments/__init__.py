@@ -10,9 +10,9 @@ from Utilities.utils import get_logger
 log = get_logger(__name__)
 
 ENV_REGISTRY = {
-    "CustomEnvironments/CartPoleContinuous": "Environments.continuous_cartpole_batched:Continuous_CartPoleEnv_Batched",
-    "CustomEnvironments/MountainCarContinuous": "Environments.continuous_mountaincar_batched:Continuous_MountainCarEnv_Batched",
-    "CustomEnvironments/Pendulum": "Environments.pendulum_batched:PendulumEnv_Batched",
+    "CustomEnvironments/CartPoleContinuous": "Environments.continuous_cartpole_batched:continuous_cartpole_batched",
+    "CustomEnvironments/MountainCarContinuous": "Environments.continuous_mountaincar_batched:continuous_mountaincar_batched",
+    "CustomEnvironments/Pendulum": "Environments.pendulum_batched:pendulum_batched",
 }
 
 
@@ -31,6 +31,7 @@ RandomGeneratorType = Union[Generator, tf.random.Generator, torch.Generator]
 
 class ComputationLibrary:
     reshape: Callable[[TensorType, "tuple[int]"], TensorType] = None
+    shape: Callable[[TensorType], "list[int]"] = None
     to_numpy: Callable[[TensorType], np.ndarray] = None
     to_tensor: Callable[[TensorType, float], TensorType] = None
     unstack: Callable[[TensorType, int, int], "list[TensorType]"] = None
@@ -50,10 +51,13 @@ class ComputationLibrary:
     uniform: Callable[
         [RandomGeneratorType, "tuple[int]", TensorType, TensorType, float], TensorType
     ] = None
+    sum: Callable[[TensorType, int], TensorType] = None
+    set_shape: Callable[[TensorType, "list[int]"], None] = None
 
 
 class NumpyLibrary(ComputationLibrary):
     reshape = lambda x, shape: np.reshape(x, shape)
+    shape = np.shape
     to_numpy = lambda x: np.array(x)
     to_tensor = lambda x, t: np.array(x, dtype=t)
     unstack = lambda x, num, axis: list(np.moveaxis(x, axis, 0))
@@ -73,10 +77,13 @@ class NumpyLibrary(ComputationLibrary):
     uniform = lambda generator, shape, low, high, dtype: generator.uniform(
         low=low, high=high, size=shape
     ).astype(dtype)
+    sum = lambda x, a: np.sum(x, axis=a, keepdims=False)
+    set_shape = lambda x, shape: x
 
 
 class TensorFlowLibrary(ComputationLibrary):
     reshape = tf.reshape
+    shape = lambda x: x.get_shape()#.as_list()
     to_numpy = lambda x: x.numpy()
     to_tensor = lambda x, t: tf.convert_to_tensor(x, dtype=t)
     unstack = lambda x, num, axis: tf.unstack(x, num=num, axis=axis)
@@ -96,10 +103,13 @@ class TensorFlowLibrary(ComputationLibrary):
     uniform = lambda generator, shape, low, high, dtype: generator.uniform(
         shape, minval=low, maxval=high, dtype=dtype
     )
+    sum = lambda x, a: tf.reduce_sum(x, axis=a, keepdims=False)
+    set_shape = lambda x, shape: x.set_shape(shape)
 
 
 class PyTorchLibrary(ComputationLibrary):
     reshape = torch.reshape
+    shape = lambda x: list(x.size())
     to_numpy = lambda x: x.cpu().detach().numpy()
     to_tensor = lambda x, t: torch.as_tensor(x, dtype=t)
     unstack = lambda x, num, dim: torch.unbind(x, dim=dim)
@@ -123,6 +133,8 @@ class PyTorchLibrary(ComputationLibrary):
         * torch.rand(*shape, generator=generator, dtype=dtype)
         + low
     )
+    sum = lambda x, a: torch.sum(x, a, keepdim=False)
+    set_shape = lambda x, shape: x
 
 
 class EnvironmentBatched:
@@ -231,3 +243,21 @@ class EnvironmentBatched:
             return rs, ss
         else:
             return total_r
+
+
+class cost_functions:
+    def __init__(self, env: EnvironmentBatched) -> None:
+        self.env = env
+    
+    def get_terminal_cost(self, s_hor):
+        return 0.0
+    
+    def get_stage_cost(self, s, u, u_prev):
+        return -self.env.get_reward(s, u)
+
+    def get_trajectory_cost(self, s_hor, u, u_prev=None):
+        total_cost = 0
+        for horizon_step in range(self.env.lib.shape(u)[1]):
+            total_cost += self.get_stage_cost(s_hor[:, horizon_step, :], u[:, horizon_step, :], None)
+        total_cost = total_cost + self.get_terminal_cost(s_hor)
+        return total_cost

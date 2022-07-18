@@ -67,6 +67,9 @@ def get_logger(name):
     logger.addHandler(ch)
     return logger
 
+class SeedMemory:
+    seeds = []
+
 
 ### Below is copied from CartPole repo
 

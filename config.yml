@@ -1,10 +1,10 @@
 num_experiments: 1
 controller_name: ControllerCartPoleSimulationImport
-environment_name: CustomEnvironments/MountainCarContinuous
+environment_name: CustomEnvironments/CartPoleContinuous
 num_iterations: 150
 render_for_humans: False
 save_plots_to_file: True
-debug: False  # Debugging mode turns off compilation/graph mode
+debug: True  # Debugging mode turns off compilation/graph mode
 logging_level: DEBUG
 seed_entropy: 1234
 
@@ -95,7 +95,7 @@ controllers:
     grad_epsilon: 1.0e-6
   
   ControllerCartPoleSimulationImport:
-    controller: cem-tf                      # Specify controller class from within CartPoleSimulation
+    controller: cem-naive-grad-tf                      # Specify controller class from within CartPoleSimulation
     cem-tf:
       seed: "None"                          # If "None", random seed based on datetime is used
       dt: 0.02                              # sec
