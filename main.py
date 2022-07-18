@@ -39,7 +39,7 @@ if __name__ == "__main__":
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.seeds = seeds
         config["environments"][ENVIRONMENT_NAME].update({"seed": int(seeds[0])})
-        env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME], render_mode=None if config["render_for_humans"] else "single_rgb_array")
+        env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME], render_mode="human" if config["render_for_humans"] else "single_rgb_array")
         obs = env.reset(seed=int(seeds[1]))
 
         config["controllers"][CONTROLLER_NAME].update({"seed": int(seeds[2])})
@@ -62,8 +62,6 @@ if __name__ == "__main__":
             new_obs, reward, done, info = env.step(action)
             if config["controllers"]["controller_logging"]:
                 frames.append(env.render())
-            elif config["render_for_humans"]:
-                env.render()
 
             time.sleep(0.001)
 
