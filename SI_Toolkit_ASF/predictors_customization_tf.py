@@ -22,7 +22,7 @@ class next_state_predictor_ODE_tf():
     def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
         self.s = None
         
-        env_name = config["environment_name"]
+        env_name = config["data_generation"]["environment_name"]
         env_config = {**config["environments"][env_name].copy(), **{"seed": SeedMemory.seeds[0]}}
         planning_env_config = {**env_config, **{"computation_lib": TensorFlowLibrary}}
         self.env = gym.make(env_name, **env_config).unwrapped.__class__(

@@ -9,7 +9,7 @@ from Utilities.utils import SeedMemory
 
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
-environment_module = ENV_REGISTRY[config['environment_name']].split(":")[0].split(".")[-1]
+environment_module = ENV_REGISTRY[config['data_generation']['environment_name']].split(":")[0].split(".")[-1]
 Environment = getattr(import_module(f"Environments.{environment_module}"), environment_module)
 
 
@@ -27,7 +27,7 @@ class next_state_predictor_ODE():
     def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
         
         self.s = None
-        env_name = config["environment_name"]
+        env_name = config["data_generation"]["environment_name"]
         
         env_config = {**config["environments"][env_name].copy(), **{"seed": SeedMemory.seeds[0]}}
         planning_env_config = {**env_config, **{"computation_lib": NumpyLibrary}}

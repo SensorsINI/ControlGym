@@ -22,28 +22,44 @@ if not pygame.display.get_init():
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAME, ENVIRONMENT_NAME = (
-    config["controller_name"],
-    config["environment_name"],
+    config["data_generation"]["controller_name"],
+    config["data_generation"]["environment_name"],
 )
 logger = get_logger(__name__)
 
 register_envs()
 
-timestamp = datetime.now()
-seed_entropy = config["seed_entropy"]
-if seed_entropy is None:
-    seed_entropy = int(timestamp.timestamp())
-    logger.info("No seed entropy specified. Setting to posix timestamp.")
 
-seed_sequences = SeedSequence(entropy=seed_entropy).spawn(config["num_experiments"])
-timestamp = timestamp.strftime("%Y%m%d-%H%M%S")
+def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
+    # Generate seeds and set timestamp
+    timestamp = datetime.now()
+    seed_entropy = config["data_generation"]["seed_entropy"]
+    if seed_entropy is None:
+        seed_entropy = int(timestamp.timestamp())
+        logger.info("No seed entropy specified. Setting to posix timestamp.")
 
-if __name__ == "__main__":
-    for i in range(config["num_experiments"]):
+    seed_sequences = SeedSequence(entropy=seed_entropy).spawn(config["data_generation"]["num_experiments"])
+    timestamp = timestamp.strftime("%Y%m%d-%H%M%S")
+
+    if run_for_ML_Pipeline:
+        frac_train, frac_val = config["data_generation"]["split"]
+        assert record_path is not None, "If ML mode is on, need to provide record_path."
+
+    # Loop through independent experiments
+    for i in range(config["data_generation"]["num_experiments"]):
+        if run_for_ML_Pipeline:
+            if i < int(frac_train * config["data_generation"]["num_experiments"]):
+                csv = os.path.join(record_path, "Train")
+            elif i < int((frac_train + frac_val) * config["data_generation"]["num_experiments"]):
+                csv = os.path.join(record_path, "Validate")
+            else:
+                csv = os.path.join(record_path, "Test")
+            os.makedirs(csv, exist_ok=True)
+            csv = os.path.join(csv, "Experiment")
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.seeds = seeds
         config["environments"][ENVIRONMENT_NAME].update({"seed": int(seeds[0])})
-        env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME], render_mode="human" if config["render_for_humans"] else "single_rgb_array")
+        env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME], render_mode="human" if config["data_generation"]["render_for_humans"] else "single_rgb_array")
         obs = env.reset(seed=int(seeds[1]))
 
         config["controllers"][CONTROLLER_NAME].update({"seed": int(seeds[2])})
@@ -61,7 +77,7 @@ if __name__ == "__main__":
         )
 
         frames = []
-        for step in range(config["num_iterations"]):
+        for step in range(config["data_generation"]["num_iterations"]):
             action = controller.step(obs)
             new_obs, reward, done, info = env.step(action)
             if config["controllers"]["controller_logging"]:
@@ -74,7 +90,7 @@ if __name__ == "__main__":
                 env.reset()
 
             logger.debug(
-                f"\nStep       : {step+1}/{config['num_iterations']}\nObservation: {obs}\nAction     : {action}\n"
+                f"\nStep       : {step+1}/{config['data_generation']['num_iterations']}\nObservation: {obs}\nAction     : {action}\n"
             )
             obs = new_obs
 
@@ -82,12 +98,14 @@ if __name__ == "__main__":
         env.close()
 
         # Generate plots
-        if config["num_experiments"] > 1:
+        if config["data_generation"]["num_experiments"] > 1:
             OutputPath.RUN_NUM = i + 1
 
-        if config["controllers"]["controller_logging"]:
-            if config["controller_name"] == "ControllerCartPoleSimulationImport":
-                config["controller_name"] = config["controllers"]["ControllerCartPoleSimulationImport"]["controller"]
+        if run_for_ML_Pipeline:
+            # Save data as csv
+            pass
+        elif config["controllers"]["controller_logging"]:
+            # Generate and save plots in default location
             generate_plots(
                 config=config,
                 controller=controller,
@@ -98,3 +116,7 @@ if __name__ == "__main__":
                 OutputPath.get_output_path(timestamp, "config", ".yml"), "w"
             ) as f:
                 dump(config, f)
+
+
+if __name__ == "__main__":
+    run_data_generator()

@@ -3,9 +3,9 @@ class Plotter:
         self.fig, self.ax, self.axs, self.gs = None, None, None, None
         self._timestamp = timestamp
         self._config_to_disp = {
-            "Controller name": config["controller_name"],
+            "Controller name": config["data_generation"]["controller_name"],
             "Actuation stdev/range(actions)": config["environments"][
-                config["environment_name"]
+                config["data_generation"]["environment_name"]
             ]["actuator_noise"],
         }
 

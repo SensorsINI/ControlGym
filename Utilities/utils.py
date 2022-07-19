@@ -16,11 +16,11 @@ class OutputPath:
 
     @classmethod
     def get_output_path(cls, timestamp: str, filename: str, suffix: str):
-        if config['controller_name'] == "ControllerCartPoleSimulationImport":
-            config['controller_name'] = config["controllers"]["ControllerCartPoleSimulationImport"]["controller"].replace("-", "_")
+        if config["data_generation"]["controller_name"] == "ControllerCartPoleSimulationImport":
+            config["data_generation"]["controller_name"] = config["controllers"]["ControllerCartPoleSimulationImport"]["controller"].replace("-", "_")
         folder = os.path.join(
             "Output",
-            f"{timestamp}_{config['controller_name']}_{config['environment_name']}".replace(
+            f"{timestamp}_{config['data_generation']['controller_name']}_{config['data_generation']['environment_name']}".replace(
                 "/", "_"
             ),
         )
@@ -62,7 +62,7 @@ class CustomFormatter(logging.Formatter):
 
 def get_logger(name):
     logger = logging.getLogger(name)
-    logger.setLevel(getattr(import_module("logging"), config["logging_level"]))
+    logger.setLevel(getattr(import_module("logging"), config["data_generation"]["logging_level"]))
     # create console handler
     ch = logging.StreamHandler()
     ch.setFormatter(CustomFormatter())
@@ -76,7 +76,7 @@ class SeedMemory:
 ### Below is copied from CartPole repo
 
 
-if config["debug"]:
+if config["data_generation"]["debug"]:
     CompileTF = lambda func: func
     CompileTorch = lambda func: func
 else:
