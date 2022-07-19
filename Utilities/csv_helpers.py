@@ -30,6 +30,7 @@ def save_to_csv(config, controller: Controller, path):
         writer = csv.writer(outfile)
         writer.writerow([f"# Gym Log"])
         writer.writerow([f"# {config['data_generation']['controller_name']}"])
+        writer.writerow([f"# Saving: {config['data_generation']['controllers']['dt']} s"])
 
     df.to_csv(filename, mode="a", header=True)
 

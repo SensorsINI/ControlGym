@@ -49,7 +49,7 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
     # Loop through independent experiments
     for i in range(config["data_generation"]["num_experiments"]):
         seeds = seed_sequences[i].generate_state(3)
-        SeedMemory.seeds = seeds
+        SeedMemory.set_seeds(seeds)
         config["environments"][ENVIRONMENT_NAME].update({"seed": int(seeds[0])})
         env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME], render_mode="human" if config["data_generation"]["render_for_humans"] else "single_rgb_array")
         obs = env.reset(seed=int(seeds[1]))
@@ -102,7 +102,6 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
             else:
                 csv = os.path.join(record_path, "Test")
             os.makedirs(csv, exist_ok=True)
-            csv = os.path.join(csv, "Experiment")
             save_to_csv(config, controller, csv)
         elif config["controllers"]["controller_logging"]:
             # Generate and save plots in default location

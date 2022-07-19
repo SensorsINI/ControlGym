@@ -23,7 +23,7 @@ class next_state_predictor_ODE_tf():
         self.s = None
         
         env_name = config["data_generation"]["environment_name"]
-        env_config = {**config["environments"][env_name].copy(), **{"seed": SeedMemory.seeds[0]}}
+        env_config = {**config["environments"][env_name].copy(), **{"seed": SeedMemory.get_seeds()[0]}}
         planning_env_config = {**env_config, **{"computation_lib": TensorFlowLibrary}}
         self.env = gym.make(env_name, **env_config).unwrapped.__class__(
             batch_size=batch_size, **planning_env_config
@@ -41,20 +41,14 @@ class next_state_predictor_ODE_tf():
 
 
 class predictor_output_augmentation_tf:
-    def __init__(self, net_info):
+    def __init__(self, net_info, differential_network=False):
         self.net_output_indices = {key: value for value, key in enumerate(net_info.outputs)}
         indices_augmentation = []
         features_augmentation = []
-        if 'sin(x)' not in net_info.outputs:
-            indices_augmentation.append(STATE_INDICES['sin(x)'])
-            features_augmentation.append('sin(x)')
 
         self.indices_augmentation = indices_augmentation
         self.features_augmentation = features_augmentation
         self.augmentation_len = len(self.indices_augmentation)
-
-        if 'x' in net_info.outputs:
-            self.index_x = tf.convert_to_tensor(self.net_output_indices['x'])
 
     def get_indices_augmentation(self):
         return self.indices_augmentation

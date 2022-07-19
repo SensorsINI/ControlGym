@@ -16,7 +16,7 @@ pandas
 pip
 pygame
 pygame
-PyQt5
+PyQt6
 pyyaml
 PyYAML
 scienceplots

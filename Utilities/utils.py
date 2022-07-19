@@ -71,6 +71,18 @@ def get_logger(name):
 
 class SeedMemory:
     seeds = []
+    
+    @classmethod
+    def set_seeds(cls, seeds):
+        cls.seeds = seeds
+    
+    @classmethod
+    def get_seeds(cls):
+        if len(cls.seeds) == 0:
+            logger = get_logger(__name__)
+            logger.warn("SeedMemory has nothing saved. Filling with dummy seeds.")
+            return [1, 2, 3]
+        return cls.seeds
 
 
 ### Below is copied from CartPole repo
