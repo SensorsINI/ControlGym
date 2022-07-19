@@ -15,6 +15,7 @@ from yaml import FullLoader, dump, load
 from Environments import register_envs
 from Utilities.generate_plots import generate_plots
 from Utilities.utils import OutputPath, SeedMemory, get_logger
+from Utilities.csv_helpers import save_to_csv
 
 if not pygame.display.get_init():
     # Set dummy output device when machine is headless
@@ -47,15 +48,6 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
 
     # Loop through independent experiments
     for i in range(config["data_generation"]["num_experiments"]):
-        if run_for_ML_Pipeline:
-            if i < int(frac_train * config["data_generation"]["num_experiments"]):
-                csv = os.path.join(record_path, "Train")
-            elif i < int((frac_train + frac_val) * config["data_generation"]["num_experiments"]):
-                csv = os.path.join(record_path, "Validate")
-            else:
-                csv = os.path.join(record_path, "Test")
-            os.makedirs(csv, exist_ok=True)
-            csv = os.path.join(csv, "Experiment")
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.seeds = seeds
         config["environments"][ENVIRONMENT_NAME].update({"seed": int(seeds[0])})
@@ -103,7 +95,15 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
 
         if run_for_ML_Pipeline:
             # Save data as csv
-            pass
+            if i < int(frac_train * config["data_generation"]["num_experiments"]):
+                csv = os.path.join(record_path, "Train")
+            elif i < int((frac_train + frac_val) * config["data_generation"]["num_experiments"]):
+                csv = os.path.join(record_path, "Validate")
+            else:
+                csv = os.path.join(record_path, "Test")
+            os.makedirs(csv, exist_ok=True)
+            csv = os.path.join(csv, "Experiment")
+            save_to_csv(config, controller, csv)
         elif config["controllers"]["controller_logging"]:
             # Generate and save plots in default location
             generate_plots(
