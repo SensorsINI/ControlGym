@@ -15,6 +15,8 @@ Environment = getattr(import_module(f"Environments.{environment_module}"), envir
 
 STATE_VARIABLES = np.array([f"x{i}" for i in range(Environment.num_states)])
 STATE_INDICES = {x: np.where(STATE_VARIABLES == x)[0][0] for x in STATE_VARIABLES}
+CONTROL_INPUTS = np.array([f"Q{i}" for i in range(Environment.num_actions)])
+CONTROL_INDICES = {x: np.where(CONTROL_INPUTS == x)[0][0] for x in CONTROL_INPUTS}
 
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
@@ -27,8 +29,8 @@ class next_state_predictor_ODE():
         self.s = None
         env_name = config["environment_name"]
         
-        env_config = config["environments"][env_name].copy()
-        planning_env_config = {**env_config, **{"computation_lib": NumpyLibrary, "seed": SeedMemory.seeds[0]}}
+        env_config = {**config["environments"][env_name].copy(), **{"seed": SeedMemory.seeds[0]}}
+        planning_env_config = {**env_config, **{"computation_lib": NumpyLibrary}}
         self.env = gym.make(env_name, **env_config).unwrapped.__class__(
             batch_size=batch_size, **planning_env_config
         )

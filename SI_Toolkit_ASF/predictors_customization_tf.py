@@ -8,7 +8,7 @@ from SI_Toolkit.TF.TF_Functions.Compile import Compile
 import numpy as np
 from Environments import TensorFlowLibrary
 
-from SI_Toolkit_ASF_global.predictors_customization import STATE_INDICES
+from SI_Toolkit_ASF.predictors_customization import STATE_INDICES
 
 STATE_INDICES_TF = tf.lookup.StaticHashTable(  # TF style dictionary
     initializer=tf.lookup.KeyValueTensorInitializer(
