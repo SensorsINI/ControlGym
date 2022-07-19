@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from Environments import EnvironmentBatched, NumpyLibrary, PyTorchLibrary, TensorFlowLibrary
 
-from Controllers import Controller
+from ControllersGym import Controller
 
 
 class ControllerCartPoleSimulationImport(Controller):

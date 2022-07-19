@@ -3,12 +3,12 @@ import numpy as np
 import tensorflow as tf
 from gym import Env
 
-from Controllers import Controller
+from ControllersGym import Controller
 from Environments import TensorFlowLibrary
 from Utilities.utils import CompileTF
 
 
-class ControllerMPPIGradient(Controller):
+class ControllerAdamResampler(Controller):
     def __init__(self, environment: Env, **controller_config) -> None:
         super().__init__(environment, **controller_config)
 
@@ -25,14 +25,15 @@ class ControllerMPPIGradient(Controller):
         self._minimal_action_stdev = controller_config["cem_stdev_min"]
         self._resamp_every = controller_config["resamp_every"]
         self._do_warmup = controller_config["do_warmup"]
-        self._lambda = controller_config["mppi_lambda"]
 
         self.dist_mean = tf.zeros([1, self._horizon_steps], dtype=tf.float32)
         self.dist_stdev = tf.sqrt(self._initial_action_variance) * tf.ones(
             [1, self._horizon_steps], dtype=tf.float32
         )
 
-        self.Q = tf.Variable(self._sample_inputs((self._num_rollouts, self._horizon_steps)))
+        self.Q = tf.Variable(
+            self._sample_inputs((self._num_rollouts, self._horizon_steps))
+        )
         self.iteration = 0
         self.opt = tf.keras.optimizers.Adam(
             learning_rate=controller_config["grad_alpha"],
@@ -60,52 +61,49 @@ class ControllerMPPIGradient(Controller):
         Q = tf.clip_by_value(Q, self._env.action_space.low, self._env.action_space.high)
         return Q
 
-    def _rollout_trajectories(
-        self, Q: tf.Variable, rollout_trajectory: tf.Tensor = None
-    ):
+    def _rollout_trajectories(self, Q: tf.Variable, record_trajectory: bool = False):
         traj_cost = tf.zeros([self._num_rollouts], dtype=tf.float32)
+        s = self._predictor_environment.get_state()
+        rollout_trajectory = tf.TensorArray(tf.float32, size=self._horizon_steps + 1)
+        rollout_trajectory = rollout_trajectory.write(0, tf.stop_gradient(s))
         for horizon_step in range(self._horizon_steps):
             new_obs, reward, done, info = self._predictor_environment.step(
-                Q[:, horizon_step, tf.newaxis]
+                tf.gather(Q, horizon_step, axis=1)
             )
             traj_cost -= reward
             s = new_obs
-            if rollout_trajectory is not None:
-                rollout_trajectory = tf.stop_gradient(
-                    tf.concat([rollout_trajectory, tf.expand_dims(s, axis=1)], axis=1)
+            if record_trajectory:
+                rollout_trajectory = rollout_trajectory.write(
+                    horizon_step + 1, tf.stop_gradient(s)
                 )
 
-        return traj_cost, rollout_trajectory
+        return traj_cost, rollout_trajectory.stack()
 
     # @CompileTF
     def _grad_step(self, s: tf.Tensor, Q: tf.Variable):
         self._predictor_environment.reset(self.s)
-        rollout_trajectory = tf.expand_dims(s, axis=1)
         with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(Q)
             traj_cost, rollout_trajectory = self._rollout_trajectories(
-                Q, rollout_trajectory
+                Q, record_trajectory=True
             )
-
         dJ_dQ = tape.gradient(traj_cost, Q)
-        # dJ_dQ_clipped = tf.clip_by_norm(dJ_dQ, self._grad_max, axes=1)
-        dJ_dQ_clipped = tf.clip_by_norm(dJ_dQ, self._grad_max)
+
+        dJ_dQ_max = tf.math.reduce_max(tf.abs(dJ_dQ), axis=1, keepdims=True)
+        mask = dJ_dQ_max > self._grad_max
+        dJ_dQ_clipped = tf.cast(~mask, dtype=tf.float32) * dJ_dQ + tf.cast(
+            mask, dtype=tf.float32
+        ) * self._grad_max * (dJ_dQ / dJ_dQ_max)
 
         self.opt.apply_gradients(zip([dJ_dQ_clipped], [Q]))
         Q_updated = tf.clip_by_value(
             Q, self._env.action_space.low, self._env.action_space.high
         )
         return Q_updated
-
+   
     def _retrieve_action(self, s0: np.ndarray, Q: tf.Variable):
         self._predictor_environment.reset(state=s0)
         self.J, _ = self._rollout_trajectories(Q)
-
-        # Do MPPI-style averaging
-        rho = tf.math.reduce_min(self.J)
-        exp_s = tf.expand_dims(tf.exp(-1.0 / self._lambda * (self.J - rho)), axis=1)
-        a = tf.math.reduce_sum(exp_s)
-        u = (tf.math.reduce_sum(exp_s * Q, axis=0) / a)[0][tf.newaxis]
 
         sorted_cost = tf.argsort(self.J)
         best_idx = sorted_cost[: self._select_best_k]
@@ -125,7 +123,7 @@ class ControllerMPPIGradient(Controller):
             axis=1,
         )
 
-        return u, Q_keep, best_idx
+        return Q_keep, best_idx
 
     def step(self, s: np.ndarray) -> np.ndarray:
         # s: ndarray(n,)
@@ -145,8 +143,8 @@ class ControllerMPPIGradient(Controller):
             self.Q.assign(Q_updated)
 
         # Final rollout
-        self.u, Q_keep, best_idx = self._retrieve_action(self.s, self.Q)
-        self.u = self.u.numpy()
+        Q_keep, best_idx = self._retrieve_action(self.s, self.Q)
+        self.u = tf.expand_dims(Q_keep[0, 0], 0).numpy()
 
         # Adam variables: m, v (1st/2nd moment of the gradient computation)
         adam_weights = self.opt.get_weights()

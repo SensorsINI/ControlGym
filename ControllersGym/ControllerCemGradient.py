@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from gym import Env
 
-from Controllers import Controller
+from ControllersGym import Controller
 from Environments import TensorFlowLibrary
 from Utilities.utils import CompileTF
 

@@ -4,9 +4,9 @@ import torch
 from Environments import EnvironmentBatched, PyTorchLibrary
 
 # Import original paper's code
-from Controllers.External.gradcem import GradCEMPlan
+from ControllersGym.External.gradcem import GradCEMPlan
 
-from Controllers import Controller
+from ControllersGym import Controller
 
 
 class ControllerCemGradientBharadhwaj(Controller):

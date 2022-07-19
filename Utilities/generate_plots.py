@@ -1,6 +1,6 @@
 from typing import Optional
 import numpy as np
-from Controllers import Controller
+from ControllersGym import Controller
 from Visualizations.plot_horizon_costs import HorizonCostPlotter
 from Visualizations.plot_input_plans import InputPlanPlotter
 

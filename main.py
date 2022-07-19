@@ -4,6 +4,9 @@ import time
 from datetime import datetime
 from copy import deepcopy
 
+import sys
+sys.path.insert(0, os.path.join(os.path.abspath("."), "CartPoleSimulation"))
+
 import gym
 import pygame
 from numpy.random import SeedSequence
@@ -44,7 +47,7 @@ if __name__ == "__main__":
         obs = env.reset(seed=int(seeds[1]))
 
         config["controllers"][CONTROLLER_NAME].update({"seed": int(seeds[2])})
-        controller_module = importlib.import_module(f"Controllers.{CONTROLLER_NAME}")
+        controller_module = importlib.import_module(f"ControllersGym.{CONTROLLER_NAME}")
         controller = getattr(controller_module, CONTROLLER_NAME)(
             **{
                 **config["controllers"][CONTROLLER_NAME],
