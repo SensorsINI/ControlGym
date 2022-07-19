@@ -86,6 +86,8 @@ if __name__ == "__main__":
             OutputPath.RUN_NUM = i + 1
 
         if config["controllers"]["controller_logging"]:
+            if config["controller_name"] == "ControllerCartPoleSimulationImport":
+                config["controller_name"] = config["controllers"]["ControllerCartPoleSimulationImport"]["controller"]
             generate_plots(
                 config=config,
                 controller=controller,
