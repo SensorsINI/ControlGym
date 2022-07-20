@@ -11,7 +11,7 @@ imageio
 matplotlib
 nni
 numba
-numpy
+numpy<1.23
 pandas
 pip
 pygame
