@@ -2,7 +2,7 @@ modeling:
   NET_NAME: 'GRU-32H1-32H2'
 paths:
   # PATH HAS TO END WITH A SOLIDUS ("/") CHARACTER
-  path_to_experiment: 'Experiment-8/'
+  path_to_experiment: 'Experiment-12/'
   PATH_TO_EXPERIMENT_FOLDERS: './Output/Experiments/'  # Path where the experiments data is stored
 
 training_default:

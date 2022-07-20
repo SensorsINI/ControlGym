@@ -32,8 +32,8 @@ class ControllerCemGradient(Controller):
         _planning_env_config = environment.unwrapped.config.copy()
         _planning_env_config.update({"computation_lib": TensorFlowLibrary})
         self._predictor_environment = getattr(
-            import_module(f"Predictors.{controller_config['predictor']}"),
-            controller_config["predictor"],
+            import_module(f"Predictors.{controller_config['predictor_name']}"),
+            controller_config["predictor_name"],
         )(
             environment.unwrapped.__class__(
                 batch_size=self._num_rollouts, **_planning_env_config

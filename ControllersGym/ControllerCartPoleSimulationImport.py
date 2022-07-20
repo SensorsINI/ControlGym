@@ -9,18 +9,16 @@ from ControllersGym import Controller
 class ControllerCartPoleSimulationImport(Controller):
     def __init__(self, environment: EnvironmentBatched, **controller_config) -> None:
         super().__init__(environment, **controller_config)
-        controller_name = controller_config["controller"]
-        controller_config[controller_name].update({"seed": controller_config["seed"]})
+        controller_name = controller_config["controller_name"]
         
         environment.set_computation_library(TensorFlowLibrary if controller_name[-2:] == "tf" else NumpyLibrary)
 
-        controller_full_name = f"controller_{controller_name.replace('-', '_')}"
         self._controller = getattr(
             import_module(
-                f"CartPoleSimulation.Controllers.{controller_full_name}"
+                f"CartPoleSimulation.Controllers.{controller_name}"
             ),
-            controller_full_name,
-        )(**{**controller_config[controller_name], **{"environment": environment, "num_control_inputs": self._m}})
+            controller_name,
+        )(**{**controller_config, **{"environment": environment, "num_control_inputs": self._m}})
 
     def step(self, s: np.ndarray) -> np.ndarray:
         # self._predictor_environment.reset(s)

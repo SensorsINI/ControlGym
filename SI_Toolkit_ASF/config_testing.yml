@@ -3,8 +3,8 @@ testing:
   TEST_FILE: 'Experiment-0.csv'
   features: ['x_0', 'x_1']
   control_inputs: ['u_0']   # Indicates which inputs to network are control_input, TODO: Not sure how it would work with multiple inputs
-  PATH_TO_NN: 'Output/Experiments/Experiment-8/Models/'  # Path where the neural network models are stored
-  PATH_TO_TEST_FILE: 'Output/Experiments/Experiment-8/Recordings/Test/Experiment'
+  PATH_TO_NN: 'Output/Experiments/Experiment-12/Models/'  # Path where the neural network models are stored
+  PATH_TO_TEST_FILE: 'Output/Experiments/Experiment-12/Recordings/Test/'
   TEST_LEN: 'max'
   DECIMATION: 1
   MAX_HORIZON: 20  # Indicates prediction horizon for testing

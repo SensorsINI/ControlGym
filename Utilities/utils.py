@@ -1,6 +1,7 @@
 import logging
 import os
 from importlib import import_module
+from importlib.util import find_spec
 from pathlib import Path
 import platform
 import tensorflow as tf
@@ -11,32 +12,8 @@ from yaml import FullLoader, load
 config = load(open("config.yml", "r"), Loader=FullLoader)
 
 
-class OutputPath:
-    RUN_NUM = None
-
-    @classmethod
-    def get_output_path(cls, timestamp: str, filename: str, suffix: str):
-        predictor_name = config["controllers"]["predictor"]
-        if config["data_generation"]["controller_name"] == "ControllerCartPoleSimulationImport":
-            config["data_generation"]["controller_name"] = config["controllers"]["ControllerCartPoleSimulationImport"]["controller"].replace("-", "_")
-            predictor_name = config["controllers"]["ControllerCartPoleSimulationImport"][config["controllers"]["ControllerCartPoleSimulationImport"]["controller"]]["predictor_name"]
-        folder = os.path.join(
-            "Output",
-            f"{timestamp}_{config['data_generation']['controller_name']}_{config['data_generation']['environment_name']}_{predictor_name}".replace(
-                "/", "_"
-            ),
-        )
-        Path(folder).mkdir(parents=True, exist_ok=True)
-        return os.path.join(
-            folder,
-            f"{timestamp}_{filename}{suffix}"
-            if cls.RUN_NUM is None
-            else f"{timestamp}_{filename}_{cls.RUN_NUM}{suffix}",
-        )
-
-
-# Below is copied from CartPole repo
 class CustomFormatter(logging.Formatter):
+    # Copied from CartPole repo
     """Logging Formatter to add colors and count warning / errors"""
 
     grey = "\x1b[38;21m"
@@ -70,6 +47,53 @@ def get_logger(name):
     ch.setFormatter(CustomFormatter())
     logger.addHandler(ch)
     return logger
+
+
+logger = get_logger(__name__)
+
+
+def get_name_of_controller_module(controller_name: str) -> str:
+    """Check if the controller name specified a controller within
+    CartPoleSimulation repo or an internal one
+
+    :param controller_name: Name of controller as in config.ymnl
+    :type controller_name: str
+    :return: name of module where to find the right controller or wrapper
+    :rtype: str
+    """
+    if find_spec(f"CartPoleSimulation.Controllers.{controller_name}") is not None:
+        logger.info(f"Using a CartPoleSimulation controller: {controller_name}")
+        return "ControllerCartPoleSimulationImport"
+    elif find_spec(f"ControllersGym.{controller_name}") is not None:
+        logger.info(f"Using a ControlGym controller: {controller_name}")
+        return controller_name
+    else:
+        raise ValueError(f"Passed an unknown controller name {controller_name}")
+
+
+class OutputPath:
+    RUN_NUM = None
+
+    @classmethod
+    def get_output_path(cls, timestamp: str, filename: str, suffix: str):
+        controller_name = config["data_generation"]["controller_name"]
+        env_name = config["data_generation"]["environment_name"]
+        predictor_name = config["controllers"][controller_name]["predictor_name"]
+        folder = os.path.join(
+            "Output",
+            f"{timestamp}_{controller_name}_{env_name}_{predictor_name}".replace(
+                "/", "_"
+            ),
+        )
+        Path(folder).mkdir(parents=True, exist_ok=True)
+        return os.path.join(
+            folder,
+            f"{timestamp}_{filename}{suffix}"
+            if cls.RUN_NUM is None
+            else f"{timestamp}_{filename}_{cls.RUN_NUM}{suffix}",
+        )
+
+
 
 class SeedMemory:
     seeds = []
