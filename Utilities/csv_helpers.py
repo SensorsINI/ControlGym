@@ -17,10 +17,9 @@ def save_to_csv(config, controller: Controller, path):
     controller_outputs = controller.get_outputs()
     states = controller_outputs["s_logged"]
     inputs = controller_outputs["u_logged"]
-    l = config["data_generation"]["num_iterations"]
 
     df = pd.DataFrame({
-        "time": [k * config["controllers"]["dt"] for k in range(l)],
+        "time": [k * config["controllers"]["dt"] for k in range(states.shape[0])],
         **{f"x_{k}": states[:, k] for k in range(states.shape[1])},
         **{f"u_{k}": inputs[:, k] for k in range(inputs.shape[1])}
     })
@@ -30,7 +29,7 @@ def save_to_csv(config, controller: Controller, path):
         writer = csv.writer(outfile)
         writer.writerow([f"# Gym Log"])
         writer.writerow([f"# {config['data_generation']['controller_name']}"])
-        writer.writerow([f"# Saving: {config['data_generation']['controllers']['dt']} s"])
+        writer.writerow([f"# Saving: {config['controllers']['dt']} s"])
 
     df.to_csv(filename, mode="a", header=True)
 

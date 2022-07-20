@@ -77,9 +77,9 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
 
             time.sleep(0.001)
 
-            # If the epsiode is up, then start another one
+            # If the episode is up, then start a new experiment
             if done:
-                env.reset()
+                break
 
             logger.debug(
                 f"\nStep       : {step+1}/{config['data_generation']['num_iterations']}\nObservation: {obs}\nAction     : {action}\n"
