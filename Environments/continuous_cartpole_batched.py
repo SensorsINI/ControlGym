@@ -25,6 +25,45 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
         self.cost_functions = cost_functions(self)
+    
+    def step_tf(self, state: tf.Tensor, action: tf.Tensor):
+        state, action = self._expand_arrays(state, action)
+
+        if self._batch_size == 1:
+            action += self._generate_actuator_noise()
+
+        x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, 1)
+        force = self.lib.clip(
+            action[:, 0],
+            self.lib.to_tensor(self.action_space.low, self.lib.float32),
+            self.lib.to_tensor(self.action_space.high, self.lib.float32),
+        )
+        costheta = self.lib.cos(theta)
+        sintheta = self.lib.sin(theta)
+
+        temp = (
+            force + self.polemass_length * theta_dot**2 * sintheta
+        ) / self.total_mass
+        thetaacc = (self.gravity * sintheta - costheta * temp) / (
+            self.length * (4.0 / 3.0 - self.masspole * costheta**2 / self.total_mass)
+        )
+        xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
+
+        if self.kinematics_integrator == "euler":
+            x = x + self.tau * x_dot
+            x_dot = x_dot + self.tau * xacc
+            theta = theta + self.tau * theta_dot
+            theta_dot = theta_dot + self.tau * thetaacc
+        else:  # semi-implicit euler
+            x_dot = x_dot + self.tau * xacc
+            x = x + self.tau * x_dot
+            theta_dot = theta_dot + self.tau * thetaacc
+            theta = theta + self.tau * theta_dot
+
+        state = self.lib.stack([x, x_dot, theta, theta_dot], 1)
+        state = self.lib.squeeze(state)
+
+        return state
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
@@ -83,19 +122,6 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
         self.state = self.lib.squeeze(self.state)
 
-        if self.steps_beyond_done is None:
-            # Pole just fell!
-            self.steps_beyond_done = 0
-        else:
-            if self.steps_beyond_done == 0:
-                logger.warn(
-                    "You are calling 'step()' even though this "
-                    "environment has already returned done = True. You "
-                    "should always call 'reset()' once you receive 'done = "
-                    "True' -- any further steps are undefined behavior."
-                )
-            self.steps_beyond_done += 1
-
         if self._batch_size == 1:
             return self.lib.to_numpy(self.state), float(reward), bool(done), {}
 
@@ -147,6 +173,4 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         state, action = self._expand_arrays(state, action)
         x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, 1)
         reward = -(100*(theta**2) + theta_dot**2 + (x**2) + x_dot**2)
-        if self.steps_beyond_done is None:
-            reward += self.lib.cast(self.is_done(state), self.lib.float32)
         return reward

@@ -44,11 +44,9 @@ class next_state_predictor_ODE_tf:
             dt / float(self.intermediate_steps), dtype=tf.float32
         )
 
-    @Compile
     def step(self, s, Q, params):
         self.env.reset(s)
-        next_state = self.env.step(Q)[0]
-        self.env.lib.set_shape(next_state, self.env.lib.shape(self.env.state))
+        next_state = self.env.step_tf(s, Q)
         return next_state
 
 

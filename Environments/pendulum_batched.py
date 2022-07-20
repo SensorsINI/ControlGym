@@ -30,6 +30,42 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         _pi = self.lib.to_tensor(np.array(np.pi), self.lib.float32)
         return ((x + _pi) % (2 * _pi)) - _pi
 
+    def step_tf(self, state: tf.Tensor, action: tf.Tensor):
+        state, action = self._expand_arrays(state, action)
+
+        # Perturb action if not in planning mode
+        if self._batch_size == 1:
+            action += self._generate_actuator_noise()
+
+        th, thdot = self.lib.unstack(state, 2, 1)  # th := theta
+
+        g = self.g
+        m = self.m
+        l = self.l
+        dt = self.dt
+
+        action = self.lib.clip(
+            action,
+            self.lib.to_tensor(-self.max_torque, self.lib.float32),
+            self.lib.to_tensor(self.max_torque, self.lib.float32),
+        )[:, 0]
+
+        newthdot = (
+            thdot
+            + (3 * g / (2 * l) * self.lib.sin(th) + 3.0 / (m * l**2) * action) * dt
+        )
+        newthdot = self.lib.clip(
+            newthdot,
+            self.lib.to_tensor(-self.max_speed, self.lib.float32),
+            self.lib.to_tensor(self.max_speed, self.lib.float32),
+        )
+        newth = th + newthdot * dt
+
+        state = self.lib.stack([newth, newthdot], 1)
+        state = self.lib.squeeze(state)
+
+        return state
+
     def step(
         self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
     ) -> Tuple[

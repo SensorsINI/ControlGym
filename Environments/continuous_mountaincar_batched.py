@@ -28,7 +28,44 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
         self.cost_functions = cost_functions(self)
+        
+    def step_tf(self, state: tf.Tensor, action: tf.Tensor):
+        state, action = self._expand_arrays(state, action)
+        
+        if self._batch_size == 1:
+            action += self._generate_actuator_noise()
+        
+        position, velocity = self.lib.unstack(state, 2, 1)
+        force = self.lib.clip(
+            action[:, 0],
+            self.lib.to_tensor(self.min_action, self.lib.float32),
+            self.lib.to_tensor(self.max_action, self.lib.float32),
+        )
+        velocity_new = (
+            velocity + force * self.power - 0.0025 * self.lib.cos(3 * position)
+        )
+        velocity = self.lib.clip(
+            velocity_new,
+            self.lib.to_tensor(-self.max_speed, self.lib.float32),
+            self.lib.to_tensor(self.max_speed, self.lib.float32),
+        )
 
+        position_new = position + velocity
+        position = self.lib.clip(
+            position_new,
+            self.lib.to_tensor(self.min_position, self.lib.float32),
+            self.lib.to_tensor(self.max_position, self.lib.float32),
+        )
+        velocity_updated = velocity * self.lib.cast(
+            ~((position == self.min_position) & (velocity < 0)), self.lib.float32
+        )
+        velocity = velocity_updated
+        
+        state = self.lib.stack([position, velocity], 1)
+        state = self.lib.squeeze(state)
+
+        return state
+    
     def step(
         self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
     ) -> Tuple[
@@ -40,6 +77,7 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         self.state, action = self._expand_arrays(self.state, action)
 
         # Perturb action if not in planning mode
+        # TODO: Set explicitly whether in planning or simulation mode, not infer from batch size
         if self._batch_size == 1:
             action += self._generate_actuator_noise()
 

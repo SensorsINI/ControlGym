@@ -74,7 +74,7 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
         controller_module = importlib.import_module(f"ControllersGym.{controller_module_name}")
         controller = getattr(controller_module, controller_module_name)(
             **{
-                **{"environment": deepcopy(env), "controller_name": CONTROLLER_NAME},
+                **{"environment": deepcopy(env.unwrapped), "controller_name": CONTROLLER_NAME},
                 **config["controllers"][CONTROLLER_NAME],
                 **config["environments"][ENVIRONMENT_NAME],
             },
