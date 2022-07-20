@@ -1,7 +1,7 @@
 testing:
   tests: [ 'Euler', 'EulerTF','GRU-3IN-32H1-32H2-2OUT-0' ]  # May be 'Euler', Euler-predictor, name of network or None = 'Dense-16H1-16H2'
   TEST_FILE: 'Experiment-0.csv'
-  features: ['x_0', 'x_1']
+  features: ['x_0', 'x_1']  # Depends on the environment dimensionality
   control_inputs: ['u_0']   # Indicates which inputs to network are control_input, TODO: Not sure how it would work with multiple inputs
   PATH_TO_NN: 'Output/Experiments/Experiment-12/Models/'  # Path where the neural network models are stored
   PATH_TO_TEST_FILE: 'Output/Experiments/Experiment-12/Recordings/Test/'
