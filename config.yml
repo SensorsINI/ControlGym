@@ -27,7 +27,7 @@ predictors:
 controllers:
   controller_logging: True
   mpc_horizon: .5
-  dt: 0.02
+  dt: 0.02  # sec
 
   ControllerAdamResampler:
     cem_outer_it: 30
@@ -103,8 +103,6 @@ controllers:
   # Imported controllers from CartPoleSimulation
   controller_cem_tf:
     seed: "None"                          # If "None", random seed based on datetime is used
-    dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
     cem_outer_it: 5                    #how many outer iterations to use
     cem_rollouts: 80          #how many rollouts per outer cem iteration
     predictor_name: "predictor_autoregressive_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
@@ -117,8 +115,6 @@ controllers:
     cem_LR: 0.1
   controller_cem_naive_grad_tf:
     seed: "None"                          # If "None", random seed based on datetime is used
-    dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
     cem_outer_it: 5                    #how many outer iterations to use
     cem_rollouts: 80          #how many rollouts per outer cem iteration
     predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
@@ -137,8 +133,6 @@ controllers:
     adam_beta_2: 0.8                      #default: 0.999
     adam_epsilon: 1.0e-7                  #default: 1.0e-7
     gradmax_clip: 1000
-    dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
     num_rollouts: 400                     # Number of Monte Carlo samples
     predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
     predictor_intermediate_steps: 10
@@ -153,8 +147,6 @@ controllers:
     optim_steps: 10
   controller_dist_adam_resamp2:
     seed: "None"                          # If "None", random seed based on datetime is used
-    dt: 0.02
-    mpc_horizon: 1.0
     predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
     predictor_intermediate_steps: 10
     NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0'  # TODO: DOES NOT WORK YET!!! Applies only if predictor type is NeuralNet
@@ -173,8 +165,6 @@ controllers:
     gradmax_clip: 250                     #maximal gradient entry to be kept, is ||gradient||_inf <= gradmax_clip
   controller_mppi_var:
     seed: "None"                          # If "None", random seed based on datetime is used
-    dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
     num_rollouts: 400                     # Number of Monte Carlo samples
     SAMPLING_TYPE: "interpolated" #if interpolated: linear interpolation; else iid
     interpolation_step: 10                #interpolation stepsize when sampling
@@ -194,8 +184,6 @@ controllers:
     max_grad_norm: 100000                 # max norm of gradient such that ||gradient||_2
   controller_mppi:
     seed: "None"                          # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
-    dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
     num_rollouts: 3500                    # Number of Monte Carlo samples
     update_every: 1                       # Cost weighted update of inputs every ... steps
     predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf", "predictor_autoregressive_GP"]
@@ -221,8 +209,6 @@ controllers:
     clip_control_input: [1.0]             # How to clip control input, symmetric
   controller_mppi_tf:
     seed: "None"                          # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
-    dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
     num_rollouts: 3500                    # Number of Monte Carlo samples
     update_every: 1                       # Cost weighted update of inputs every ... steps
     predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf", "predictor_autoregressive_GP"]
@@ -252,7 +238,6 @@ controllers:
     # method: 'L-BFGS-B'
     method: 'SLSQP'
     ftol: 1.0e-8
-    mpc_horizon: 10
     # weights
     wr: 0.001  # rterm
     l1: 100.0  # angle_cost
@@ -266,11 +251,9 @@ controllers:
     m4: 0.0  # positionD_cost
   controller_do_mpc_discrete:
     dt_mpc_simulation: 0.02  # s
-    mpc_horizon: 50
   controller_do_mpc:
     seed: "None"                          # If "None", random seed based on datetime is used
     dt_mpc_simulation: 0.02  # s
-    mpc_horizon: 50
     # Perturbation factors:
     # Change of output from optimal
     p_Q: 0.00
@@ -284,7 +267,6 @@ controllers:
     l_positionD: 0.1
   controller_mpc_opti:
     dt_mpc_simulation: 0.2  # s
-    mpc_horizon: 10
   controller_nn_as_mpc_tf:
     net_name: 'Dense-6IN-32H1-32H2-1OUT-0'
     PATH_TO_MODELS: './Controllers/models_for_nn_as_mpc_tf/'
