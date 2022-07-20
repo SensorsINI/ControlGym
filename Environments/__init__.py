@@ -53,6 +53,7 @@ class ComputationLibrary:
     ] = None
     sum: Callable[[TensorType, int], TensorType] = None
     set_shape: Callable[[TensorType, "list[int]"], None] = None
+    concat: Callable[["list[TensorType]", int], TensorType]
 
 
 class NumpyLibrary(ComputationLibrary):
@@ -79,6 +80,7 @@ class NumpyLibrary(ComputationLibrary):
     ).astype(dtype)
     sum = lambda x, a: np.sum(x, axis=a, keepdims=False)
     set_shape = lambda x, shape: x
+    concat = lambda x, a: np.concatenate(x, axis=a)
 
 
 class TensorFlowLibrary(ComputationLibrary):
@@ -105,6 +107,7 @@ class TensorFlowLibrary(ComputationLibrary):
     )
     sum = lambda x, a: tf.reduce_sum(x, axis=a, keepdims=False)
     set_shape = lambda x, shape: x.set_shape(shape)
+    concat = lambda x, a: tf.concat(x, a)
 
 
 class PyTorchLibrary(ComputationLibrary):
@@ -135,6 +138,7 @@ class PyTorchLibrary(ComputationLibrary):
     )
     sum = lambda x, a: torch.sum(x, a, keepdim=False)
     set_shape = lambda x, shape: x
+    concat = lambda x, a: torch.concat(x, dim=a)
 
 
 class EnvironmentBatched:

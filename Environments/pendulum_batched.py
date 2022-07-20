@@ -16,7 +16,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
     def __init__(self, g=10, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs):
         super().__init__(render_mode=render_mode, g=g)
         self.config = kwargs
-        high = np.array([np.pi, self.max_speed], dtype=np.float32)
+        high = np.array([np.pi, self.max_speed, 1.0, 1.0], dtype=np.float32)
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
 
         self._batch_size = batch_size
@@ -27,7 +27,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         self.cost_functions = cost_functions(self)
 
     def _angle_normalize(self, x):
-        _pi = self.lib.to_tensor(np.array(np.pi), self.lib.float32)
+        _pi = self.lib.to_tensor(np.pi, self.lib.float32)
         return ((x + _pi) % (2 * _pi)) - _pi
 
     def step_tf(self, state: tf.Tensor, action: tf.Tensor):
@@ -37,7 +37,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         if self._batch_size == 1:
             action += self._generate_actuator_noise()
 
-        th, thdot = self.lib.unstack(state, 2, 1)  # th := theta
+        th, thdot, sinth, costh = self.lib.unstack(state, 4, 1)  # th := theta
 
         g = self.g
         m = self.m
@@ -61,7 +61,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         )
         newth = th + newthdot * dt
 
-        state = self.lib.stack([newth, newthdot], 1)
+        state = self.lib.stack([newth, newthdot, self.lib.sin(newth), self.lib.cos(newth)], 1)
         state = self.lib.squeeze(state)
 
         return state
@@ -80,7 +80,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         if self._batch_size == 1:
             action += self._generate_actuator_noise()
 
-        th, thdot = self.lib.unstack(self.state, 2, 1)  # th := theta
+        th, thdot, sinth, costh = self.lib.unstack(self.state, 4, 1)  # th := theta
 
         g = self.g
         m = self.m
@@ -105,7 +105,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         )
         newth = th + newthdot * dt
 
-        self.state = self.lib.stack([newth, newthdot], 1)
+        self.state = self.lib.stack([newth, newthdot, self.lib.sin(newth), self.lib.cos(newth)], 1)
 
         done = self.is_done(self.state)
         reward = self.get_reward(self.state, action)
@@ -134,7 +134,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
         if state is None:
             if self._batch_size == 1:
-                high = np.array([np.pi, 1])
+                high = np.array([[np.pi, 1]])
             else:
                 high = np.tile(np.array([np.pi, 1]), (self._batch_size, 1))
             self.state = self.lib.uniform(self.rng, high.shape, -high, high, self.lib.float32)
@@ -148,8 +148,10 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
             else:
                 self.state = state
 
+        # Augment state with sin/cos
+        self.state = self.lib.concat([self.state, self.lib.sin(self.lib.unsqueeze(self.state[..., 0], 1)), self.lib.cos(self.lib.unsqueeze(self.state[..., 0], 1))], 1)
+        
         self.last_u = None
-
         return self._get_reset_return_val()
 
     def is_done(self, state):
@@ -157,7 +159,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
     def get_reward(self, state, action):
         state, action = self._expand_arrays(state, action)
-        th, thdot = self.lib.unstack(state, 2, 1)
+        th, thdot, sinth, costh = self.lib.unstack(state, 4, 1)
         costs = (
             self._angle_normalize(th) ** 2 + 0.1 * thdot**2 + 0.001 * (action[:, 0]**2)
         )
