@@ -1,6 +1,6 @@
 data_generation:
   num_experiments: 1
-  controller_name: ControllerCem
+  controller_name: controller_cem_naive_grad_tf
   environment_name: CustomEnvironments/MountainCarContinuous
   num_iterations: 150
   render_for_humans: False
@@ -119,7 +119,7 @@ controllers:
     cem_rollouts: 80          #how many rollouts per outer cem iteration
     predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
     predictor_intermediate_steps: 10
-    CEM_NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0' # Applies only if predictor type is NeuralNet
+    CEM_NET_NAME: 'GRU-3IN-32H1-32H2-2OUT-0' # Applies only if predictor type is NeuralNet
     cem_stdev_min: 0.05
     cem_R: 1
     cem_ccrc_weight: 1

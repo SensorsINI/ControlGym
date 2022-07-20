@@ -9,8 +9,14 @@ from Utilities.utils import SeedMemory
 
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
-environment_module = ENV_REGISTRY[config['data_generation']['environment_name']].split(":")[0].split(".")[-1]
-Environment = getattr(import_module(f"Environments.{environment_module}"), environment_module)
+environment_module = (
+    ENV_REGISTRY[config["data_generation"]["environment_name"]]
+    .split(":")[0]
+    .split(".")[-1]
+)
+Environment = getattr(
+    import_module(f"Environments.{environment_module}"), environment_module
+)
 
 
 STATE_VARIABLES = np.array([f"x_{i}" for i in range(Environment.num_states)])
@@ -24,16 +30,19 @@ config = load(open("config.yml", "r"), Loader=FullLoader)
 register_envs()
 
 
-class next_state_predictor_ODE():
-
+class next_state_predictor_ODE:
     def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
-        
+
         self.s = None
         env_name = config["data_generation"]["environment_name"]
-        
-        env_config = {**config["environments"][env_name].copy(), **{"seed": SeedMemory.get_seeds()[0]}}
-        planning_env_config = {**env_config, **{"computation_lib": NumpyLibrary}}
-        self.env = gym.make(env_name, **env_config).unwrapped.__class__(
+
+        planning_env_config = {
+            **config["environments"][env_name].copy(),
+            **{"seed": SeedMemory.get_seeds()[0]},
+            **{"computation_lib": NumpyLibrary},
+        }
+        EnvClass, EnvName = ENV_REGISTRY[env_name].split(":")
+        self.env = getattr(import_module(EnvClass), EnvName)(
             batch_size=batch_size, **planning_env_config
         )
 
