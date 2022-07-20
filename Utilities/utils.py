@@ -16,11 +16,13 @@ class OutputPath:
 
     @classmethod
     def get_output_path(cls, timestamp: str, filename: str, suffix: str):
+        predictor_name = config["controllers"]["predictor"]
         if config["data_generation"]["controller_name"] == "ControllerCartPoleSimulationImport":
             config["data_generation"]["controller_name"] = config["controllers"]["ControllerCartPoleSimulationImport"]["controller"].replace("-", "_")
+            predictor_name = config["controllers"]["ControllerCartPoleSimulationImport"][config["controllers"]["ControllerCartPoleSimulationImport"]["controller"]]["predictor_name"]
         folder = os.path.join(
             "Output",
-            f"{timestamp}_{config['data_generation']['controller_name']}_{config['data_generation']['environment_name']}".replace(
+            f"{timestamp}_{config['data_generation']['controller_name']}_{config['data_generation']['environment_name']}_{predictor_name}".replace(
                 "/", "_"
             ),
         )
