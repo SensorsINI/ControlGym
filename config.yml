@@ -1,272 +1,263 @@
-data_generation:
-  num_experiments: 20
+1_data_generation:
   controller_name: controller_cem_naive_grad_tf
+  controller_names: controller_cem_naive_grad_tf
+  debug: false
   environment_name: CustomEnvironments/CartPoleContinuous
-  num_iterations: 150
-  render_for_humans: False
-  save_plots_to_file: False
-  debug: False  # Debugging mode turns off compilation/graph mode
+  environment_names: CustomEnvironments/CartPoleContinuous
   logging_level: DEBUG
+  num_experiments: 3
+  num_iterations: 150
+  render_for_humans: false
+  save_plots_to_file: false
   seed_entropy: 1234
-  split: [0.6, 0.2]  # Train / Val for ML pipeline mode
-
-environments:
+  split:
+  - 0.6
+  - 0.2
+2_environments:
   CustomEnvironments/CartPoleContinuous:
-    actuator_noise: [0.0] # stdev, can be set to 0.0
-
+    actuator_noise:
+    - 0.0
   CustomEnvironments/MountainCarContinuous:
-    actuator_noise: [0.0] # stdev
-
+    actuator_noise:
+    - 0.0
   CustomEnvironments/Pendulum:
-    actuator_noise: [0.5] # stdev
-
-predictors:
+    actuator_noise:
+    - 0.5
+3_predictors:
   PredictorGaussianError:
     prediction_error_stdev: 0.1
-
-controllers:
-  controller_logging: True
-  mpc_horizon: .5
-  dt: 0.02  # sec
-
+4_controllers:
   ControllerAdamResampler:
+    cem_LR: 0.1
+    cem_R: 1
+    cem_best_k: 5
+    cem_ccrc_weight: 1
+    cem_initial_action_variance: 0.5
     cem_outer_it: 30
     cem_rollouts: 30
     cem_stdev_min: 0.1
-    cem_R: 1
-    cem_ccrc_weight: 1
-    cem_best_k: 5
-    cem_LR: 0.1
-    grad_max: 1
+    do_warmup: true
     grad_alpha: 0.05
     grad_beta_1: 0.9
     grad_beta_2: 0.999
-    grad_epsilon: 1.0e-7
-    cem_initial_action_variance: 0.5
-    resamp_every: 1
-    do_warmup: True
+    grad_epsilon: 1.0e-07
+    grad_max: 1
     predictor_name: PredictorEuler
-  
+    resamp_every: 1
+  ControllerCem:
+    cem_LR: 0.1
+    cem_R: 1
+    cem_best_k: 5
+    cem_ccrc_weight: 1
+    cem_initial_action_variance: 0.5
+    cem_outer_it: 5
+    cem_rollouts: 200
+    cem_stdev_min: 0.1
+    predictor_name: PredictorEuler
+  ControllerCemGradient:
+    cem_LR: 0.1
+    cem_R: 1
+    cem_best_k: 5
+    cem_ccrc_weight: 1
+    cem_initial_action_variance: 0.5
+    cem_outer_it: 5
+    cem_rollouts: 200
+    cem_stdev_min: 0.1
+    grad_alpha: 0.05
+    grad_max: 1
+    predictor_name: PredictorEuler
+  ControllerCemGradientBharadhwaj:
+    cem_best_k: 5
+    cem_outer_it: 20
+    cem_rollouts: 30
+    grad_epsilon: 1.0e-06
+    grad_learning_rate: 0.1
+    grad_max: 1
+    grad_sgd_momentum: 0.0
+    predictor_name: PredictorEuler
   ControllerMPPIGradient:
+    cem_LR: 0.1
+    cem_R: 1
+    cem_best_k: 5
+    cem_ccrc_weight: 1
+    cem_initial_action_variance: 0.5
     cem_outer_it: 10
     cem_rollouts: 10
     cem_stdev_min: 0.05
-    cem_R: 1
-    cem_ccrc_weight: 1
-    cem_best_k: 5
-    cem_LR: 0.1
-    grad_max: 5
+    do_warmup: true
     grad_alpha: 0.05
     grad_beta_1: 0.9
     grad_beta_2: 0.999
-    grad_epsilon: 1.0e-7
-    cem_initial_action_variance: 0.5
-    resamp_every: 1
-    do_warmup: True
+    grad_epsilon: 1.0e-07
+    grad_max: 5
     mppi_lambda: 0.1
     predictor_name: PredictorEuler
-
-  ControllerCem:
-    cem_outer_it: 5
-    cem_rollouts: 200
-    cem_stdev_min: 0.1
-    cem_R: 1
-    cem_ccrc_weight: 1
-    cem_best_k: 5
-    cem_LR: 0.1
-    cem_initial_action_variance: 0.5
-    predictor_name: PredictorEuler
-
-  ControllerCemGradient:
-    cem_outer_it: 5
-    cem_rollouts: 200
-    cem_stdev_min: 0.1
-    cem_R: 1
-    cem_ccrc_weight: 1
-    cem_best_k: 5
-    cem_LR: 0.1
-    grad_max: 1
-    grad_alpha: 0.05
-    cem_initial_action_variance: 0.5
-    predictor_name: PredictorEuler
-  
-  ControllerCemGradientBharadhwaj:
-    cem_rollouts: 30
-    cem_outer_it: 20
-    cem_best_k: 5
-    grad_max: 1
-    grad_learning_rate: 0.1
-    grad_sgd_momentum: 0.0
-    grad_epsilon: 1.0e-6
-    predictor_name: PredictorEuler
-
-  # Imported controllers from CartPoleSimulation
-  controller_cem_tf:
-    seed: "None"                          # If "None", random seed based on datetime is used
-    cem_outer_it: 5                    #how many outer iterations to use
-    cem_rollouts: 80          #how many rollouts per outer cem iteration
-    predictor_name: "predictor_autoregressive_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
-    predictor_intermediate_steps: 10
-    CEM_NET_NAME: 'GRU-3IN-32H1-32H2-2OUT-0' # Applies only if predictor type is NeuralNet
-    cem_stdev_min: 0.05
-    cem_R: 1
-    cem_ccrc_weight: 1
-    cem_best_k: 4
-    cem_LR: 0.1
+    resamp_every: 1
   controller_cem_naive_grad_tf:
-    seed: "None"                          # If "None", random seed based on datetime is used
-    cem_outer_it: 5                    #how many outer iterations to use
-    cem_rollouts: 80          #how many rollouts per outer cem iteration
-    predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
-    predictor_intermediate_steps: 10
-    CEM_NET_NAME: 'GRU-3IN-32H1-32H2-2OUT-0' # Applies only if predictor type is NeuralNet
-    cem_stdev_min: 0.05
-    cem_R: 1
-    cem_ccrc_weight: 1
-    cem_best_k: 4
+    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     cem_LR: 0.001
+    cem_R: 1
+    cem_best_k: 4
+    cem_ccrc_weight: 1
+    cem_outer_it: 5
+    cem_rollouts: 80
+    cem_stdev_min: 0.05
     gradmax_clip: 10
-  controller_mppi_optimize:
-    seed: "None"                          # If "None", random seed based on datetime is used
-    mppi_LR: 0.02
-    adam_beta_1: 0.4                      #default: 0.9
-    adam_beta_2: 0.8                      #default: 0.999
-    adam_epsilon: 1.0e-7                  #default: 1.0e-7
-    gradmax_clip: 1000
-    num_rollouts: 400                     # Number of Monte Carlo samples
-    predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
     predictor_intermediate_steps: 10
-    NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0'  # Applies only if predictor type is NeuralNet
-    cc_weight: 1.0
-    R: 1.0                                # How much to punish Q
-    LBD: 100.0                            # Cost parameter lambda
-    NU: 1000.0                            # Exploration variance
-    SQRTRHOINV: 0.02
-    GAMMA: 1.00                           # Future cost discount
-    SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
-    optim_steps: 10
-  controller_dist_adam_resamp2:
-    seed: "None"                          # If "None", random seed based on datetime is used
-    predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
+    predictor_name: predictor_ODE_tf
+    seed: None
+  controller_cem_tf:
+    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
+    cem_LR: 0.1
+    cem_R: 1
+    cem_best_k: 4
+    cem_ccrc_weight: 1
+    cem_outer_it: 5
+    cem_rollouts: 80
+    cem_stdev_min: 0.05
     predictor_intermediate_steps: 10
-    NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0'  # TODO: DOES NOT WORK YET!!! Applies only if predictor type is NeuralNet
-    resamp_per: 1                         #determines after how many steps the control plans are resamples
-    sample_stdev: 0.5                     #sampling variance of control action
-    cem_LR: 0.002                         #learning rate parameter for adam
-    adam_beta_1: 0.4    #default: 0.9      adam hyperparameter
-    adam_beta_2: 0.8 #default: 0.999       adam hyperparameter
-    adam_epsilon: 1.0e-7 #default: 1.0e-7    adam hyperparameter. consult https://ruder.io/optimizing-gradient-descent/ for information
-    opt_keep_k: 5                          #how many plans should be kept for warmstarting when resampling, has to be smaller or equal num_rollouts, set equal num_rollouts for degenerate case without any resampling
-    num_rollouts: 20                      # number of parallel optimizations
-    SAMPLING_TYPE: "interpolated" #if interpolated: linear interpolation; else iid
-    warmup: True                          #whether or not we warmstart the controller. If true, first iteration will do mpc_horizon/dt*outer_its optimizations
-    interpolation_step: 10                #interpolation stepsize when sampling
-    outer_its: 20                         #number of optimization iterations
-    gradmax_clip: 250                     #maximal gradient entry to be kept, is ||gradient||_inf <= gradmax_clip
-  controller_mppi_var:
-    seed: "None"                          # If "None", random seed based on datetime is used
-    num_rollouts: 400                     # Number of Monte Carlo samples
-    SAMPLING_TYPE: "interpolated" #if interpolated: linear interpolation; else iid
-    interpolation_step: 10                #interpolation stepsize when sampling
-    cc_weight: 1.0
-    predictor_name: "predictor_ODE_tf"             # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
-    predictor_intermediate_steps: 10
-    NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0'  # TODO: DOES NOT WORK YET!!! Applies only if predictor type is NeuralNet
-    R: 1.0                                # How much to punish Q
-    # mc stands for mathematical correct, as this controller uses the formula from the paper
-    LBD_mc: 10.0                          # Cost parameter lambda
-    SQRTRHOINV_mc: 0.002                  # Sampling variance
-    NU_mc: 20.0                           # Exploration variance
-    GAMMA: 1.00                           # Future cost discount
-    LR: 1.0e-2                            # Learning rate for adaption of variance, !!! Set to 0 to retrieve a mppi version in accordance with mppi paper
-    STDEV_min: 0.1                        # Minimal variance for sampling
-    STDEV_max: 10                         # Minimal sampling variance for sampling
-    max_grad_norm: 100000                 # max norm of gradient such that ||gradient||_2
-  controller_mppi:
-    seed: "None"                          # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
-    num_rollouts: 3500                    # Number of Monte Carlo samples
-    update_every: 1                       # Cost weighted update of inputs every ... steps
-    predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf", "predictor_autoregressive_GP"]
-    predictor_intermediate_steps: 10
-    NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0'  # Applies only if predictor type is NeuralNet
-    GP_NAME: 'SGP_30'                     # Applies only if predictor type is GP
-    dd_weight: 120.0
-    ep_weight: 50000.0
-    ekp_weight: 0.01
-    ekc_weight: 5.0
-    cc_weight: 1.0
-    ccrc_weight: 1.0
-    cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
-    control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
-    R: 1.0                                # How much to punish Q
-    LBD: 100.0                            # Cost parameter lambda
-    NU: 1000.0                            # Exploration variance
-    SQRTRHOINV: 0.02                      # Sampling variance
-    GAMMA: 1.00                           # Future cost discount
-    SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
-    LOGGING: False                        # Collect and show detailed insights into the controller's behavior
-    WASH_OUT_LEN: 100                     # Only matters if RNN used as predictor; For how long MPPI should be desactivated (replaced either with LQR or random input) to give memory units time to settle
-    clip_control_input: [1.0]             # How to clip control input, symmetric
-  controller_mppi_tf:
-    seed: "None"                          # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
-    num_rollouts: 3500                    # Number of Monte Carlo samples
-    update_every: 1                       # Cost weighted update of inputs every ... steps
-    predictor_name: "predictor_ODE_tf"    # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf", "predictor_autoregressive_GP"]
-    predictor_intermediate_steps: 10
-    NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0'  # Applies only if predictor type is NeuralNet
-    GP_NAME: 'SGP_30'                     # Applies only if predictor type is GP
-    dd_weight: 120.0
-    ep_weight: 50000.0
-    ekp_weight: 0.01
-    ekc_weight: 5.0
-    cc_weight: 1.0
-    ccrc_weight: 1.0
-    cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
-    control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
-    R: 1.0                                # How much to punish Q
-    LBD: 100.0                            # Cost parameter lambda
-    NU: 1000.0                            # Exploration variance
-    SQRTRHOINV: 0.02                      # Sampling variance
-    GAMMA: 1.00                           # Future cost discount
-    SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
-    LOGGING: False                        # Collect and show detailed insights into the controller's behavior
-    WASH_OUT_LEN: 100                     # Only matters if RNN used as predictor; For how long MPPI should be desactivated (replaced either with LQR or random input) to give memory units time to settle
-    clip_control_input: [1.0]             # How to clip control input, symmetric
+    predictor_name: predictor_autoregressive_tf
+    seed: None
   controller_custom_mpc_scipy:
-    seed: "None"                          # If "None", random seed based on datetime is used
     DT: 0.1
-    # method: 'L-BFGS-B'
-    method: 'SLSQP'
-    ftol: 1.0e-8
-    # weights
-    wr: 0.001  # rterm
-    l1: 100.0  # angle_cost
-    l1_2: 0.0  # angle_sin_cost
-    l2: 0.0  # angleD_cost
-    l3: 0.0  # position_cost
-    l4: 0.01  # positionD_cost
-    m1: 0.0  # angle_sin_cost
-    m2: 0.0  # angleD_cost
-    m3: 0.0  # position_cost
-    m4: 0.0  # positionD_cost
-  controller_do_mpc_discrete:
-    dt_mpc_simulation: 0.02  # s
+    ftol: 1.0e-08
+    l1: 100.0
+    l1_2: 0.0
+    l2: 0.0
+    l3: 0.0
+    l4: 0.01
+    m1: 0.0
+    m2: 0.0
+    m3: 0.0
+    m4: 0.0
+    method: SLSQP
+    seed: None
+    wr: 0.001
+  controller_dist_adam_resamp2:
+    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
+    SAMPLING_TYPE: interpolated
+    adam_beta_1: 0.4
+    adam_beta_2: 0.8
+    adam_epsilon: 1.0e-07
+    cem_LR: 0.002
+    gradmax_clip: 250
+    interpolation_step: 10
+    num_rollouts: 20
+    opt_keep_k: 5
+    outer_its: 20
+    predictor_intermediate_steps: 10
+    predictor_name: predictor_ODE_tf
+    resamp_per: 1
+    sample_stdev: 0.5
+    seed: None
+    warmup: true
   controller_do_mpc:
-    seed: "None"                          # If "None", random seed based on datetime is used
-    dt_mpc_simulation: 0.02  # s
-    # Perturbation factors:
-    # Change of output from optimal
-    p_Q: 0.00
-    # Random change of cost function by factor
-    p_position: 0.0
-    p_positionD: 0.0
-    p_angle: 0.0
-    # Cost factor
+    dt_mpc_simulation: 0.02
     l_angle: 0.1
     l_position: 1.0
     l_positionD: 0.1
+    p_Q: 0.0
+    p_angle: 0.0
+    p_position: 0.0
+    p_positionD: 0.0
+    seed: None
+  controller_do_mpc_discrete:
+    dt_mpc_simulation: 0.02
+  controller_logging: true
   controller_mpc_opti:
-    dt_mpc_simulation: 0.2  # s
+    dt_mpc_simulation: 0.2
+  controller_mppi:
+    GAMMA: 1.0
+    GP_NAME: SGP_30
+    LBD: 100.0
+    LOGGING: false
+    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
+    NU: 1000.0
+    R: 1.0
+    SAMPLING_TYPE: interpolated
+    SQRTRHOINV: 0.02
+    WASH_OUT_LEN: 100
+    cc_weight: 1.0
+    ccrc_weight: 1.0
+    clip_control_input:
+    - 1.0
+    control_noise: 0.0
+    cost_noise: 0.0
+    dd_weight: 120.0
+    ekc_weight: 5.0
+    ekp_weight: 0.01
+    ep_weight: 50000.0
+    num_rollouts: 3500
+    predictor_intermediate_steps: 10
+    predictor_name: predictor_ODE_tf
+    seed: None
+    update_every: 1
+  controller_mppi_optimize:
+    GAMMA: 1.0
+    LBD: 100.0
+    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
+    NU: 1000.0
+    R: 1.0
+    SAMPLING_TYPE: interpolated
+    SQRTRHOINV: 0.02
+    adam_beta_1: 0.4
+    adam_beta_2: 0.8
+    adam_epsilon: 1.0e-07
+    cc_weight: 1.0
+    gradmax_clip: 1000
+    mppi_LR: 0.02
+    num_rollouts: 400
+    optim_steps: 10
+    predictor_intermediate_steps: 10
+    predictor_name: predictor_ODE_tf
+    seed: None
+  controller_mppi_tf:
+    GAMMA: 1.0
+    GP_NAME: SGP_30
+    LBD: 100.0
+    LOGGING: false
+    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
+    NU: 1000.0
+    R: 1.0
+    SAMPLING_TYPE: interpolated
+    SQRTRHOINV: 0.02
+    WASH_OUT_LEN: 100
+    cc_weight: 1.0
+    ccrc_weight: 1.0
+    clip_control_input:
+    - 1.0
+    control_noise: 0.0
+    cost_noise: 0.0
+    dd_weight: 120.0
+    ekc_weight: 5.0
+    ekp_weight: 0.01
+    ep_weight: 50000.0
+    num_rollouts: 3500
+    predictor_intermediate_steps: 10
+    predictor_name: predictor_ODE_tf
+    seed: None
+    update_every: 1
+  controller_mppi_var:
+    GAMMA: 1.0
+    LBD_mc: 10.0
+    LR: 0.01
+    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
+    NU_mc: 20.0
+    R: 1.0
+    SAMPLING_TYPE: interpolated
+    SQRTRHOINV_mc: 0.002
+    STDEV_max: 10
+    STDEV_min: 0.1
+    cc_weight: 1.0
+    interpolation_step: 10
+    max_grad_norm: 100000
+    num_rollouts: 400
+    predictor_intermediate_steps: 10
+    predictor_name: predictor_ODE_tf
+    seed: None
   controller_nn_as_mpc_tf:
-    net_name: 'Dense-6IN-32H1-32H2-1OUT-0'
-    PATH_TO_MODELS: './Controllers/models_for_nn_as_mpc_tf/'
+    PATH_TO_MODELS: ./Controllers/models_for_nn_as_mpc_tf/
+    net_name: Dense-6IN-32H1-32H2-1OUT-0
+  dt: 0.02
+  global_logging: true
+  mpc_horizon: 0.5

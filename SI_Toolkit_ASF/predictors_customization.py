@@ -10,7 +10,7 @@ from Utilities.utils import SeedMemory
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 environment_module = (
-    ENV_REGISTRY[config["data_generation"]["environment_name"]]
+    ENV_REGISTRY[config["1_data_generation"]["environment_name"]]
     .split(":")[0]
     .split(".")[-1]
 )
@@ -19,7 +19,7 @@ Environment = getattr(
 )
 
 
-STATE_VARIABLES = np.array([f"x_{i}" for i in range(Environment.num_states)])
+STATE_VARIABLES = np.array([f"x_{i}" for i in range(1, Environment.num_states)])
 STATE_INDICES = {x: np.where(STATE_VARIABLES == x)[0][0] for x in STATE_VARIABLES}
 CONTROL_INPUTS = np.array([f"u_{i}" for i in range(Environment.num_actions)])
 CONTROL_INDICES = {x: np.where(CONTROL_INPUTS == x)[0][0] for x in CONTROL_INPUTS}
@@ -34,10 +34,10 @@ class next_state_predictor_ODE:
     def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
 
         self.s = None
-        env_name = config["data_generation"]["environment_name"]
+        env_name = config["1_data_generation"]["environment_name"]
 
         planning_env_config = {
-            **config["environments"][env_name].copy(),
+            **config["2_environments"][env_name].copy(),
             **{"seed": SeedMemory.get_seeds()[0]},
             **{"computation_lib": NumpyLibrary},
         }

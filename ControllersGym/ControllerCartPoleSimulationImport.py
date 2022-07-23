@@ -6,22 +6,14 @@ from Environments import EnvironmentBatched, NumpyLibrary, PyTorchLibrary, Tenso
 from ControllersGym import Controller
 from Utilities.utils import SeedMemory
 
-from yaml import load, FullLoader
-
-config = load(open("config.yml", "r"), FullLoader)
-
-
 class ControllerCartPoleSimulationImport(Controller):
     def __init__(self, environment: EnvironmentBatched, **controller_config) -> None:
         super().__init__(environment, **controller_config)
         controller_name = controller_config["controller_name"]
         
-        env_name = config["data_generation"]["environment_name"]
-        planning_env_config = {
-            **config["environments"][env_name].copy(),
-            **{"seed": SeedMemory.get_seeds()[0]},
-            **{"computation_lib": TensorFlowLibrary},
-        }
+        planning_env_config = environment.unwrapped.config.copy()
+        planning_env_config.update({"computation_lib": TensorFlowLibrary})
+        
         batch_size = controller_config.get("num_rollouts", controller_config.get("cem_rollouts", 1))
         env_mock = environment.__class__(batch_size=batch_size, **planning_env_config)
         env_mock.set_computation_library(TensorFlowLibrary if controller_name[-2:] == "tf" else NumpyLibrary)

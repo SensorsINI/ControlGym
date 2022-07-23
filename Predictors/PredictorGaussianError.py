@@ -21,7 +21,7 @@ class PredictorGaussianError(Predictor):
 
     def __init__(self, environment: EnvironmentBatched, seed: int) -> None:
         super().__init__(environment, seed)
-        self.stdev = config["predictors"][self.__class__.__name__][
+        self.stdev = config["3_predictors"][self.__class__.__name__][
             "prediction_error_stdev"
         ]
 

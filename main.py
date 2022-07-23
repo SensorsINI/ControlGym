@@ -1,4 +1,5 @@
 import importlib
+from itertools import product
 import os
 import sys
 import time
@@ -9,10 +10,11 @@ import gym
 import pygame
 from numpy.random import SeedSequence
 from yaml import FullLoader, dump, load
+from ControllersGym import Controller
 
 from Environments import register_envs
 from Utilities.csv_helpers import save_to_csv
-from Utilities.generate_plots import generate_plots
+from Utilities.generate_plots import generate_experiment_plots
 from Utilities.utils import OutputPath, SeedMemory, get_logger, get_name_of_controller_module
 
 
@@ -24,20 +26,22 @@ if not pygame.display.get_init():
     os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
-CONTROLLER_NAME, ENVIRONMENT_NAME, NUM_EXPERIMENTS = (
-    config["data_generation"]["controller_name"],
-    config["data_generation"]["environment_name"],
-    config["data_generation"]["num_experiments"],
+CONTROLLER_NAMES, ENVIRONMENT_NAMES, NUM_EXPERIMENTS = (
+    config["1_data_generation"]["controller_names"],
+    config["1_data_generation"]["environment_names"],
+    config["1_data_generation"]["num_experiments"],
 )
 logger = get_logger(__name__)
 
 register_envs()
 
+CONTROLLER_NAMES = [CONTROLLER_NAMES] if isinstance(CONTROLLER_NAMES, str) else CONTROLLER_NAMES
+ENVIRONMENT_NAMES = [ENVIRONMENT_NAMES] if isinstance(ENVIRONMENT_NAMES, str) else ENVIRONMENT_NAMES
 
-def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
+def run_data_generator(controller_name: str, environment_name: str, run_for_ML_Pipeline=False, record_path=None):
     # Generate seeds and set timestamp
     timestamp = datetime.now()
-    seed_entropy = config["data_generation"]["seed_entropy"]
+    seed_entropy = config["1_data_generation"]["seed_entropy"]
     if seed_entropy is None:
         seed_entropy = int(timestamp.timestamp())
         logger.info("No seed entropy specified. Setting to posix timestamp.")
@@ -47,44 +51,47 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
 
     if run_for_ML_Pipeline:
         # Get training/validation split
-        frac_train, frac_val = config["data_generation"]["split"]
+        frac_train, frac_val = config["1_data_generation"]["split"]
         assert record_path is not None, "If ML mode is on, need to provide record_path."
+        
+    if config["4_controllers"]["global_logging"]:
+        global_log = {}
 
     # Loop through independent experiments
     for i in range(NUM_EXPERIMENTS):
         # Generate new seeds for environment and controller
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.set_seeds(seeds)
-        config["environments"][ENVIRONMENT_NAME].update({"seed": int(seeds[0])})
-        config["controllers"][CONTROLLER_NAME].update({"seed": int(seeds[2])})
+        config["2_environments"][environment_name].update({"seed": int(seeds[0])})
+        config["4_controllers"][controller_name].update({"seed": int(seeds[2])})
         
         # Flatten global controller config values
-        config["controllers"][CONTROLLER_NAME].update({
-            k: config["controllers"][k]
+        config["4_controllers"][controller_name].update({
+            k: config["4_controllers"][k]
             for k in ["controller_logging", "mpc_horizon", "dt"]
         })
         
         # Create environment and call reset
-        render_mode = "human" if config["data_generation"]["render_for_humans"] else "single_rgb_array"
-        env = gym.make(ENVIRONMENT_NAME, **config["environments"][ENVIRONMENT_NAME], render_mode=render_mode)
+        render_mode = "human" if config["1_data_generation"]["render_for_humans"] else "single_rgb_array"
+        env = gym.make(environment_name, **config["2_environments"][environment_name], render_mode=render_mode)
         obs = env.reset(seed=int(seeds[1]))
         
         # Instantiate controller
-        controller_module_name = get_name_of_controller_module(CONTROLLER_NAME)
+        controller_module_name = get_name_of_controller_module(controller_name)
         controller_module = importlib.import_module(f"ControllersGym.{controller_module_name}")
-        controller = getattr(controller_module, controller_module_name)(
+        controller: Controller = getattr(controller_module, controller_module_name)(
             **{
-                **{"environment": deepcopy(env.unwrapped), "controller_name": CONTROLLER_NAME},
-                **config["controllers"][CONTROLLER_NAME],
-                **config["environments"][ENVIRONMENT_NAME],
+                **{"environment": deepcopy(env.unwrapped), "controller_name": controller_name},
+                **config["4_controllers"][controller_name],
+                **config["2_environments"][environment_name],
             },
         )
 
         frames = []
-        for step in range(config["data_generation"]["num_iterations"]):
+        for step in range(config["1_data_generation"]["num_iterations"]):
             action = controller.step(obs)
             new_obs, reward, done, info = env.step(action)
-            if config["controllers"]["controller_logging"]:
+            if config["4_controllers"]["controller_logging"]:
                 frames.append(env.render())
 
             time.sleep(0.001)
@@ -94,7 +101,7 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
                 break
 
             logger.debug(
-                f"\nStep       : {step+1}/{config['data_generation']['num_iterations']}\nObservation: {obs}\nAction     : {action}\n"
+                f"\nStep       : {step+1}/{config['1_data_generation']['num_iterations']}\nObservation: {obs}\nAction     : {action}\n"
             )
             obs = new_obs
 
@@ -104,6 +111,8 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
         # Generate plots
         if NUM_EXPERIMENTS > 1:
             OutputPath.RUN_NUM = i + 1
+            
+        controller_output = controller.get_outputs()
 
         if run_for_ML_Pipeline:
             # Save data as csv
@@ -115,11 +124,11 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
                 csv = os.path.join(record_path, "Test")
             os.makedirs(csv, exist_ok=True)
             save_to_csv(config, controller, csv)
-        elif config["controllers"]["controller_logging"]:
+        elif config["4_controllers"]["controller_logging"]:
             # Generate and save plots in default location
-            generate_plots(
+            generate_experiment_plots(
                 config=config,
-                controller=controller,
+                controller_output=controller_output,
                 timestamp=timestamp_str,
                 frames=frames if len(frames) > 0 else None,
             )
@@ -127,7 +136,17 @@ def run_data_generator(run_for_ML_Pipeline=False, record_path=None):
                 OutputPath.get_output_path(timestamp_str, "config", ".yml"), "w"
             ) as f:
                 dump(config, f)
+                
+        if config["4_controllers"]["global_logging"]:
+            global_log.update({i: controller_output})
 
 
 if __name__ == "__main__":
-    run_data_generator()
+    for controller_name, environment_name in product(CONTROLLER_NAMES, ENVIRONMENT_NAMES):
+        config["1_data_generation"]["controller_name"] = controller_name
+        config["1_data_generation"]["environment_name"] = environment_name
+        
+        with open("config.yml", "w") as f:
+            dump(config, f, default_flow_style=False)
+        
+        run_data_generator(controller_name, environment_name)

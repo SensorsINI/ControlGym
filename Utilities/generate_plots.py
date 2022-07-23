@@ -10,13 +10,12 @@ from Visualizations.plot_summary import SummaryPlotter
 logger = get_logger(__name__)
 
 
-def generate_plots(
+def generate_experiment_plots(
     config: dict,
-    controller: Controller,
+    controller_output: dict[str, np.ndarray],
     timestamp: str,
     frames: "list[np.ndarray]" = None,
 ):
-    controller_output = controller.get_outputs()
     for n, a in controller_output.items():
         with open(
             OutputPath.get_output_path(timestamp, str(n), ".npy"),
@@ -29,14 +28,15 @@ def generate_plots(
     horizon_cost_plotter.plot(
         controller_output["s_logged"],
         controller_output["u_logged"],
-        save_to_image=config["data_generation"]["save_plots_to_file"],
+        save_to_image=config["1_data_generation"]["save_plots_to_file"],
     )
     logger.info("...done.")
 
     logger.info("Creating horizon cost plot...")
     horizon_cost_plotter = HorizonCostPlotter(timestamp=timestamp, config=config)
     horizon_cost_plotter.plot(
-        controller_output["J_logged"], save_to_image=config["data_generation"]["save_plots_to_file"]
+        controller_output["J_logged"],
+        save_to_image=config["1_data_generation"]["save_plots_to_file"],
     )
     logger.info("...done.")
 
@@ -46,6 +46,6 @@ def generate_plots(
         controller_output["Q_logged"],
         controller_output["J_logged"],
         frames,
-        save_to_video=config["data_generation"]["save_plots_to_file"],
+        save_to_video=config["1_data_generation"]["save_plots_to_file"],
     )
     logger.info("...done.")

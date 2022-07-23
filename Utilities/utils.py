@@ -41,7 +41,7 @@ class CustomFormatter(logging.Formatter):
 
 def get_logger(name):
     logger = logging.getLogger(name)
-    logger.setLevel(getattr(import_module("logging"), config["data_generation"]["logging_level"]))
+    logger.setLevel(getattr(import_module("logging"), config["1_data_generation"]["logging_level"]))
     # create console handler
     ch = logging.StreamHandler()
     ch.setFormatter(CustomFormatter())
@@ -76,9 +76,9 @@ class OutputPath:
 
     @classmethod
     def get_output_path(cls, timestamp: str, filename: str, suffix: str):
-        controller_name = config["data_generation"]["controller_name"]
-        env_name = config["data_generation"]["environment_name"]
-        predictor_name = config["controllers"][controller_name]["predictor_name"]
+        controller_name = config["1_data_generation"]["controller_name"]
+        env_name = config["1_data_generation"]["environment_name"]
+        predictor_name = config["4_controllers"][controller_name]["predictor_name"]
         folder = os.path.join(
             "Output",
             f"{timestamp}_{controller_name}_{env_name}_{predictor_name}".replace(
@@ -114,7 +114,7 @@ class SeedMemory:
 ### Below is copied from CartPole repo
 
 
-if config["data_generation"]["debug"]:
+if config["1_data_generation"]["debug"]:
     CompileTF = lambda func: func
     CompileTorch = lambda func: func
 else:

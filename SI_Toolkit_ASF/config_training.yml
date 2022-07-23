@@ -1,16 +1,16 @@
 modeling:
-  NET_NAME: 'GRU-32H1-32H2'
+  NET_NAME: 'GRU-16H1-16H2'
 paths:
   # PATH HAS TO END WITH A SOLIDUS ("/") CHARACTER
-  path_to_experiment: 'Experiment-12/'
+  path_to_experiment: 'Experiment-1/'
   PATH_TO_EXPERIMENT_FOLDERS: './Output/Experiments/'  # Path where the experiments data is stored
 
 training_default:
   # For training closed loop dynamics model:
   control_inputs: ['u_0']
-  state_inputs: ['x_0', 'x_1']  # Depends on the environment dimensionality
+  state_inputs: ['x_1', 'x_2', 'x_3']  # Depends on the environment dimensionality
   setpoint_inputs: []  # Can be only 'target' or empty for CartPole
-  outputs: ['x_0', 'x_1']  # Depends on the environment dimensionality
+  outputs: ['x_1', 'x_2', 'x_3']  # Depends on the environment dimensionality
   translation_invariant_variables: []
   # For training open loop dynamics model:
   # inputs = ['position', 'positionD', 'angle_sin', 'angle_cos', 'angleD']
