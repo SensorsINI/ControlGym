@@ -16,7 +16,7 @@ class ControllerCartPoleSimulationImport(Controller):
         
         batch_size = controller_config.get("num_rollouts", controller_config.get("cem_rollouts", 1))
         env_mock = environment.__class__(batch_size=batch_size, **planning_env_config)
-        env_mock.set_computation_library(TensorFlowLibrary if controller_name[-2:] == "tf" else NumpyLibrary)
+        env_mock.set_computation_library(TensorFlowLibrary)
 
         self._controller = getattr(
             import_module(
