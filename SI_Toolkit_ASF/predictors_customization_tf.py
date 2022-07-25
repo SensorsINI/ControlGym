@@ -2,7 +2,7 @@ from importlib import import_module
 import tensorflow as tf
 import gym
 
-from Utilities.utils import SeedMemory
+from Utilities.utils import CurrentRunMemory, SeedMemory
 from yaml import load, FullLoader
 
 from SI_Toolkit.TF.TF_Functions.Compile import Compile
@@ -26,7 +26,7 @@ class next_state_predictor_ODE_tf:
     def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
         self.s = None
 
-        env_name = config["1_data_generation"]["environment_name"]
+        env_name = CurrentRunMemory.current_environment_name
         planning_env_config = {
             **config["2_environments"][env_name].copy(),
             **{"seed": SeedMemory.get_seeds()[0]},

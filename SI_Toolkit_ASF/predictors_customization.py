@@ -5,12 +5,12 @@ from Environments import ENV_REGISTRY, NumpyLibrary, register_envs
 from yaml import FullLoader, load
 import gym
 
-from Utilities.utils import SeedMemory
+from Utilities.utils import CurrentRunMemory, SeedMemory
 
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 environment_module = (
-    ENV_REGISTRY[config["1_data_generation"]["environment_name"]]
+    ENV_REGISTRY[CurrentRunMemory.current_environment_name]
     .split(":")[0]
     .split(".")[-1]
 )
@@ -34,7 +34,7 @@ class next_state_predictor_ODE:
     def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
 
         self.s = None
-        env_name = config["1_data_generation"]["environment_name"]
+        env_name = CurrentRunMemory.current_environment_name
 
         planning_env_config = {
             **config["2_environments"][env_name].copy(),

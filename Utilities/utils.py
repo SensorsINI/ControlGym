@@ -41,7 +41,9 @@ class CustomFormatter(logging.Formatter):
 
 def get_logger(name):
     logger = logging.getLogger(name)
-    logger.setLevel(getattr(import_module("logging"), config["1_data_generation"]["logging_level"]))
+    logger.setLevel(
+        getattr(import_module("logging"), config["1_data_generation"]["logging_level"])
+    )
     # create console handler
     ch = logging.StreamHandler()
     ch.setFormatter(CustomFormatter())
@@ -72,12 +74,12 @@ def get_name_of_controller_module(controller_name: str) -> str:
 
 
 class OutputPath:
-    RUN_NUM = None
+    RUN_NUM = 1
 
     @classmethod
     def get_output_path(cls, timestamp: str, filename: str, suffix: str):
-        controller_name = config["1_data_generation"]["controller_name"]
-        env_name = config["1_data_generation"]["environment_name"]
+        controller_name = CurrentRunMemory.current_controller_name
+        env_name = CurrentRunMemory.current_environment_name
         predictor_name = config["4_controllers"][controller_name]["predictor_name"]
         folder = os.path.join(
             "Output",
@@ -94,14 +96,13 @@ class OutputPath:
         )
 
 
-
 class SeedMemory:
     seeds = []
-    
+
     @classmethod
     def set_seeds(cls, seeds):
         cls.seeds = seeds
-    
+
     @classmethod
     def get_seeds(cls):
         if len(cls.seeds) == 0:
@@ -111,8 +112,12 @@ class SeedMemory:
         return cls.seeds
 
 
-### Below is copied from CartPole repo
+class CurrentRunMemory:
+    current_controller_name: str
+    current_environment_name: str
 
+
+### Below is copied from CartPole repo
 
 if config["1_data_generation"]["debug"]:
     CompileTF = lambda func: func

@@ -12,8 +12,9 @@ logger = get_logger(__name__)
 
 PATH_TO_EXPERIMENTS = "Output"
 EXPERIMENTS_TO_PLOT = [
-    "20220723-145340_controller_cem_naive_grad_tf_CustomEnvironments_CartPoleContinuous_predictor_ODE_tf",
-    "20220723-145433_controller_cem_naive_grad_tf_CustomEnvironments_CartPoleContinuous_predictor_ODE_tf",
+    "20220724-184558_controller_dist_adam_resamp2_CustomEnvironments_CartPoleContinuous_predictor_ODE_tf",
+    "20220724-185337_controller_dist_adam_resamp2_CustomEnvironments_CartPoleContinuous_predictor_ODE_tf",
+    "20220724-185649_controller_dist_adam_resamp2_CustomEnvironments_CartPoleContinuous_predictor_ODE_tf",
 ]
 # Compare configs associated with the different experiments
 
@@ -30,7 +31,6 @@ def generate_global_plots():
         config_filepaths = filter(lambda x: x.endswith(".yml"), os.listdir(path_to_experiment))
         config_filepaths = list(map(lambda x: os.path.join(path_to_experiment, x), config_filepaths))
         config = load(open(config_filepaths[0], "r"), FullLoader)
-        num_runs = config["data_generation"]["num_experiments"]
         
         cost_filepaths = filter(lambda x: "J_logged" in x and x.endswith(".npy"), os.listdir(path_to_experiment))
         cost_filepaths = map(lambda x: os.path.join(path_to_experiment, x), cost_filepaths)

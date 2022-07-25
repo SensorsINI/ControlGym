@@ -2,7 +2,7 @@ import csv
 import os
 import pandas as pd
 from ControllersGym import Controller
-from Utilities.utils import get_logger
+from Utilities.utils import CurrentRunMemory, get_logger
 log = get_logger(__name__)
 
 
@@ -28,7 +28,7 @@ def save_to_csv(config, controller: Controller, path):
     with open(filename, "a", newline='') as outfile:
         writer = csv.writer(outfile)
         writer.writerow([f"# Gym Log"])
-        writer.writerow([f"# {config['1_data_generation']['controller_name']}"])
+        writer.writerow([f"# {CurrentRunMemory.current_controller_name}"])
         writer.writerow([f"# Saving: {config['4_controllers']['dt']} s"])
 
     df.to_csv(filename, mode="a", header=True)
