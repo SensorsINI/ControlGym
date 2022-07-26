@@ -4,12 +4,12 @@
   - controller_cem_tf
   - controller_dist_adam_resamp2
   debug: false
-  environment_names: CustomEnvironments/CartPoleContinuous
+  environment_names: CustomEnvironments/DubinsCar
   logging_level: DEBUG
-  num_experiments: 2
-  num_iterations: 150
+  num_experiments: 1
+  num_iterations: 10
   render_for_humans: false
-  save_plots_to_file: false
+  save_plots_to_file: true
   seed_entropy: 1234
   split:
   - 0.6
@@ -25,7 +25,22 @@
     - 0.0
   CustomEnvironments/Pendulum:
     actuator_noise:
-    - 0.5
+    - 0.2
+  CustomEnvironments/DubinsCar:
+    actuator_noise:
+    - 0.0
+    - 0.0
+    start_point: [0.0, 0.0, 1.57]
+    target_point: [4.0, 8.0, 1.57]
+    waypoints:
+    - [0.0, 1.0, 1.57]
+    - [0.0, 2.0, 1.57]
+    - [1.0, 3.0, 1.57]
+    - [2.0, 4.0, 1.57]
+    - [3.0, 5.0, 1.57]
+    - [4.0, 6.0, 1.57]
+    - [4.0, 7.0, 1.57]
+    n_waypoints: 1  # look ahead waypoints
 3_predictors:
   PredictorGaussianError:
     prediction_error_stdev: 0.1

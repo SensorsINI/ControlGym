@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 import torch
 from gym import spaces
-from gym.envs.classic_control.pendulum import PendulumEnv, angle_normalize
+from gym.envs.classic_control.pendulum import PendulumEnv
 
 from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
 
