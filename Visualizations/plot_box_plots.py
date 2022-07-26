@@ -8,7 +8,7 @@ class BoxPlotPlotter(Plotter):
     def plot(self, costs: "dict[str, list]", save_to_image):
         if self.ax is None:
             self.fig, self.ax = plt.subplots(
-                figsize=(10, 8), gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.1}
+                figsize=(10, 8), gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.3}
             )
         self.ax.clear()
         
@@ -18,7 +18,7 @@ class BoxPlotPlotter(Plotter):
         self.ax.set_xlabel("Control method")
         self.ax.set_title("Average cost comparison of different control methods")
 
-        self.ax.legend(list(costs.keys()))
+        self.ax.legend(list(costs.keys()), loc="lower center")
 
         if save_to_image:
             self.fig.savefig(

@@ -1,3 +1,6 @@
+import matplotlib
+matplotlib.use("Agg")
+
 import itertools
 import os
 import matplotlib.pyplot as plt
@@ -28,7 +31,7 @@ class InputPlanPlotter(Plotter):
         num_steps, num_samples, horizon_length, num_actions = actions.shape
 
         if self.fig is None:
-            self.fig = plt.figure(figsize=(8, 4))
+            self.fig = plt.figure(figsize=(8, 4), layout="constrained")
             self.subfig_l, self.subfig_r = self.fig.subfigures(1, 2, wspace=0.1)
             self.axs_l = self.subfig_l.subplots(
                 nrows=num_actions,
@@ -69,13 +72,13 @@ class InputPlanPlotter(Plotter):
             ]
             for ax in self.axs_l
         ]
-        self.im = self.axs_r[0].imshow(frames[0], animated=True)
+        im = self.axs_r[0].imshow(frames[0], animated=True)
 
         def init_animation():
             for m in lines:
                 for line in m:
                     line.set_data([], [])
-            return [self.im] + [line for sublist in lines for line in sublist]
+            return [im] + [line for sublist in lines for line in sublist]
 
         def animate(k):
             # Left side: Plot cost evolution
@@ -103,11 +106,11 @@ class InputPlanPlotter(Plotter):
                 self.axs_l[na].set_ylim(np.min(actions[..., na]), np.max(actions[..., na]))
 
             # Right side: Plot state of environment
-            self.im.set_array(frames[k])
+            im.set_array(frames[k])
 
             # Set figure title
             self.fig.suptitle(f"Frame {k}")
-            return [self.im] + [line for p in lines for line in p]
+            return [im] + [line for p in lines for line in p]
 
         anim = animation.FuncAnimation(
             fig=self.fig,

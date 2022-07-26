@@ -256,6 +256,10 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         return self.state, reward, done, {}
 
     def render(self):
+        if self.render_mode in {"rgb_array", "single_rgb_array"}:
+            # Turn interactive plotting off
+            plt.ioff()
+        
         # Storing tracked trajectory
         self.traj_x.append(self.state[0] * MAX_X)
         self.traj_y.append(self.state[1] * MAX_Y)
@@ -263,7 +267,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         # for stopping simulation with the esc key.
         if self.fig is None:
-            self.fig, self.ax = plt.subplots(nrows=1, ncols=1)
+            self.fig, self.ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6))
         self.ax.cla()
         self.fig.canvas.mpl_connect(
             "key_release_event",
@@ -286,7 +290,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.plot_car()
         self.ax.set_aspect("equal", adjustable="datalim")
         self.ax.grid(True)
-        self.ax.set_title("Simulation")
+        # self.ax.set_title("Simulation")
         plt.pause(0.0001)
         
         if self.render_mode in {"rgb_array", "single_rgb_array"}:

@@ -16,13 +16,17 @@ class SummaryPlotter(Plotter):
         _, m = actions.shape
 
         if self.axs is None:
-            self.fig = plt.figure(constrained_layout=True, figsize=(12, 8))
-            self.gs = gridspec.GridSpec(nrows=2, ncols=m * n, figure=self.fig)
+            self.fig = plt.figure(figsize=(12, 8))
+            self.gs = gridspec.GridSpec(nrows=2, ncols=m * n, figure=self.fig, wspace=0.2, hspace=0.2)
             self.axs = [[], []]
             for i in range(n):
-                self.axs[0].append(self.fig.add_subplot(self.gs[0, i * m]))
+                self.axs[0].append(
+                    self.fig.add_subplot(self.gs[0, (i * m) : ((i + 1) * m)])
+                )
             for i in range(m):
-                self.axs[1].append(self.fig.add_subplot(self.gs[1, i * n]))
+                self.axs[1].append(
+                    self.fig.add_subplot(self.gs[1, (i * n) : ((i + 1) * n)])
+                )
         for ax in [_x1 for _x2 in self.axs for _x1 in _x2]:
             ax.clear()
 
