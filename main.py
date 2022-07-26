@@ -5,6 +5,7 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from itertools import product
+import tensorflow as tf
 
 import gym
 import pygame
@@ -177,7 +178,12 @@ if __name__ == "__main__":
         CurrentRunMemory.current_controller_name = controller_name
         CurrentRunMemory.current_environment_name = environment_name
 
-        # with open("config.yml", "w") as f:
-        #     dump(config, f, default_flow_style=False)
+        device_name = "/CPU:0"
+        if config["1_data_generation"]["use_gpu"]:
+            if len(tf.config.list_physical_devices('GPU')) > 0:
+                device_name = "/GPU:0"
+            else:
+                logger.info("GPU use specified in config but no device available. Using CPU instead.")
 
-        run_data_generator(controller_name, environment_name)
+        with tf.device(device_name):
+            run_data_generator(controller_name, environment_name)
