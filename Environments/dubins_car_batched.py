@@ -47,6 +47,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         n_waypoints,
         batch_size=1,
         computation_lib=NumpyLibrary,
+        render_mode: str=None,
         **kwargs
     ):
         super(dubins_car_batched, self).__init__()
@@ -62,6 +63,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         }
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
+        self.render_mode = render_mode
 
         self.action_space = spaces.Box(
             np.array([0.0, -1.57]), np.array([1.0, 1.57]), dtype=np.float32
@@ -104,6 +106,9 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
         self.cost_functions = cost_functions(self)
+        
+        self.fig: plt.Figure = None
+        self.ax: plt.Axes = None
 
     def reset(
         self,
@@ -256,30 +261,38 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.traj_y.append(self.state[1] * MAX_Y)
         self.traj_yaw.append(self.state[2])
 
-        plt.cla()
         # for stopping simulation with the esc key.
-        plt.gcf().canvas.mpl_connect(
+        if self.fig is None:
+            self.fig, self.ax = plt.subplots(nrows=1, ncols=1)
+        self.ax.cla()
+        self.fig.canvas.mpl_connect(
             "key_release_event",
             lambda event: [exit(0) if event.key == "escape" else None],
         )
-        plt.plot(
+        # self.ax: plt.Axes = self.fig.axes[0]
+        self.ax.plot(
             self.traj_x * 10, self.traj_y * 10, "ob", markersize=2, label="trajectory"
         )
         # Rendering waypoint sequence
         for i in range(len(self.waypoints)):
-            plt.plot(
+            self.ax.plot(
                 self.waypoints[i][0] * MAX_X,
                 self.waypoints[i][1] * MAX_Y,
                 "^r",
                 label="waypoint",
             )
-        plt.plot(self.target[0] * MAX_X, self.target[1] * MAX_Y, "xg", label="target")
+        self.ax.plot(self.target[0] * MAX_X, self.target[1] * MAX_Y, "xg", label="target")
         # Rendering the car and action taken
         self.plot_car()
-        plt.axis("equal")
-        plt.grid(True)
-        plt.title("Simulation")
+        self.ax.set_aspect("equal", adjustable="datalim")
+        self.ax.grid(True)
+        self.ax.set_title("Simulation")
         plt.pause(0.0001)
+        
+        if self.render_mode in {"rgb_array", "single_rgb_array"}:
+            data = np.frombuffer(self.fig.canvas.tostring_rgb(), dtype=np.uint8)
+            data = data.reshape(tuple((self.fig.get_size_inches()*self.fig.dpi).astype(np.int32)[::-1]) + (3,))
+            return data
 
     def close(self):
         # For Gym AI compatibility
@@ -369,32 +382,32 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         rl_wheel[0, :] += x
         rl_wheel[1, :] += y
 
-        plt.plot(
+        self.ax.plot(
             np.array(outline[0, :]).flatten(),
             np.array(outline[1, :]).flatten(),
             truckcolor,
         )
-        plt.plot(
+        self.ax.plot(
             np.array(fr_wheel[0, :]).flatten(),
             np.array(fr_wheel[1, :]).flatten(),
             truckcolor,
         )
-        plt.plot(
+        self.ax.plot(
             np.array(rr_wheel[0, :]).flatten(),
             np.array(rr_wheel[1, :]).flatten(),
             truckcolor,
         )
-        plt.plot(
+        self.ax.plot(
             np.array(fl_wheel[0, :]).flatten(),
             np.array(fl_wheel[1, :]).flatten(),
             truckcolor,
         )
-        plt.plot(
+        self.ax.plot(
             np.array(rl_wheel[0, :]).flatten(),
             np.array(rl_wheel[1, :]).flatten(),
             truckcolor,
         )
-        plt.plot(x, y, "*")
+        self.ax.plot(x, y, "*")
 
 
 # def main():

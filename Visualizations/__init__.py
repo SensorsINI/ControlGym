@@ -1,9 +1,12 @@
 from Utilities.utils import CurrentRunMemory
-
+import matplotlib.pyplot as plt
+from matplotlib import gridspec
 
 class Plotter:
     def __init__(self, timestamp: str, config: dict, **kwargs) -> None:
-        self.fig, self.ax, self.axs, self.gs = None, None, None, None
+        self.fig: plt.Figure = None
+        self.ax: plt.Axes = None
+        self.axs: "list[plt.Axes]" = None
         self._timestamp: str = timestamp
         self._config_to_disp: dict = {
             "Controller name": config["1_data_generation"]["controller_name"],
