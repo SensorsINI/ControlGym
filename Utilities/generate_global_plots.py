@@ -5,6 +5,7 @@ import os
 
 from Utilities.utils import get_logger
 from Visualizations.plot_box_plots import BoxPlotPlotter
+from pprint import pformat
 
 logger = get_logger(__name__)
 
@@ -12,16 +13,16 @@ logger = get_logger(__name__)
 
 PATH_TO_EXPERIMENTS = "Output"
 EXPERIMENTS_TO_PLOT = [
-    "20220724-184558_controller_dist_adam_resamp2_CustomEnvironments_CartPoleContinuous_predictor_ODE_tf",
-    "20220724-185337_controller_dist_adam_resamp2_CustomEnvironments_CartPoleContinuous_predictor_ODE_tf",
-    "20220724-185649_controller_dist_adam_resamp2_CustomEnvironments_CartPoleContinuous_predictor_ODE_tf",
+    "20220727-113456_controller_cem_naive_grad_tf_CustomEnvironments_MountainCarContinuous_predictor_ODE_tf",
+    "20220727-114223_controller_cem_tf_CustomEnvironments_MountainCarContinuous_predictor_ODE_tf",
+    "20220727-114530_controller_dist_adam_resamp2_CustomEnvironments_MountainCarContinuous_predictor_ODE_tf",
 ]
 # Compare configs associated with the different experiments
 
 # Generate box plot: Each box represents the total cost statistics for a specific controller
 
-def generate_global_plots():
-    all_average_cost_data = {}
+def generate_global_plots() -> None:
+    all_average_cost_data: "dict[str, list[float]]" = {}
     
     # Prepare average cost data
     for exp in EXPERIMENTS_TO_PLOT:
@@ -45,6 +46,7 @@ def generate_global_plots():
         "2_environments": {"": {"actuator_noise": 0}}
     })
     box_plot_plotter.plot(all_average_cost_data, True)
+    logger.info(pformat({k: sorted(v) for k, v in all_average_cost_data.items()}))
     logger.info("...done.")
     
 

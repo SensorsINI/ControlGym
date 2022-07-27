@@ -37,7 +37,7 @@ class Controller:
         """
         return {k: np.stack(v, axis=0) for k, v in self.logs.items()}
 
-    def _update_logs(self):
+    def _update_logs(self) -> None:
         if self._controller_logging:
             for name, var in zip(self._save_vars, [self.Q, self.J, self.s, self.u]):
                 self.logs[name].append(

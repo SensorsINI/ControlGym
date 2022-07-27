@@ -14,6 +14,7 @@ ENV_REGISTRY = {
     "CustomEnvironments/MountainCarContinuous": "Environments.continuous_mountaincar_batched:continuous_mountaincar_batched",
     "CustomEnvironments/Pendulum": "Environments.pendulum_batched:pendulum_batched",
     "CustomEnvironments/DubinsCar": "Environments.dubins_car_batched:dubins_car_batched",
+    "CustomEnvironments/CartPoleSimulator": "Environments.cartpole_simulator_batched:cartpole_simulator_batched",
 }
 
 
@@ -247,7 +248,7 @@ class EnvironmentBatched:
             return tuple((self.state, {}))
         return self.state
 
-    def set_computation_library(self, computation_lib: ComputationLibrary):
+    def set_computation_library(self, computation_lib: type[ComputationLibrary]):
         try:
             self.lib = computation_lib
         except KeyError as error:
