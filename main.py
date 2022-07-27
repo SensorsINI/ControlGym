@@ -126,8 +126,7 @@ def run_data_generator(
         for step in range(config["1_data_generation"]["num_iterations"]):
             action = controller.step(obs)
             new_obs, reward, done, info = env.step(action)
-            if config["4_controllers"]["controller_logging"]:
-                frames.append(env.render())
+            frames.append(env.render())
 
             time.sleep(0.001)
 
@@ -158,13 +157,14 @@ def run_data_generator(
             os.makedirs(csv, exist_ok=True)
             save_to_csv(config, controller, csv)
         elif config["4_controllers"]["controller_logging"]:
-            # Generate and save plots in default location
-            generate_experiment_plots(
-                config=config,
-                controller_output=controller_output,
-                timestamp=timestamp_str,
-                frames=frames if len(frames) > 0 else None,
-            )
+            if render_mode != "human":
+                # Generate and save plots in default location
+                generate_experiment_plots(
+                    config=config,
+                    controller_output=controller_output,
+                    timestamp=timestamp_str,
+                    frames=frames if len(frames) > 0 else None,
+                )
             with open(
                 OutputPath.get_output_path(timestamp_str, "config", ".yml"), "w"
             ) as f:
