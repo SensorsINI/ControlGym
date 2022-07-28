@@ -10,11 +10,13 @@ from Utilities.utils import get_logger
 log = get_logger(__name__)
 
 ENV_REGISTRY = {
-    "CustomEnvironments/CartPoleContinuous": "Environments.continuous_cartpole_batched:continuous_cartpole_batched",
-    "CustomEnvironments/MountainCarContinuous": "Environments.continuous_mountaincar_batched:continuous_mountaincar_batched",
-    "CustomEnvironments/Pendulum": "Environments.pendulum_batched:pendulum_batched",
-    "CustomEnvironments/DubinsCar": "Environments.dubins_car_batched:dubins_car_batched",
-    "CustomEnvironments/CartPoleSimulator": "Environments.cartpole_simulator_batched:cartpole_simulator_batched",
+    "CustomEnvironments/CartPoleContinuous-v0": "Environments.continuous_cartpole_batched:continuous_cartpole_batched",
+    "CustomEnvironments/MountainCarContinuous-v0": "Environments.continuous_mountaincar_batched:continuous_mountaincar_batched",
+    "CustomEnvironments/Pendulum-v0": "Environments.pendulum_batched:pendulum_batched",
+    "CustomEnvironments/AcrobotBatched-v0": "Environments.acrobot_batched:acrobot_batched",
+    "CustomEnvironments/DubinsCar-v0": "Environments.dubins_car_batched:dubins_car_batched",
+    "CustomEnvironments/CartPoleSimulator-v0": "Environments.cartpole_simulator_batched:cartpole_simulator_batched",
+    "CustomEnvironments/HalfCheetahBatched-v0": "Environments.half_cheetah_batched:half_cheetah_batched",
 }
 
 
@@ -40,12 +42,14 @@ class ComputationLibrary:
     ndim: Callable[[TensorType], int] = None
     clip: Callable[[TensorType, float, float], TensorType] = None
     sin: Callable[[TensorType], TensorType] = None
+    asin: Callable[[TensorType], TensorType] = None
     cos: Callable[[TensorType], TensorType] = None
     tan: Callable[[TensorType], TensorType] = None
     squeeze: Callable[[TensorType], TensorType] = None
     unsqueeze: Callable[[TensorType, int], TensorType] = None
     stack: Callable[["list[TensorType]", int], TensorType] = None
     cast: Callable[[TensorType, type], TensorType] = None
+    floormod: Callable[[TensorType], TensorType] = None
     float32: Callable[[], float] = None
     tile: Callable[[TensorType, "tuple[int]"], TensorType] = None
     gather: Callable[[TensorType, TensorType, int], TensorType] = None
@@ -77,12 +81,14 @@ class NumpyLibrary(ComputationLibrary):
     ndim = np.ndim
     clip = np.clip
     sin = np.sin
+    asin = np.arcsin
     cos = np.cos
     tan = np.tan
     squeeze = np.squeeze
     unsqueeze = np.expand_dims
     stack = np.stack
     cast = lambda x, t: x.astype(t)
+    floormod = np.mod
     float32 = np.float32
     tile = np.tile
     gather = lambda x, i, a: np.take(x, i, axis=a)
@@ -95,7 +101,7 @@ class NumpyLibrary(ComputationLibrary):
     sum = lambda x, a: np.sum(x, axis=a, keepdims=False)
     set_shape = lambda x, shape: x
     concat = lambda x, a: np.concatenate(x, axis=a)
-    pi = np.array(np.pi)
+    pi = np.array(np.pi).astype(np.float32)
     any = np.any
     min = np.minimum
     max = np.maximum
@@ -114,6 +120,7 @@ class TensorFlowLibrary(ComputationLibrary):
     ndim = tf.rank
     clip = tf.clip_by_value
     sin = tf.sin
+    asin = tf.asin
     cos = tf.cos
     tan = tf.tan
     squeeze = tf.squeeze
@@ -121,6 +128,7 @@ class TensorFlowLibrary(ComputationLibrary):
     stack = tf.stack
     gather = lambda x, i, a: tf.gather(x, i, axis=a)
     cast = lambda x, t: tf.cast(x, dtype=t)
+    floormod = tf.math.floormod
     float32 = tf.float32
     tile = tf.tile
     zeros = tf.zeros
@@ -132,7 +140,7 @@ class TensorFlowLibrary(ComputationLibrary):
     sum = lambda x, a: tf.reduce_sum(x, axis=a, keepdims=False)
     set_shape = lambda x, shape: x.set_shape(shape)
     concat = lambda x, a: tf.concat(x, a)
-    pi = tf.convert_to_tensor(np.array(np.pi))
+    pi = tf.convert_to_tensor(np.array(np.pi), dtype=tf.float32)
     any = tf.reduce_any
     min = tf.minimum
     max = tf.maximum
@@ -151,6 +159,7 @@ class PyTorchLibrary(ComputationLibrary):
     ndim = lambda x: x.ndim
     clip = torch.clamp
     sin = torch.sin
+    asin = torch.asin
     cos = torch.cos
     tan = torch.tan
     squeeze = torch.squeeze
@@ -158,6 +167,7 @@ class PyTorchLibrary(ComputationLibrary):
     stack = torch.stack
     gather = lambda x, i, a: torch.gather(x, dim=a, index=i)
     cast = lambda x, t: x.type(t)
+    floormod = torch.remainder
     float32 = torch.float32
     tile = torch.tile
     zeros = torch.zeros
@@ -173,7 +183,7 @@ class PyTorchLibrary(ComputationLibrary):
     sum = lambda x, a: torch.sum(x, a, keepdim=False)
     set_shape = lambda x, shape: x
     concat = lambda x, a: torch.concat(x, dim=a)
-    pi = torch.from_numpy(np.array(np.pi))
+    pi = torch.from_numpy(np.array(np.pi)).float()
     any = torch.any
     min = torch.minimum
     max = torch.maximum
@@ -184,6 +194,8 @@ class PyTorchLibrary(ComputationLibrary):
 
 
 class EnvironmentBatched:
+    """Has no __init__ method."""
+
     def step(
         self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
     ) -> Tuple[

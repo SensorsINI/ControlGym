@@ -1,37 +1,36 @@
 1_data_generation:
   controller_names:
-  - controller_cem_naive_grad_tf
   - controller_cem_tf
+  - controller_cem_naive_grad_tf
   - controller_dist_adam_resamp2
   debug: false
-  environment_names: CustomEnvironments/DubinsCar
+  environment_names: CustomEnvironments/AcrobotBatched-v0
   logging_level: DEBUG
   num_experiments: 1
-  num_iterations: 10
+  num_iterations: 1000
   render_for_humans: false
   save_plots_to_file: true
-  seed_entropy: 1234
+  seed_entropy: 556123
   split:
   - 0.6
   - 0.2
   use_gpu: true
 2_environments:
-  CustomEnvironments/CartPoleContinuous:
+  CustomEnvironments/CartPoleContinuous-v0:
     actuator_noise:
     - 0.0
     seed: 3346455728
-  CustomEnvironments/MountainCarContinuous:
+  CustomEnvironments/MountainCarContinuous-v0:
     actuator_noise:
     - 0.0
-  CustomEnvironments/Pendulum:
+  CustomEnvironments/Pendulum-v0:
     actuator_noise:
     - 0.2
-  CustomEnvironments/DubinsCar:
+  CustomEnvironments/DubinsCar-v0:
     actuator_noise:
     - 0.0
     - 0.0
-    start_point: [0.0, 0.0, 1.57]
-    target_point: [4.0, 8.0, 1.57]
+    target_point: [0.5, 0.8, 1.57]
     waypoints:
     - [0.0, 1.0, 1.57]
     - [0.0, 2.0, 1.57]
@@ -41,6 +40,16 @@
     - [4.0, 6.0, 1.57]
     - [4.0, 7.0, 1.57]
     n_waypoints: 1  # look ahead waypoints
+  CustomEnvironments/HalfCheetahBatched-v0:
+    actuator_noise:
+    - 0.0
+    forward_reward_weight: 1.0
+    ctrl_cost_weight: 0.1
+    reset_noise_scale: 0.1
+    exclude_current_positions_from_observation: true
+  CustomEnvironments/AcrobotBatched-v0:
+    actuator_noise:
+    - 0.0
 3_predictors:
   PredictorGaussianError:
     prediction_error_stdev: 0.1
@@ -113,28 +122,27 @@
     resamp_every: 1
   controller_cem_naive_grad_tf:
     CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
-    cem_LR: 0.001
+    cem_LR: 0.05
     cem_R: 1
     cem_best_k: 4
     cem_ccrc_weight: 1
     cem_outer_it: 5
-    cem_rollouts: 80
+    cem_rollouts: 400
     cem_stdev_min: 0.05
     controller_logging: true
     dt: 0.02
-    gradmax_clip: 10
+    gradmax_clip: 5
     mpc_horizon: 0.5
     predictor_intermediate_steps: 10
     predictor_name: predictor_ODE_tf
     seed: 1344337794
   controller_cem_tf:
     CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
-    cem_LR: 0.001
     cem_R: 1
     cem_best_k: 4
     cem_ccrc_weight: 1
     cem_outer_it: 5
-    cem_rollouts: 80
+    cem_rollouts: 400
     cem_stdev_min: 0.05
     controller_logging: true
     dt: 0.02
@@ -163,15 +171,16 @@
     adam_beta_1: 0.9
     adam_beta_2: 0.999
     adam_epsilon: 1.0e-07
-    cem_LR: 0.001
-    gradmax_clip: 250
+    cem_LR: 0.05
+    gradmax_clip: 5
+    rtol: 1.0e-3
     interpolation_step: 10
     num_rollouts: 20
     opt_keep_k: 4
-    outer_its: 5
+    outer_its: 20
     predictor_intermediate_steps: 10
     predictor_name: predictor_ODE_tf
-    resamp_per: 1
+    resamp_per: 5
     sample_stdev: 0.5
     seed: None
     warmup: true
@@ -203,8 +212,6 @@
     WASH_OUT_LEN: 100
     cc_weight: 1.0
     ccrc_weight: 1.0
-    clip_control_input:
-    - 1.0
     control_noise: 0.0
     cost_noise: 0.0
     dd_weight: 120.0
@@ -248,8 +255,6 @@
     WASH_OUT_LEN: 100
     cc_weight: 1.0
     ccrc_weight: 1.0
-    clip_control_input:
-    - 1.0
     control_noise: 0.0
     cost_noise: 0.0
     dd_weight: 120.0

@@ -1,14 +1,14 @@
 from typing import Optional, Tuple, Union
 from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
-from gym.envs.mujoco.half_cheetah_v4 import HalfCheetahEnv
-from gym.utils.ezpickle import EzPickle
+from gym.envs.mujoco.half_cheetah_v3 import HalfCheetahEnv
 
 import numpy as np
 import tensorflow as tf
 import mujoco
+from tf_agents.environments import suite_gym, BatchedPyEnvironment
 
 
-class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv, EzPickle):
+class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
     num_actions = 6
     num_states = 17
 
@@ -24,12 +24,23 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv, EzPickle):
         computation_lib=NumpyLibrary,
         render_mode="human",
     ) -> None:
-        super().__init__(
-            forward_reward_weight=forward_reward_weight,
-            ctrl_cost_weight=ctrl_cost_weight,
-            reset_noise_scale=reset_noise_scale,
-            exclude_current_positions_from_observation=exclude_current_positions_from_observation,
+        self._envs = BatchedPyEnvironment(
+            [
+                suite_gym.load(
+                    "HalfCheetah-v3",
+                    gym_kwargs=dict(
+                        forward_reward_weight=forward_reward_weight,
+                        ctrl_cost_weight=ctrl_cost_weight,
+                        reset_noise_scale=reset_noise_scale,
+                        exclude_current_positions_from_observation=exclude_current_positions_from_observation,
+                    ),
+                    render_kwargs={"mode": render_mode},
+                )
+                for _ in range(batch_size)
+            ],
+            multithreading=True,
         )
+
         self._batch_size = batch_size
         self._actuator_noise = np.array(actuator_noise, dtype=np.float32)
 
@@ -45,59 +56,7 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv, EzPickle):
         Union[np.ndarray, bool],
         dict,
     ]:
-        x_position_before = self.data.qpos[0]
-        self.do_simulation(action, self.frame_skip)
-        x_position_after = self.data.qpos[0]
-        x_velocity = (x_position_after - x_position_before) / self.dt
-
-        ctrl_cost = self.control_cost(action)
-
-        forward_reward = self._forward_reward_weight * x_velocity
-
-        observation = self._get_obs()
-        reward = forward_reward - ctrl_cost
-        terminated = False
-        info = {
-            "x_position": x_position_after,
-            "x_velocity": x_velocity,
-            "reward_run": forward_reward,
-            "reward_ctrl": -ctrl_cost,
-        }
-
-        self.renderer.render_step()
-        return observation, reward, terminated, False, info
-
-    def do_simulation(self, ctrl, n_frames):
-        """
-        Step the simulation n number of frames and applying a control action.
-        """
-        # Check control input is contained in the action space
-        if self.lib.to_numpy(self.lib.shape(ctrl)) != self.action_space.shape:
-            raise ValueError("Action dimension mismatch")
-        self._step_mujoco_simulation(ctrl, n_frames)
-
-    def _step_mujoco_simulation(self, ctrl, n_frames):
-        self.data.ctrl[:] = ctrl
-
-        mujoco.mj_step(self.model, self.data, nstep=self.frame_skip)
-
-        # As of MuJoCo 2.0, force-related quantities like cacc are not computed
-        # unless there's a force sensor in the model.
-        # See https://github.com/openai/gym/issues/1541
-        mujoco.mj_rnePostConstraint(self.model, self.data)
-
-    def control_cost(self, action):
-        return self._ctrl_cost_weight * self.lib.sum(action**2)
-
-    def _get_obs(self):
-        position = self.data.qpos.flat.copy()
-        velocity = self.data.qvel.flat.copy()
-
-        if self._exclude_current_positions_from_observation:
-            position = position[1:]
-
-        observation = self.lib.squeeze(self.lib.concat([position, velocity], 0))
-        return observation
+        return self._envs.step(action)
 
     def reset(
         self,
@@ -109,43 +68,15 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv, EzPickle):
         if seed is not None:
             self._set_up_rng(seed)
         
-        self._reset_simulation()
+        step_type, reward, discount, obs  = self._envs.reset()
+        
+        if state is not None:
+            self._envs.set_state(state)
 
-        state = self.reset_model()
-        self.renderer.reset()
-        self.renderer.render_step()
-        # if not return_info:
-        #     return ob
-        # else:
-        #     return ob, {}
 
-        if state is None:
-            if self._batch_size == 1:
-                self.state = self.lib.to_tensor(
-                    [self.lib.uniform(self.rng, (), -0.6, -0.4, self.lib.float32), 0],
-                    self.lib.float32,
-                )
-            else:
-                self.state = self.lib.stack(
-                    [
-                        self.lib.uniform(
-                            self.rng, (self._batch_size,), -0.6, -0.4, self.lib.float32
-                        ),
-                        self.lib.zeros((self._batch_size,)),
-                    ],
-                    1,
-                )
-        else:
-            if self.lib.ndim(state) < 2:
-                state = self.lib.unsqueeze(
-                    self.lib.to_tensor(state, self.lib.float32), 0
-                )
-            if self.lib.shape(state)[0] == 1:
-                self.state = self.lib.tile(state, (self._batch_size, 1))
-            else:
-                self.state = state
-
-        return self._get_reset_return_val()
+        if return_info:
+            return obs, {}
+        return obs
 
     def render(self, mode="human"):
         if self._batch_size == 1:

@@ -60,19 +60,21 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.render_mode = render_mode
 
         self.action_space = spaces.Box(
-            np.array([MIN_SPEED, -MAX_STEER]), np.array([MAX_SPEED, MAX_STEER]), dtype=np.float32
+            np.array([MIN_SPEED, -MAX_STEER]),
+            np.array([MAX_SPEED, MAX_STEER]),
+            dtype=np.float32,
         )  # Action space for [throttle, steer]
         low = np.array([-1.0, -1.0, -4.0])  # low range of observation space
         high = np.array([1.0, 1.0, 4.0])  # high range of observation space
         self.observation_space = spaces.Box(
             low, high, dtype=np.float32
         )  # Observation space for [x, y, theta]
-        
+
         # if target_point is None:
         #     self.target = self.lib.to_numpy(self.lib.uniform(self.rng, (3,), [-1.0, -1.0, -np.pi/2], [1.0, 1.0, np.pi/2], self.lib.float32))
         # else:
         self.target = target_point
-        
+
         self.action = [0.0, 0.0]  # Action
 
         self.config = {
@@ -99,13 +101,15 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         if state is None:
             x = self.rng.uniform(-1.0, 1.0, (1, 1))
-            y = self.rng.choice([-1.0, 1.0], (1, 1)) * self.lib.sqrt(1.0-x**2)
-            theta = self.get_heading(self.lib.concat([x, y], 1), self.lib.unsqueeze(self.target, 0))
+            y = self.rng.choice([-1.0, 1.0], (1, 1)) * self.lib.sqrt(1.0 - x**2)
+            theta = self.get_heading(
+                self.lib.concat([x, y], 1), self.lib.unsqueeze(self.target, 0)
+            )
             yaw = self.rng.uniform(theta - MAX_STEER, theta + MAX_STEER, (1, 1))
 
             self.state = self.lib.stack([x, y, yaw], 1)
-            self.traj_x = [float(x*MAX_X)]
-            self.traj_y = [float(y*MAX_Y)]
+            self.traj_x = [float(x * MAX_X)]
+            self.traj_y = [float(y * MAX_Y)]
             self.traj_yaw = [float(yaw)]
             if self._batch_size > 1:
                 self.state = np.tile(self.state, (self._batch_size, 1))
@@ -126,21 +130,21 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         x, y, yaw_car = self.lib.unstack(state, 3, 1)
         x_target, y_target, yaw_target = self.target
 
-        head_to_target = self.get_heading(
-            state, self.lib.unsqueeze(self.target, 0)
-        )
+        head_to_target = self.get_heading(state, self.lib.unsqueeze(self.target, 0))
         alpha = head_to_target - yaw_car
         ld = self.get_distance(state, self.lib.unsqueeze(self.target, 0))
         crossTrackError = self.lib.sin(alpha) * ld
 
-        cond1 = (self.lib.abs(x) < 1.0) & (self.lib.abs(y) < 1.0)
-        cond2 = (self.lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL) & (
-            self.lib.abs(y - y_target) < THRESHOLD_DISTANCE_2_GOAL
+        car_in_bounds = (self.lib.abs(x) < 1.0) & (self.lib.abs(y) < 1.0)
+        car_at_target = (
+            (self.lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL)
+            & (self.lib.abs(y - y_target) < THRESHOLD_DISTANCE_2_GOAL)
+            & (self.lib.abs(yaw_car - yaw_target) < 0.1)
         )
 
         reward = (
-            self.lib.cast(cond1 & cond2, self.lib.float32) * 10.0
-            + self.lib.cast(cond1 & (~cond2), self.lib.float32)
+            self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
+            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32)
             * (
                 -1.0
                 * (
@@ -151,7 +155,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 )
                 / 8.0
             )
-            + self.lib.cast(~cond1, self.lib.float32) * (-1.0)
+            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-1.0)
         )
 
         return reward
@@ -161,11 +165,11 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         x_target = self.target[0]
         y_target = self.target[1]
 
-        cond1 = (self.lib.abs(x) < 1.0) & (self.lib.abs(y) < 1.0)
-        cond2 = (self.lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL) & (
+        car_in_bounds = (self.lib.abs(x) < 1.0) & (self.lib.abs(y) < 1.0)
+        car_at_target = (self.lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL) & (
             self.lib.abs(y - y_target) < THRESHOLD_DISTANCE_2_GOAL
         )
-        done = ~(cond1 & (~cond2))
+        done = ~(car_in_bounds & (~car_at_target))
         return done
 
     def get_distance(self, x1, x2):
@@ -183,9 +187,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         if self._batch_size == 1:
             action += self._generate_actuator_noise()
 
-        state = self.update_state(
-            state, action, 0.005
-        )
+        state = self.update_state(state, action, 0.005)
 
         return state
 
@@ -205,9 +207,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         info = {}
 
-        self.state = self.update_state(
-            self.state, action, 0.005
-        )
+        self.state = self.update_state(self.state, action, 0.005)
 
         done = self.is_done(self.state)
         reward = self.get_reward(self.state, action)
@@ -238,9 +238,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             lambda event: [exit(0) if event.key == "escape" else None],
         )
         # self.ax: plt.Axes = self.fig.axes[0]
-        self.ax.plot(
-            self.traj_x, self.traj_y, "ob", markersize=2, label="trajectory"
-        )
+        self.ax.plot(self.traj_x, self.traj_y, "ob", markersize=2, label="trajectory")
         # # Rendering waypoint sequence
         # for i in range(len(self.waypoints)):
         #     self.ax.plot(
