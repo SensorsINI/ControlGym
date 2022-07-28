@@ -13,12 +13,6 @@ from Utilities.utils import OutputPath
 plt.style.use(["science"])
 
 
-def _build_color_seq(n):
-    colors = ["r", "g", "b", "k"]
-    L = len(colors)
-    return [colors[i % L] for i in range(n)]
-
-
 class InputPlanPlotter(Plotter):
     def plot(
         self,
