@@ -3,9 +3,11 @@
 from typing import Optional, Union, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import math
 import gym
 from gym import spaces
+from gym.utils.renderer import Renderer
 import time
 import itertools
 import datetime
@@ -14,7 +16,7 @@ import tensorflow as tf
 from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
 
 # Training constants
-MAX_STEER = np.pi / 4
+MAX_STEER = np.pi / 3
 MAX_SPEED = 10.0
 MIN_SPEED = 0.0
 THRESHOLD_DISTANCE_2_GOAL = 0.05
@@ -41,10 +43,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
     def __init__(
         self,
-        waypoints,
         target_point,
         spawn_on_circle_radius,
-        n_waypoints,
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode: str = None,
@@ -59,6 +59,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
         self.render_mode = render_mode
+        self.renderer = Renderer(self.render_mode, self._render)
 
         self.action_space = spaces.Box(
             np.array([MIN_SPEED, -MAX_STEER]),
@@ -82,9 +83,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.config = {
             **kwargs,
             **dict(
-                waypoints=waypoints,
                 target_point=self.target,
-                n_waypoints=n_waypoints,
+                spawn_on_circle_radius=spawn_on_circle_radius,
             ),
         }
 
@@ -218,14 +218,25 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.state = self.lib.squeeze(self.state)
 
         if self._batch_size == 1:
+            self.renderer.render_step()
             return self.lib.to_numpy(self.state), float(reward), bool(done), {}
 
         return self.state, reward, done, {}
 
-    def render(self):
+    def render(self, mode="human"):
+        if self.render_mode is not None:
+            return self.renderer.get_renders()
+        else:
+            return self._render(mode)
+
+    def _render(self, mode="human"):
+        assert mode in self.metadata["render_modes"]
         if self.render_mode in {"rgb_array", "single_rgb_array"}:
             # Turn interactive plotting off
             plt.ioff()
+        else:
+            matplotlib.use('TkAgg')
+            plt.ion()
 
         # Storing tracked trajectory
         self.traj_x.append(self.state[0] * MAX_X)
@@ -269,6 +280,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 + (3,)
             )
             return data
+        elif self.render_mode in {"human"}:
+            self.fig.show()
 
     def close(self):
         # For Gym AI compatibility

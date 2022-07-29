@@ -86,8 +86,9 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         reward = self.get_reward(self.state, action)
 
         self.state = self.lib.squeeze(self.state)
-
+        
         if self._batch_size == 1:
+            self.renderer.render_step()
             return (
                 self.lib.to_numpy(self.lib.squeeze(self.state)),
                 float(reward),

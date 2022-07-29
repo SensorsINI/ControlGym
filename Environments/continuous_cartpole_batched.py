@@ -123,6 +123,7 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         self.state = self.lib.squeeze(self.state)
 
         if self._batch_size == 1:
+            self.renderer.render_step()
             return self.lib.to_numpy(self.state), float(reward), bool(done), {}
 
         return self.state, reward, done, {}

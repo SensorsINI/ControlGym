@@ -8,7 +8,6 @@ from itertools import product
 import tensorflow as tf
 
 import gym
-import pygame
 from numpy.random import SeedSequence
 from yaml import FullLoader, dump, load
 
@@ -27,9 +26,6 @@ from Utilities.utils import (
 # Keep allowing absolute imports within CartPoleSimulation subgit
 sys.path.insert(0, os.path.join(os.path.abspath("."), "CartPoleSimulation"))
 
-# Set dummy output device when machine is headless
-if not pygame.display.get_init():
-    os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 # Load config
 config = load(open("config.yml", "r"), Loader=FullLoader)

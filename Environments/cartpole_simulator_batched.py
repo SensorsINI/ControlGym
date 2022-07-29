@@ -29,7 +29,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
         self.render_mode = render_mode
-        self.renderer = Renderer(self.render_mode, super().render)
+        self.renderer = Renderer(self.render_mode, self._render)
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
@@ -48,7 +48,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
         cart_length = kwargs["cart_length"]
         usable_track_length = kwargs["usable_track_length"]
-        track_half_length = (usable_track_length - cart_length) / 2.0
+        track_half_length = np.array(usable_track_length - cart_length / 2.0)
         self.u_max = kwargs["u_max"]
 
         self.x_threshold = (
@@ -95,8 +95,9 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
     ) -> Tuple[np.ndarray, Optional[dict]]:
         if seed is not None:
             self._set_up_rng(seed)
+        
         if state is None:
-            high = np.array([self.lib.pi / 2, 1.0e-1, 5.0e-1, 1.0e-1])
+            high = np.array([self.lib.pi / 2, 1.0e-1, 1.0e-1, 1.0e-1])
             angle, angleD, position, positionD = self.lib.unstack(
                 self.lib.uniform(
                     self.rng, [self._batch_size, 4], -high, high, self.lib.float32
@@ -120,7 +121,14 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             )
             self.steps_beyond_done = None
         else:
-            self.state = state
+            if self.lib.ndim(state) < 2:
+                state = self.lib.unsqueeze(
+                    self.lib.to_tensor(state, self.lib.float32), 0
+                )
+            if self.lib.shape(state)[0] == 1:
+                self.state = self.lib.tile(state, (self._batch_size, 1))
+            else:
+                self.state = state
 
         if self._batch_size == 1:
             self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
@@ -162,6 +170,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
             reward = float(reward)
 
+        self.renderer.render_step()
         return (
             self.state,
             reward,
@@ -171,7 +180,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
     def step_physics(self, state: TensorType, action: TensorType):
         # Convert dimensionless motor power to a physical force acting on the Cart
-        u = self.u_max * (action[:, 0])
+        u = self.u_max * action[:, 0]
 
         angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(state, 6, 1)
 
@@ -196,9 +205,3 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
     def is_done(self, state):
         return False
-    
-    def render(self, mode="human"):
-        if self.render_mode is not None:
-            return self.renderer.get_renders()
-        else:
-            return super().render(mode)
