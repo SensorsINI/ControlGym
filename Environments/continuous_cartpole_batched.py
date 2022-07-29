@@ -7,6 +7,7 @@ from gym import logger, spaces
 from gym.envs.classic_control.cartpole import CartPoleEnv
 
 from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
+from Utilities.utils import CurrentRunMemory
 
 
 class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
@@ -15,7 +16,13 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
     def __init__(self, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs):
         super().__init__(render_mode=render_mode)
-        self.config = kwargs
+
+        self.config = {
+            **kwargs,
+            **{"render_mode": self.render_mode},
+        }
+        CurrentRunMemory.controller_specific_params = self.config
+
         self.action_space = spaces.Box(
             low=-self.force_mag, high=self.force_mag, shape=(1,), dtype=np.float32
         )

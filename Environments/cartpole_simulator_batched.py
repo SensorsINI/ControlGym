@@ -17,6 +17,8 @@ from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
 from gym.spaces import Box
 from gym.utils.renderer import Renderer
 
+from Utilities.utils import CurrentRunMemory
+
 class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
     num_actions = 1
     num_states = 6
@@ -24,12 +26,16 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
     def __init__(
         self, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs
     ):
-        self.config = kwargs
-
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
         self.render_mode = render_mode
         self.renderer = Renderer(self.render_mode, self._render)
+
+        self.config = {
+            **kwargs,
+            **{"render_mode": self.render_mode},
+        }
+        CurrentRunMemory.controller_specific_params = self.config
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
