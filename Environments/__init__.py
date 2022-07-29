@@ -37,7 +37,7 @@ class ComputationLibrary:
     reshape: Callable[[TensorType, "tuple[int]"], TensorType] = None
     shape: Callable[[TensorType], "list[int]"] = None
     to_numpy: Callable[[TensorType], np.ndarray] = None
-    to_tensor: Callable[[TensorType, float], TensorType] = None
+    to_tensor: Callable[[TensorType, type], TensorType] = None
     unstack: Callable[[TensorType, int, int], "list[TensorType]"] = None
     ndim: Callable[[TensorType], int] = None
     clip: Callable[[TensorType, float, float], TensorType] = None
@@ -57,7 +57,7 @@ class ComputationLibrary:
     create_rng: Callable[[int], RandomGeneratorType] = None
     standard_normal: Callable[[RandomGeneratorType, "tuple[int]"], TensorType] = None
     uniform: Callable[
-        [RandomGeneratorType, "tuple[int]", TensorType, TensorType, float], TensorType
+        [RandomGeneratorType, "tuple[int]", TensorType, TensorType, type], TensorType
     ] = None
     sum: Callable[[TensorType, int], TensorType] = None
     set_shape: Callable[[TensorType, "list[int]"], None] = None

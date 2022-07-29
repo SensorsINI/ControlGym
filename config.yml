@@ -1,13 +1,13 @@
 1_data_generation:
   controller_names:
-  - controller_cem_tf
-  - controller_cem_naive_grad_tf
+  # - controller_cem_tf
+  # - controller_cem_naive_grad_tf
   - controller_dist_adam_resamp2
   debug: false
-  environment_names: CustomEnvironments/AcrobotBatched-v0
+  environment_names: CustomEnvironments/CartPoleSimulator-v0
   logging_level: DEBUG
   num_experiments: 1
-  num_iterations: 1000
+  num_iterations: 300
   render_for_humans: false
   save_plots_to_file: true
   seed_entropy: 556123
@@ -50,6 +50,14 @@
   CustomEnvironments/AcrobotBatched-v0:
     actuator_noise:
     - 0.0
+  CustomEnvironments/CartPoleSimulator-v0:
+    actuator_noise:
+    - 0.0
+    dt: 0.002
+    mode: stabilization
+    cart_length: 4.4e-2
+    usable_track_length: 44.0e-2
+    u_max: 2.62
 3_predictors:
   PredictorGaussianError:
     prediction_error_stdev: 0.1
@@ -124,7 +132,7 @@
     CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     cem_LR: 0.05
     cem_R: 1
-    cem_best_k: 4
+    cem_best_k: 40
     cem_ccrc_weight: 1
     cem_outer_it: 5
     cem_rollouts: 400
@@ -139,7 +147,7 @@
   controller_cem_tf:
     CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     cem_R: 1
-    cem_best_k: 4
+    cem_best_k: 40
     cem_ccrc_weight: 1
     cem_outer_it: 5
     cem_rollouts: 400
@@ -183,7 +191,7 @@
     resamp_per: 5
     sample_stdev: 0.5
     seed: None
-    warmup: true
+    warmup: false
   controller_do_mpc:
     dt_mpc_simulation: 0.02
     l_angle: 0.1
@@ -288,4 +296,4 @@
     PATH_TO_MODELS: ./Controllers/models_for_nn_as_mpc_tf/
     net_name: Dense-6IN-32H1-32H2-1OUT-0
   dt: 0.02
-  mpc_horizon: 0.5
+  mpc_horizon: 0.7

@@ -128,14 +128,13 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         return self._get_reset_return_val()
 
     def is_done(self, state):
-        th1, th2, th1_vel, th2_vel = self.lib.unstack(state, 4, 1)
-        return -self.lib.cos(th1) - self.lib.cos(th2 + th1) > 1.0
+        return False
 
     def get_reward(self, state, action):
         th1, th2, th1_vel, th2_vel = self.lib.unstack(state, 4, 1)
         return (
             -self.lib.cos(th1) - self.lib.cos(th2 + th1)
-            + (-1.0) * self.lib.cast(self.is_done(state), self.lib.float32)
+            - 1.0e-2 * (th1_vel + th2_vel)
         )
     
     def _convert_to_state(self, state):

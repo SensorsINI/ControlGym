@@ -43,6 +43,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self,
         waypoints,
         target_point,
+        spawn_on_circle_radius,
         n_waypoints,
         batch_size=1,
         computation_lib=NumpyLibrary,
@@ -74,6 +75,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         #     self.target = self.lib.to_numpy(self.lib.uniform(self.rng, (3,), [-1.0, -1.0, -np.pi/2], [1.0, 1.0, np.pi/2], self.lib.float32))
         # else:
         self.target = target_point
+        self.spawn_on_circle_radius = spawn_on_circle_radius
 
         self.action = [0.0, 0.0]  # Action
 
@@ -100,12 +102,13 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             self._set_up_rng(seed)
 
         if state is None:
-            x = self.rng.uniform(-1.0, 1.0, (1, 1))
-            y = self.rng.choice([-1.0, 1.0], (1, 1)) * self.lib.sqrt(1.0 - x**2)
+            circle_radius = self.spawn_on_circle_radius
+            x = self.lib.uniform(self.rng, (1, 1), -circle_radius, circle_radius, self.lib.float32)
+            y = self.rng.choice([-circle_radius, circle_radius], (1, 1)) * self.lib.sqrt(circle_radius**2 - x**2)
             theta = self.get_heading(
                 self.lib.concat([x, y], 1), self.lib.unsqueeze(self.target, 0)
             )
-            yaw = self.rng.uniform(theta - MAX_STEER, theta + MAX_STEER, (1, 1))
+            yaw = self.lib.uniform(self.rng, (1, 1), theta - MAX_STEER, theta + MAX_STEER, self.lib.float32)
 
             self.state = self.lib.stack([x, y, yaw], 1)
             self.traj_x = [float(x * MAX_X)]
