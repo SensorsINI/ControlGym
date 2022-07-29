@@ -16,6 +16,7 @@ import datetime
 import tensorflow as tf
 
 from Environments import EnvironmentBatched, NumpyLibrary, TensorType, cost_functions
+from Utilities.utils import CurrentRunMemory
 
 # Training constants
 MAX_STEER = np.pi / 3
@@ -46,7 +47,6 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
     def __init__(
         self,
         target_point,
-        spawn_on_circle_radius,
         obstacle_positions: list[list[float]],
         batch_size=1,
         computation_lib=NumpyLibrary,
@@ -75,23 +75,34 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             low, high, dtype=np.float32
         )  # Observation space for [x, y, theta]
 
-        # if target_point is None:
-        #     self.target = self.lib.to_numpy(self.lib.uniform(self.rng, (3,), [-1.0, -1.0, -np.pi/2], [1.0, 1.0, np.pi/2], self.lib.float32))
-        # else:
         self.target = target_point
-        self.spawn_on_circle_radius = spawn_on_circle_radius
-        self.obstacle_positions = obstacle_positions  # List of lists [x_pos, y_pos, radius]
+        self.num_obstacles = 5
+
+        if obstacle_positions is None:
+            self.obstacle_positions = []
+            # TODO: Assign obstacles here
+            # Ensure the planning env takes the same obstacles, does not generate new ones
+            # Will have to check this with debugging mode on
+            for _ in range(self.num_obstacles):
+                self.obstacle_positions.append(list(self.lib.to_numpy(
+                    self.lib.uniform(
+                        self.rng, (3,), [-0.7, -0.8, 0.05], [0.7, 0.8, 0.2], self.lib.float32
+                    )
+                )))
+        else:
+            self.obstacle_positions = obstacle_positions  # List of lists [x_pos, y_pos, radius]
 
         self.action = [0.0, 0.0]  # Action
 
         self.config = {
             **kwargs,
             **dict(
+                render_mode=self.render_mode,
                 target_point=self.target,
-                spawn_on_circle_radius=spawn_on_circle_radius,
-                obstacle_positions=obstacle_positions
-            ),
+                obstacle_positions=self.obstacle_positions,
+            )
         }
+        CurrentRunMemory.controller_specific_params = self.config
 
         self.fig: plt.Figure = None
         self.ax: plt.Axes = None
@@ -107,9 +118,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             self._set_up_rng(seed)
 
         if state is None:
-            circle_radius = self.spawn_on_circle_radius
-            x = self.lib.uniform(self.rng, (1, 1), -circle_radius, circle_radius, self.lib.float32)
-            y = self.rng.choice([-circle_radius, circle_radius], (1, 1)) * self.lib.sqrt(circle_radius**2 - x**2)
+            x = self.lib.uniform(self.rng, (1, 1), -1.0, -0.9, self.lib.float32)
+            y = self.lib.uniform(self.rng, (1, 1), -1.0, 1.0, self.lib.float32)
             theta = self.get_heading(
                 self.lib.concat([x, y], 1), self.lib.unsqueeze(self.target, 0)
             )
@@ -184,13 +194,14 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         )
     
     def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType) -> TensorType:
-        costs = self.lib.zeros(self.lib.shape(x))
+        costs = self.lib.unsqueeze(self.lib.zeros(self.lib.shape(x)), 1)
         for obstacle_position in self.obstacle_positions:
             x_obs, y_obs, radius = obstacle_position
             _d = self.lib.sqrt((x - x_obs)**2 + (y - y_obs)**2)
             _c = 1.0 - (self.lib.min(self.lib.ones(self.lib.shape(x)), _d/radius))**2
-            costs = self.lib.stack([costs, _c], 1)
-        return self.lib.reduce_max(costs[:, 1:], 1)
+            _c = self.lib.unsqueeze(_c, 1)
+            costs = self.lib.concat([costs, _c], 1)
+        return self.lib.reduce_max(costs, 1)
     
     def get_distance(self, x1, x2):
         # Distance between points x1 and x2
@@ -252,7 +263,6 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             # Turn interactive plotting off
             plt.ioff()
         else:
-            matplotlib.use('TkAgg')
             plt.ion()
 
         # Storing tracked trajectory
@@ -415,10 +425,6 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         )
         self.ax.plot(x, y, "*")
     
-
-
-
-
     def plot_obstacles(self):
         patches = []
         for obstacle_position in self.obstacle_positions:

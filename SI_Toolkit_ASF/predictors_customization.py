@@ -8,7 +8,6 @@ import gym
 from Utilities.utils import CurrentRunMemory, SeedMemory
 
 
-config = load(open("config.yml", "r"), Loader=FullLoader)
 environment_module = (
     ENV_REGISTRY[CurrentRunMemory.current_environment_name]
     .split(":")[0]
@@ -25,19 +24,16 @@ CONTROL_INPUTS = np.array([f"u_{i}" for i in range(Environment.num_actions)])
 CONTROL_INDICES = {x: np.where(CONTROL_INPUTS == x)[0][0] for x in CONTROL_INPUTS}
 
 
-config = load(open("config.yml", "r"), Loader=FullLoader)
-
 register_envs()
 
 
 class next_state_predictor_ODE:
     def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
-
         self.s = None
         env_name = CurrentRunMemory.current_environment_name
 
         planning_env_config = {
-            **config["2_environments"][env_name].copy(),
+            **CurrentRunMemory.controller_specific_params,
             **{"seed": SeedMemory.get_seeds()[0]},
             **{"computation_lib": NumpyLibrary},
         }

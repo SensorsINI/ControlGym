@@ -3,12 +3,12 @@
   - controller_cem_tf
   - controller_cem_naive_grad_tf
   - controller_dist_adam_resamp2
-  debug: false
+  debug: true
   environment_names: CustomEnvironments/DubinsCar-v0
   logging_level: DEBUG
   num_experiments: 10
   num_iterations: 300
-  render_for_humans: false
+  render_for_humans: true
   save_plots_to_file: false
   seed_entropy: 556123
   split:
@@ -30,10 +30,9 @@
     actuator_noise:
     - 0.0
     - 0.0
-    target_point: [0.8, 0.0, 1.55]
-    spawn_on_circle_radius: 0.3
-    obstacle_positions:
-    - [0.0, 0.0, 0.2]
+    target_point: [0.9, 0.0, 0.0]
+    obstacle_positions: null
+    # - [0.0, 0.0, 0.2]
   CustomEnvironments/HalfCheetahBatched-v0:
     actuator_noise:
     - 0.0

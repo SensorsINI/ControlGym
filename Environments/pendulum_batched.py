@@ -7,6 +7,7 @@ from gym import spaces
 from gym.envs.classic_control.pendulum import PendulumEnv
 
 from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
+from Utilities.utils import CurrentRunMemory
 
 
 class pendulum_batched(EnvironmentBatched, PendulumEnv):
@@ -15,7 +16,13 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
     def __init__(self, g=10, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs):
         super().__init__(render_mode=render_mode, g=g)
-        self.config = kwargs
+
+        self.config = {
+            **kwargs,
+            **{"render_mode": self.render_mode, "g": g},
+        }
+        CurrentRunMemory.controller_specific_params = self.config
+
         high = np.array([np.pi, self.max_speed, 1.0, 1.0], dtype=np.float32)
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
 

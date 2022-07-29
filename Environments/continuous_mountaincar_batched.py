@@ -6,6 +6,7 @@ import torch
 from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
 from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
+from Utilities.utils import CurrentRunMemory
 
 
 class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarEnv):
@@ -21,7 +22,13 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         self, goal_velocity=0, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs
     ):
         super().__init__(render_mode=render_mode, goal_velocity=goal_velocity)
-        self.config = kwargs
+
+        self.config = {
+            **kwargs,
+            **{"render_mode": self.render_mode, "goal_velocity": self.goal_velocity},
+        }
+        CurrentRunMemory.controller_specific_params = self.config
+
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
 

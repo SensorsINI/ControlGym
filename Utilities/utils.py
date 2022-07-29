@@ -4,6 +4,7 @@ from importlib import import_module
 from importlib.util import find_spec
 from pathlib import Path
 import platform
+from typing import Any
 import tensorflow as tf
 import torch
 
@@ -115,6 +116,7 @@ class SeedMemory:
 class CurrentRunMemory:
     current_controller_name: str
     current_environment_name: str
+    controller_specific_params: dict[str, Any]
 
 
 ### Below is copied from CartPole repo

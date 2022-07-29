@@ -8,6 +8,7 @@ from gym.envs.classic_control import utils
 from gym.envs.classic_control.acrobot import AcrobotEnv
 
 from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
+from Utilities.utils import CurrentRunMemory
 
 
 class acrobot_batched(EnvironmentBatched, AcrobotEnv):
@@ -16,7 +17,13 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
 
     def __init__(self, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs):
         super().__init__(render_mode=render_mode)
-        self.config = kwargs
+        
+        self.config = {
+            **kwargs,
+            **{"render_mode": self.render_mode},
+        }
+        CurrentRunMemory.controller_specific_params = self.config
+
         high = np.array(
             [np.pi, np.pi, self.MAX_VEL_1, self.MAX_VEL_2], dtype=np.float32
         )

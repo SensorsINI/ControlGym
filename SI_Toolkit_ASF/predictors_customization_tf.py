@@ -19,7 +19,6 @@ STATE_INDICES_TF = tf.lookup.StaticHashTable(  # TF style dictionary
     default_value=-100,
     name=None,
 )
-config = load(open("config.yml", "r"), Loader=FullLoader)
 
 
 class next_state_predictor_ODE_tf:
@@ -28,7 +27,7 @@ class next_state_predictor_ODE_tf:
 
         env_name = CurrentRunMemory.current_environment_name
         planning_env_config = {
-            **config["2_environments"][env_name].copy(),
+            **CurrentRunMemory.controller_specific_params,
             **{"seed": SeedMemory.get_seeds()[0]},
             **{"computation_lib": TensorFlowLibrary},
         }
