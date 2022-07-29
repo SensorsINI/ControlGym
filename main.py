@@ -95,6 +95,13 @@ def run_data_generator(
             if config["1_data_generation"]["render_for_humans"]
             else "single_rgb_array"
         )
+        
+        import matplotlib
+        if render_mode == "human":
+            matplotlib.use("Qt5Agg")
+        else:
+            matplotlib.use("Agg")
+
         env = gym.make(
             environment_name,
             **config["2_environments"][environment_name],

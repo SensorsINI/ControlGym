@@ -1,16 +1,8 @@
-import matplotlib
-matplotlib.use("Agg")
-
 import itertools
-import os
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import numpy as np
 
 from Visualizations import Plotter
 from Utilities.utils import OutputPath
-
-plt.style.use(["science"])
 
 
 class InputPlanPlotter(Plotter):
@@ -21,6 +13,15 @@ class InputPlanPlotter(Plotter):
         frames: "list[np.ndarray]",
         save_to_video: bool = True,
     ):
+        import matplotlib
+        if save_to_video:
+            matplotlib.use("Agg")
+        else:
+            matplotlib.use("Qt5Agg")
+        import matplotlib.pyplot as plt
+        import matplotlib.animation as animation
+        plt.style.use(["science"])
+            
         actions = np.expand_dims(actions, 3) if actions.ndim == 3 else actions
         num_steps, num_samples, horizon_length, num_actions = actions.shape
 

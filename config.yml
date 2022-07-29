@@ -1,9 +1,9 @@
 1_data_generation:
   controller_names:
-  - controller_cem_tf
-  - controller_cem_naive_grad_tf
+  # - controller_cem_tf
+  # - controller_cem_naive_grad_tf
   - controller_dist_adam_resamp2
-  debug: true
+  debug: false
   environment_names: CustomEnvironments/DubinsCar-v0
   logging_level: DEBUG
   num_experiments: 10
@@ -144,7 +144,7 @@
     cem_ccrc_weight: 1
     cem_outer_it: 5
     cem_rollouts: 400
-    cem_stdev_min: 0.05
+    cem_stdev_min: 0.2
     controller_logging: true
     dt: 0.02
     mpc_horizon: 0.5

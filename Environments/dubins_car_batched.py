@@ -76,7 +76,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         )  # Observation space for [x, y, theta]
 
         self.target = target_point
-        self.num_obstacles = 5
+        self.num_obstacles = 5 + math.floor(float(self.lib.uniform(self.rng, (), 0, 5, self.lib.float32)))
 
         if obstacle_positions is None:
             self.obstacle_positions = []
@@ -86,11 +86,11 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             for _ in range(self.num_obstacles):
                 self.obstacle_positions.append(list(self.lib.to_numpy(
                     self.lib.uniform(
-                        self.rng, (3,), [-0.7, -0.8, 0.05], [0.7, 0.8, 0.2], self.lib.float32
+                        self.rng, (3,), [-0.7, -0.8, 0.05], [0.7, 0.8, 0.3], self.lib.float32
                     )
                 )))
         else:
-            self.obstacle_positions = obstacle_positions  # List of lists [x_pos, y_pos, radius]
+            self.obstacle_positions = obstacle_positions  # List of lists [[x_pos, y_pos, radius], ...]
 
         self.action = [0.0, 0.0]  # Action
 
@@ -263,6 +263,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             # Turn interactive plotting off
             plt.ioff()
         else:
+            
             plt.ion()
 
         # Storing tracked trajectory
@@ -429,5 +430,5 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         patches = []
         for obstacle_position in self.obstacle_positions:
             pos_x, pos_y, radius = obstacle_position
-            self.ax.add_patch(Circle((pos_x, pos_y), radius*np.sqrt(MAX_X*MAX_Y), fill=False, edgecolor="k"))
+            self.ax.add_patch(Circle((pos_x*MAX_X, pos_y*MAX_Y), radius*np.sqrt(MAX_X*MAX_Y), fill=False, edgecolor="k"))
         
