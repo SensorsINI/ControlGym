@@ -50,10 +50,12 @@ class ComputationLibrary:
     stack: Callable[["list[TensorType]", int], TensorType] = None
     cast: Callable[[TensorType, type], TensorType] = None
     floormod: Callable[[TensorType], TensorType] = None
-    float32: Callable[[], float] = None
+    float32 = None
+    bool = None
     tile: Callable[[TensorType, "tuple[int]"], TensorType] = None
     gather: Callable[[TensorType, TensorType, int], TensorType] = None
     zeros: Callable[["tuple[int]"], TensorType] = None
+    ones: Callable[["tuple[int]"], TensorType] = None
     create_rng: Callable[[int], RandomGeneratorType] = None
     standard_normal: Callable[[RandomGeneratorType, "tuple[int]"], TensorType] = None
     uniform: Callable[
@@ -64,6 +66,8 @@ class ComputationLibrary:
     concat: Callable[["list[TensorType]", int], TensorType]
     pi: TensorType = None
     any: Callable[[TensorType], bool] = None
+    reduce_any: Callable[[TensorType, int], bool] = None
+    reduce_max: Callable[[TensorType, int], bool] = None
     min: Callable[[TensorType, TensorType], TensorType] = None
     max: Callable[[TensorType, TensorType], TensorType] = None
     atan2: Callable[[TensorType], TensorType] = None
@@ -90,9 +94,11 @@ class NumpyLibrary(ComputationLibrary):
     cast = lambda x, t: x.astype(t)
     floormod = np.mod
     float32 = np.float32
+    bool = np.bool_
     tile = np.tile
     gather = lambda x, i, a: np.take(x, i, axis=a)
     zeros = np.zeros
+    ones = np.ones
     create_rng = lambda seed: Generator(SFC64(seed))
     standard_normal = lambda generator, shape: generator.standard_normal(size=shape)
     uniform = lambda generator, shape, low, high, dtype: generator.uniform(
@@ -103,6 +109,8 @@ class NumpyLibrary(ComputationLibrary):
     concat = lambda x, a: np.concatenate(x, axis=a)
     pi = np.array(np.pi).astype(np.float32)
     any = np.any
+    reduce_any = lambda a, axis: np.any(a, axis=axis)
+    reduce_max = lambda a, axis: np.max(a, axis=axis)
     min = np.minimum
     max = np.maximum
     atan2 = np.arctan2
@@ -130,8 +138,10 @@ class TensorFlowLibrary(ComputationLibrary):
     cast = lambda x, t: tf.cast(x, dtype=t)
     floormod = tf.math.floormod
     float32 = tf.float32
+    bool = tf.bool
     tile = tf.tile
     zeros = tf.zeros
+    ones = tf.ones
     create_rng = lambda seed: tf.random.Generator.from_seed(seed)
     standard_normal = lambda generator, shape: generator.normal(shape)
     uniform = lambda generator, shape, low, high, dtype: generator.uniform(
@@ -142,6 +152,8 @@ class TensorFlowLibrary(ComputationLibrary):
     concat = lambda x, a: tf.concat(x, a)
     pi = tf.convert_to_tensor(np.array(np.pi), dtype=tf.float32)
     any = tf.reduce_any
+    reduce_any = lambda a, axis: tf.reduce_any(a, axis=axis)
+    reduce_max = lambda a, axis: tf.reduce_max(a, axis=axis)
     min = tf.minimum
     max = tf.maximum
     atan2 = tf.atan2
@@ -169,8 +181,10 @@ class PyTorchLibrary(ComputationLibrary):
     cast = lambda x, t: x.type(t)
     floormod = torch.remainder
     float32 = torch.float32
+    bool = torch.bool
     tile = torch.tile
     zeros = torch.zeros
+    ones = torch.ones
     create_rng = lambda seed: torch.Generator().manual_seed(seed)
     standard_normal = lambda generator, shape: torch.normal(
         torch.zeros(shape), 1.0, generator=generator
@@ -185,6 +199,8 @@ class PyTorchLibrary(ComputationLibrary):
     concat = lambda x, a: torch.concat(x, dim=a)
     pi = torch.from_numpy(np.array(np.pi)).float()
     any = torch.any
+    reduce_any = lambda a, axis: torch.any(a, dim=axis)
+    reduce_max = lambda a, axis: torch.max(a, dim=axis)
     min = torch.minimum
     max = torch.maximum
     atan2 = torch.atan2

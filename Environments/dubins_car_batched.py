@@ -4,6 +4,8 @@ from typing import Optional, Union, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.patches import Circle
+from matplotlib.collections import PatchCollection
 import math
 import gym
 from gym import spaces
@@ -13,13 +15,13 @@ import itertools
 import datetime
 import tensorflow as tf
 
-from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
+from Environments import EnvironmentBatched, NumpyLibrary, TensorType, cost_functions
 
 # Training constants
 MAX_STEER = np.pi / 3
 MAX_SPEED = 10.0
 MIN_SPEED = 0.0
-THRESHOLD_DISTANCE_2_GOAL = 0.05
+THRESHOLD_DISTANCE_2_GOAL = 0.01
 MAX_X = 10.0
 MAX_Y = 10.0
 max_ep_length = 800
@@ -45,6 +47,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self,
         target_point,
         spawn_on_circle_radius,
+        obstacle_positions: list[list[float]],
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode: str = None,
@@ -77,6 +80,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         # else:
         self.target = target_point
         self.spawn_on_circle_radius = spawn_on_circle_radius
+        self.obstacle_positions = obstacle_positions  # List of lists [x_pos, y_pos, radius]
 
         self.action = [0.0, 0.0]  # Action
 
@@ -85,6 +89,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             **dict(
                 target_point=self.target,
                 spawn_on_circle_radius=spawn_on_circle_radius,
+                obstacle_positions=obstacle_positions
             ),
         }
 
@@ -138,12 +143,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         ld = self.get_distance(state, self.lib.unsqueeze(self.target, 0))
         crossTrackError = self.lib.sin(alpha) * ld
 
-        car_in_bounds = (self.lib.abs(x) < 1.0) & (self.lib.abs(y) < 1.0)
-        car_at_target = (
-            (self.lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL)
-            & (self.lib.abs(y - y_target) < THRESHOLD_DISTANCE_2_GOAL)
-            & (self.lib.abs(yaw_car - yaw_target) < 0.1)
-        )
+        car_in_bounds = self._car_in_bounds(x, y)
+        car_at_target = self._car_at_target(x, y, x_target, y_target)
 
         reward = (
             self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
@@ -151,10 +152,11 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             * (
                 -1.0
                 * (
-                    3 * self.lib.abs(crossTrackError)
-                    + self.lib.abs(x - x_target)
-                    + self.lib.abs(y - y_target)
-                    + 3 * self.lib.abs(head_to_target - yaw_car) / MAX_STEER
+                    # 3 * crossTrackError**2
+                    (x - x_target)**2
+                    + (y - y_target)**2
+                    # + 3 * (head_to_target - yaw_car)**2 / MAX_STEER
+                    + 5 * self._distance_to_obstacle_cost(x, y)
                 )
                 / 8.0
             )
@@ -165,16 +167,31 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
     def is_done(self, state):
         x, y, yaw_car = self.lib.unstack(state, 3, 1)
-        x_target = self.target[0]
-        y_target = self.target[1]
-
-        car_in_bounds = (self.lib.abs(x) < 1.0) & (self.lib.abs(y) < 1.0)
-        car_at_target = (self.lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL) & (
-            self.lib.abs(y - y_target) < THRESHOLD_DISTANCE_2_GOAL
-        )
+        x_target, y_target, yaw_target = self.target
+        
+        car_in_bounds = self._car_in_bounds(x, y)
+        car_at_target = self._car_at_target(x, y, x_target, y_target)
         done = ~(car_in_bounds & (~car_at_target))
         return done
-
+    
+    def _car_in_bounds(self, x: TensorType, y: TensorType) -> TensorType:
+        return (self.lib.abs(x) < 1.0) & (self.lib.abs(y) < 1.0)
+    
+    def _car_at_target(self, x: TensorType, y: TensorType, x_target: float, y_target: float) -> TensorType:
+        return (
+            (self.lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL)
+            & (self.lib.abs(y - y_target) < THRESHOLD_DISTANCE_2_GOAL)
+        )
+    
+    def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType) -> TensorType:
+        costs = self.lib.zeros(self.lib.shape(x))
+        for obstacle_position in self.obstacle_positions:
+            x_obs, y_obs, radius = obstacle_position
+            _d = self.lib.sqrt((x - x_obs)**2 + (y - y_obs)**2)
+            _c = 1.0 - (self.lib.min(self.lib.ones(self.lib.shape(x)), _d/radius))**2
+            costs = self.lib.stack([costs, _c], 1)
+        return self.lib.reduce_max(costs[:, 1:], 1)
+    
     def get_distance(self, x1, x2):
         # Distance between points x1 and x2
         return self.lib.sqrt((x1[:, 0] - x2[:, 0]) ** 2 + (x1[:, 1] - x2[:, 1]) ** 2)
@@ -264,7 +281,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.ax.plot(
             self.target[0] * MAX_X, self.target[1] * MAX_Y, "xg", label="target"
         )
-        # Rendering the car and action taken
+        self.plot_obstacles()
         self.plot_car()
         self.ax.set_aspect("equal", adjustable="datalim")
         self.ax.grid(True)
@@ -397,3 +414,14 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             truckcolor,
         )
         self.ax.plot(x, y, "*")
+    
+
+
+
+
+    def plot_obstacles(self):
+        patches = []
+        for obstacle_position in self.obstacle_positions:
+            pos_x, pos_y, radius = obstacle_position
+            self.ax.add_patch(Circle((pos_x, pos_y), radius*np.sqrt(MAX_X*MAX_Y), fill=False, edgecolor="k"))
+        
