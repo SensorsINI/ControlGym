@@ -7,7 +7,7 @@
   environment_names: CustomEnvironments/CartPoleSimulator-v0
   logging_level: DEBUG
   num_experiments: 1
-  num_iterations: 300
+  num_iterations: 600
   render_for_humans: false
   save_plots_to_file: true
   seed_entropy: 556123
@@ -30,16 +30,8 @@
     actuator_noise:
     - 0.0
     - 0.0
-    target_point: [0.5, 0.8, 1.57]
-    waypoints:
-    - [0.0, 1.0, 1.57]
-    - [0.0, 2.0, 1.57]
-    - [1.0, 3.0, 1.57]
-    - [2.0, 4.0, 1.57]
-    - [3.0, 5.0, 1.57]
-    - [4.0, 6.0, 1.57]
-    - [4.0, 7.0, 1.57]
-    n_waypoints: 1  # look ahead waypoints
+    target_point: [0.0, 0.0, 0.55]
+    spawn_on_circle_radius: 0.3
   CustomEnvironments/HalfCheetahBatched-v0:
     actuator_noise:
     - 0.0
