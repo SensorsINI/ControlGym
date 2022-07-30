@@ -1,8 +1,8 @@
 1_data_generation:
   controller_names:
   - controller_cem_tf
-  # - controller_cem_naive_grad_tf
-  # - controller_dist_adam_resamp2
+  - controller_cem_naive_grad_tf
+  - controller_dist_adam_resamp2
   debug: false
   environment_names: CustomEnvironments/DubinsCar-v0
   logging_level: DEBUG
@@ -125,10 +125,10 @@
     CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     cem_LR: 0.05
     cem_R: 1
-    cem_best_k: 40
+    cem_best_k: 20
     cem_ccrc_weight: 1
     cem_outer_it: 5
-    cem_rollouts: 400
+    cem_rollouts: 200
     cem_stdev_min: 0.2
     controller_logging: true
     dt: 0.02
@@ -140,10 +140,10 @@
   controller_cem_tf:
     CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     cem_R: 1
-    cem_best_k: 40
+    cem_best_k: 20
     cem_ccrc_weight: 1
     cem_outer_it: 5
-    cem_rollouts: 400
+    cem_rollouts: 200
     cem_stdev_min: 0.2
     controller_logging: true
     dt: 0.02
@@ -176,8 +176,8 @@
     gradmax_clip: 5
     rtol: 1.0e-3
     interpolation_step: 10
-    num_rollouts: 20
-    opt_keep_k: 4
+    num_rollouts: 10
+    opt_keep_k: 2
     outer_its: 20
     predictor_intermediate_steps: 10
     predictor_name: predictor_ODE_tf

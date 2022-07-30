@@ -20,7 +20,13 @@ class Controller:
         self._rng_np = Generator(SFC64(seed))
         self._rng_tf = tf.random.Generator.from_seed(seed)
         self._controller_logging = controller_logging
-        self.save_vars = ["Q_logged", "J_logged", "realized_cost_logged", "s_logged", "u_logged"]
+        self.save_vars = [
+            "Q_logged",
+            "J_logged",
+            "realized_cost_logged",
+            "s_logged",
+            "u_logged",
+        ]
         self.logs = {s: [] for s in self.save_vars}
         for v in self.save_vars:
             setattr(self, v, None)
@@ -37,11 +43,15 @@ class Controller:
         :return: A dictionary of numpy arrays
         :rtype: dict[str, np.ndarray]
         """
-        return {k: np.stack(v, axis=0) if len(v) > 0 else None for k, v in self.logs.items()}
+        return {
+            k: np.stack(v, axis=0) if len(v) > 0 else None for k, v in self.logs.items()
+        }
 
     def update_logs(self) -> None:
         if self._controller_logging:
-            for name, var in zip(self.save_vars, [getattr(self, var_name) for var_name in self.save_vars]):
+            for name, var in zip(
+                self.save_vars, [getattr(self, var_name) for var_name in self.save_vars]
+            ):
                 if var is not None:
                     self.logs[name].append(
                         var.numpy().copy() if hasattr(var, "numpy") else var.copy()

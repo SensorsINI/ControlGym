@@ -11,7 +11,14 @@ class HorizonCostPlotter(Plotter):
     def plot(self, costs: np.ndarray, save_to_image: bool = True):
         if self.ax is None:
             self.fig, self.ax = plt.subplots(
-                figsize=(10, 8), gridspec_kw={"wspace": 0.1, "left": 0.1, "right": 0.9, "top": 0.9, "bottom": 0.1}
+                figsize=(10, 8),
+                gridspec_kw={
+                    "wspace": 0.1,
+                    "left": 0.1,
+                    "right": 0.9,
+                    "top": 0.9,
+                    "bottom": 0.1,
+                },
             )
         self.ax.clear()
         num_steps, num_samples = costs.shape

@@ -2,6 +2,7 @@ from Utilities.utils import CurrentRunMemory
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
+
 class Plotter:
     def __init__(self, timestamp: str, config: dict, **kwargs) -> None:
         self.fig: plt.Figure = None

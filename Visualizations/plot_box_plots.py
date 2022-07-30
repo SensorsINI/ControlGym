@@ -33,7 +33,7 @@ class BoxPlotPlotter(Plotter):
         for patch, color in zip(bplot["boxes"], _build_color_seq(len(costs.values()))):
             patch.set_facecolor(color)
 
-        self.ax.set_ylabel("Realized average cost per experiment")
+        self.ax.set_ylabel("Realized total cost per experiment")
         self.ax.set_title(
             f"Comparison of different control methods, N={num_datapoints_per_experiment}\nShowing median, Q1, Q3, IQR. Outliers not shown."
         )

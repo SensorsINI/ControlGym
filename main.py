@@ -96,8 +96,9 @@ def run_data_generator(
             if config["1_data_generation"]["render_for_humans"]
             else "single_rgb_array"
         )
-        
+
         import matplotlib
+
         if render_mode == "human":
             matplotlib.use("Qt5Agg")
         else:
@@ -186,10 +187,12 @@ if __name__ == "__main__":
 
         device_name = "/CPU:0"
         if config["1_data_generation"]["use_gpu"]:
-            if len(tf.config.list_physical_devices('GPU')) > 0:
+            if len(tf.config.list_physical_devices("GPU")) > 0:
                 device_name = "/GPU:0"
             else:
-                logger.info("GPU use specified in config but no device available. Using CPU instead.")
+                logger.info(
+                    "GPU use specified in config but no device available. Using CPU instead."
+                )
 
         with tf.device(device_name):
             run_data_generator(controller_name, environment_name)

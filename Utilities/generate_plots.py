@@ -23,7 +23,10 @@ def generate_experiment_plots(
         ) as f:
             np.save(f, a)
 
-    if controller_output["s_logged"] is not None and controller_output["u_logged"] is not None:
+    if (
+        controller_output["s_logged"] is not None
+        and controller_output["u_logged"] is not None
+    ):
         logger.info("Creating summary plot...")
         horizon_cost_plotter = SummaryPlotter(timestamp=timestamp, config=config)
         horizon_cost_plotter.plot(
@@ -33,7 +36,9 @@ def generate_experiment_plots(
         )
         logger.info("...done.")
     else:
-        logger.info("States and inputs were not saved in controller. Not generating plot.")
+        logger.info(
+            "States and inputs were not saved in controller. Not generating plot."
+        )
 
     if controller_output["J_logged"] is not None:
         logger.info("Creating horizon cost plot...")
@@ -46,7 +51,10 @@ def generate_experiment_plots(
     else:
         logger.info("Costs were not saved in controller. Not generating plot.")
 
-    if controller_output["Q_logged"] is not None and controller_output["J_logged"] is not None:
+    if (
+        controller_output["Q_logged"] is not None
+        and controller_output["J_logged"] is not None
+    ):
         logger.info("Creating input plan animation...")
         input_plan_plotter = InputPlanPlotter(timestamp=timestamp, config=config)
         input_plan_plotter.plot(
@@ -57,4 +65,6 @@ def generate_experiment_plots(
         )
         logger.info("...done.")
     else:
-        logger.info("Input plans and costs were not saved in controller. Not generating plot.")
+        logger.info(
+            "Input plans and costs were not saved in controller. Not generating plot."
+        )

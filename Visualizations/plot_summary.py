@@ -17,7 +17,9 @@ class SummaryPlotter(Plotter):
 
         if self.axs is None:
             self.fig = plt.figure(figsize=(12, 8))
-            self.gs = gridspec.GridSpec(nrows=2, ncols=m * n, figure=self.fig, wspace=0.2, hspace=0.2)
+            self.gs = gridspec.GridSpec(
+                nrows=2, ncols=m * n, figure=self.fig, wspace=0.2, hspace=0.2
+            )
             self.axs = [[], []]
             for i in range(n):
                 self.axs[0].append(

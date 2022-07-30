@@ -76,7 +76,9 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         )  # Observation space for [x, y, theta]
 
         self.target = target_point
-        self.num_obstacles = 5 + math.floor(float(self.lib.uniform(self.rng, (), 0, 5, self.lib.float32)))
+        self.num_obstacles = 8 + math.floor(
+            float(self.lib.uniform(self.rng, (), 0, 8, self.lib.float32))
+        )
 
         if obstacle_positions is None:
             self.obstacle_positions = []
@@ -84,13 +86,23 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             # Ensure the planning env takes the same obstacles, does not generate new ones
             # Will have to check this with debugging mode on
             for _ in range(self.num_obstacles):
-                self.obstacle_positions.append(list(self.lib.to_numpy(
-                    self.lib.uniform(
-                        self.rng, (3,), [-0.7, -0.8, 0.05], [0.7, 0.8, 0.3], self.lib.float32
+                self.obstacle_positions.append(
+                    list(
+                        self.lib.to_numpy(
+                            self.lib.uniform(
+                                self.rng,
+                                (3,),
+                                [-0.7, -0.8, 0.05],
+                                [0.7, 0.8, 0.3],
+                                self.lib.float32,
+                            )
+                        )
                     )
-                )))
+                )
         else:
-            self.obstacle_positions = obstacle_positions  # List of lists [[x_pos, y_pos, radius], ...]
+            self.obstacle_positions = (
+                obstacle_positions  # List of lists [[x_pos, y_pos, radius], ...]
+            )
 
         self.action = [0.0, 0.0]  # Action
 
@@ -100,7 +112,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 render_mode=self.render_mode,
                 target_point=self.target,
                 obstacle_positions=self.obstacle_positions,
-            )
+            ),
         }
         CurrentRunMemory.controller_specific_params = self.config
 
@@ -123,7 +135,9 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             theta = self.get_heading(
                 self.lib.concat([x, y], 1), self.lib.unsqueeze(self.target, 0)
             )
-            yaw = self.lib.uniform(self.rng, (1, 1), theta - MAX_STEER, theta + MAX_STEER, self.lib.float32)
+            yaw = self.lib.uniform(
+                self.rng, (1, 1), theta - MAX_STEER, theta + MAX_STEER, self.lib.float32
+            )
 
             self.state = self.lib.stack([x, y, yaw], 1)
             self.traj_x = [float(x * MAX_X)]
@@ -163,8 +177,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 -1.0
                 * (
                     # 3 * crossTrackError**2
-                    (x - x_target)**2
-                    + (y - y_target)**2
+                    (x - x_target) ** 2
+                    + (y - y_target) ** 2
                     # + 3 * (head_to_target - yaw_car)**2 / MAX_STEER
                     + 5 * self._distance_to_obstacle_cost(x, y)
                 )
@@ -178,31 +192,34 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
     def is_done(self, state):
         x, y, yaw_car = self.lib.unstack(state, 3, 1)
         x_target, y_target, yaw_target = self.target
-        
+
         car_in_bounds = self._car_in_bounds(x, y)
         car_at_target = self._car_at_target(x, y, x_target, y_target)
         done = ~(car_in_bounds & (~car_at_target))
         return done
-    
+
     def _car_in_bounds(self, x: TensorType, y: TensorType) -> TensorType:
         return (self.lib.abs(x) < 1.0) & (self.lib.abs(y) < 1.0)
-    
-    def _car_at_target(self, x: TensorType, y: TensorType, x_target: float, y_target: float) -> TensorType:
-        return (
-            (self.lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL)
-            & (self.lib.abs(y - y_target) < THRESHOLD_DISTANCE_2_GOAL)
+
+    def _car_at_target(
+        self, x: TensorType, y: TensorType, x_target: float, y_target: float
+    ) -> TensorType:
+        return (self.lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL) & (
+            self.lib.abs(y - y_target) < THRESHOLD_DISTANCE_2_GOAL
         )
-    
+
     def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType) -> TensorType:
         costs = self.lib.unsqueeze(self.lib.zeros(self.lib.shape(x)), 1)
         for obstacle_position in self.obstacle_positions:
             x_obs, y_obs, radius = obstacle_position
-            _d = self.lib.sqrt((x - x_obs)**2 + (y - y_obs)**2)
-            _c = 1.0 - (self.lib.min(self.lib.ones(self.lib.shape(x)), _d/radius))**2
+            _d = self.lib.sqrt((x - x_obs) ** 2 + (y - y_obs) ** 2)
+            _c = (
+                1.0 - (self.lib.min(self.lib.ones(self.lib.shape(x)), _d / radius)) ** 2
+            )
             _c = self.lib.unsqueeze(_c, 1)
             costs = self.lib.concat([costs, _c], 1)
         return self.lib.reduce_max(costs, 1)
-    
+
     def get_distance(self, x1, x2):
         # Distance between points x1 and x2
         return self.lib.sqrt((x1[:, 0] - x2[:, 0]) ** 2 + (x1[:, 1] - x2[:, 1]) ** 2)
@@ -263,7 +280,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             # Turn interactive plotting off
             plt.ioff()
         else:
-            
+
             plt.ion()
 
         # Storing tracked trajectory
@@ -426,15 +443,28 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             truckcolor,
         )
         self.ax.plot(x, y, "*")
-    
+
     def plot_obstacles(self):
         for obstacle_position in self.obstacle_positions:
             pos_x, pos_y, radius = obstacle_position
-            self.ax.add_patch(Circle((pos_x*MAX_X, pos_y*MAX_Y), radius*np.sqrt(MAX_X*MAX_Y), fill=False, edgecolor="k"))
-    
+            self.ax.add_patch(
+                Circle(
+                    (pos_x * MAX_X, pos_y * MAX_Y),
+                    radius * np.sqrt(MAX_X * MAX_Y),
+                    fill=False,
+                    edgecolor="k",
+                )
+            )
+
     def plot_trajectory_plans(self):
         controller_logs = getattr(CurrentRunMemory, "controller_logs", {})
         trajectories = controller_logs.get("rollout_trajectories_logged", None)
         if trajectories is not None:
             for trajectory in trajectories:
-                self.ax.plot(trajectory[:, 0]*MAX_X, trajectory[:, 1]*MAX_Y, linewidth=1, alpha=0.2, color="g")
+                self.ax.plot(
+                    trajectory[:, 0] * MAX_X,
+                    trajectory[:, 1] * MAX_Y,
+                    linewidth=0.5,
+                    alpha=min(5.0 / trajectories, 1.0),
+                    color="g",
+                )
