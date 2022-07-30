@@ -1,15 +1,15 @@
 1_data_generation:
   controller_names:
-  # - controller_cem_tf
+  - controller_cem_tf
   # - controller_cem_naive_grad_tf
-  - controller_dist_adam_resamp2
+  # - controller_dist_adam_resamp2
   debug: false
   environment_names: CustomEnvironments/DubinsCar-v0
   logging_level: DEBUG
-  num_experiments: 10
+  num_experiments: 1
   num_iterations: 300
-  render_for_humans: true
-  save_plots_to_file: false
+  render_for_humans: false
+  save_plots_to_file: true
   seed_entropy: 556123
   split:
   - 0.6
@@ -129,7 +129,7 @@
     cem_ccrc_weight: 1
     cem_outer_it: 5
     cem_rollouts: 400
-    cem_stdev_min: 0.05
+    cem_stdev_min: 0.2
     controller_logging: true
     dt: 0.02
     gradmax_clip: 5

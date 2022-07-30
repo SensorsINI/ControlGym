@@ -231,7 +231,6 @@ class ControllerMPPIGradient(Controller):
             )
 
         self.opt.set_weights([adam_weights[0], w_m, w_v])
-        self._update_logs()
         self.Q.assign(Q_new)
         self.iteration += 1
         return self.u

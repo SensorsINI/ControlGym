@@ -23,7 +23,7 @@ class InputPlanPlotter(Plotter):
         num_steps, num_samples, horizon_length, num_actions = actions.shape
 
         if self.fig is None:
-            self.fig = plt.figure(figsize=(8, 4), layout="constrained")
+            self.fig = plt.figure(figsize=(10, 5), layout="constrained")
             self.subfig_l, self.subfig_r = self.fig.subfigures(1, 2, wspace=0.1)
             self.axs_l = self.subfig_l.subplots(
                 nrows=num_actions,

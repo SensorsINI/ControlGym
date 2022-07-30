@@ -6,6 +6,7 @@ from copy import deepcopy
 from datetime import datetime
 from itertools import product
 import tensorflow as tf
+import numpy as np
 
 import gym
 from numpy.random import SeedSequence
@@ -129,6 +130,8 @@ def run_data_generator(
         for step in range(config["1_data_generation"]["num_iterations"]):
             action = controller.step(obs)
             new_obs, reward, done, info = env.step(action)
+            controller.realized_cost_logged = np.array([-reward])
+            controller.update_logs()
             frames.append(env.render())
 
             time.sleep(0.001)

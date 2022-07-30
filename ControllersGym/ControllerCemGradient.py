@@ -126,7 +126,6 @@ class ControllerCemGradient(Controller):
         self.u_logged = self.u.copy()
         self.J_logged, self.Q_logged = self.J.copy(), self.Q.copy()
 
-        self._update_logs()
         self.dist_mean = tf.concat(
             [self.dist_mean[:, 1:], tf.constant(0.0, shape=[1, 1])], -1
         )

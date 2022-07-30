@@ -66,5 +66,4 @@ class ControllerCemGradientBharadhwaj(Controller):
         self.u_logged = self.u.copy()
         self.J_logged, self.Q_logged = self.J.copy(), self.Q.copy()
 
-        self._update_logs()
         return self.u

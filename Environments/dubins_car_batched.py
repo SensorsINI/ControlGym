@@ -53,7 +53,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         render_mode: str = None,
         **kwargs
     ):
-        super(dubins_car_batched, self).__init__()
+        super().__init__()
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
@@ -293,6 +293,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             self.target[0] * MAX_X, self.target[1] * MAX_Y, "xg", label="target"
         )
         self.plot_obstacles()
+        self.plot_trajectory_plans()
         self.plot_car()
         self.ax.set_aspect("equal", adjustable="datalim")
         self.ax.grid(True)
@@ -427,8 +428,13 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.ax.plot(x, y, "*")
     
     def plot_obstacles(self):
-        patches = []
         for obstacle_position in self.obstacle_positions:
             pos_x, pos_y, radius = obstacle_position
             self.ax.add_patch(Circle((pos_x*MAX_X, pos_y*MAX_Y), radius*np.sqrt(MAX_X*MAX_Y), fill=False, edgecolor="k"))
-        
+    
+    def plot_trajectory_plans(self):
+        controller_logs = getattr(CurrentRunMemory, "controller_logs", {})
+        trajectories = controller_logs.get("rollout_trajectories_logged", None)
+        if trajectories is not None:
+            for trajectory in trajectories:
+                self.ax.plot(trajectory[:, 0]*MAX_X, trajectory[:, 1]*MAX_Y, linewidth=1, alpha=0.2, color="g")

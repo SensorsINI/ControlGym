@@ -92,7 +92,6 @@ class ControllerCem(Controller):
         self.u_logged = self.u.copy()
         self.J_logged, self.Q_logged = self.J.copy(), self.Q.copy()
 
-        self._update_logs()
         self.dist_mean = np.append(self.dist_mean[1:], 0).astype(np.float32)
         return self.u
 
