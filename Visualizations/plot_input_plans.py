@@ -14,10 +14,7 @@ class InputPlanPlotter(Plotter):
         save_to_video: bool = True,
     ):
         import matplotlib
-        if save_to_video:
-            matplotlib.use("Agg")
-        else:
-            matplotlib.use("Qt5Agg")
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import matplotlib.animation as animation
         plt.style.use(["science"])

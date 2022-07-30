@@ -13,9 +13,9 @@ logger = get_logger(__name__)
 
 PATH_TO_EXPERIMENTS = "Output"
 EXPERIMENTS_TO_PLOT = [
-    "20220727-113456_controller_cem_naive_grad_tf_CustomEnvironments_MountainCarContinuous_predictor_ODE_tf",
-    "20220727-114223_controller_cem_tf_CustomEnvironments_MountainCarContinuous_predictor_ODE_tf",
-    "20220727-114530_controller_dist_adam_resamp2_CustomEnvironments_MountainCarContinuous_predictor_ODE_tf",
+    "20220729-231123_controller_cem_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+    "20220729-234253_controller_cem_naive_grad_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+    "20220730-004715_controller_dist_adam_resamp2_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
 ]
 # Compare configs associated with the different experiments
 

@@ -57,6 +57,7 @@ class ControllerCem(Controller):
 
     def step(self, s: np.ndarray) -> np.ndarray:
         self.s = s.copy()
+        self.s_logged = self.s
         self._predictor_environment.reset(state=s)
         s = self._predictor_environment.get_state()
 
@@ -87,6 +88,10 @@ class ControllerCem(Controller):
             self.dist_stdev[1:], np.sqrt(self._initial_action_variance)
         ).astype(np.float32)
         self.u = np.array([self.dist_mean[0]], dtype=np.float32)
+
+        self.u_logged = self.u.copy()
+        self.J_logged, self.Q_logged = self.J.copy(), self.Q.copy()
+
         self._update_logs()
         self.dist_mean = np.append(self.dist_mean[1:], 0).astype(np.float32)
         return self.u

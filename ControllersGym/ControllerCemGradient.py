@@ -109,6 +109,7 @@ class ControllerCemGradient(Controller):
 
     def step(self, s: np.ndarray) -> np.ndarray:
         self.s = s.copy()
+        self.s_logged = self.s
         self._predictor_environment.reset(s)
         s = self._predictor_environment.get_state()
 
@@ -121,6 +122,10 @@ class ControllerCemGradient(Controller):
             [self.dist_stdev[:, 1:], tf.sqrt([[self._initial_action_variance]])], -1
         )
         self.u = tf.expand_dims(self.dist_mean[0, 0], 0).numpy()
+
+        self.u_logged = self.u.copy()
+        self.J_logged, self.Q_logged = self.J.copy(), self.Q.copy()
+
         self._update_logs()
         self.dist_mean = tf.concat(
             [self.dist_mean[:, 1:], tf.constant(0.0, shape=[1, 1])], -1

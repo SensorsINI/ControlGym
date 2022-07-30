@@ -20,8 +20,10 @@ class Controller:
         self._rng_np = Generator(SFC64(seed))
         self._rng_tf = tf.random.Generator.from_seed(seed)
         self._controller_logging = controller_logging
-        self._save_vars = ["Q_logged", "J_logged", "s_logged", "u_logged"]
-        self.logs = {s: [] for s in self._save_vars}
+        self.save_vars = ["Q_logged", "J_logged", "s_logged", "u_logged"]
+        self.logs = {s: [] for s in self.save_vars}
+        for v in self.save_vars:
+            setattr(self, v, None)
 
     def step(self, s: np.ndarray) -> np.ndarray:
         raise NotImplementedError()
@@ -35,11 +37,12 @@ class Controller:
         :return: A dictionary of numpy arrays
         :rtype: dict[str, np.ndarray]
         """
-        return {k: np.stack(v, axis=0) for k, v in self.logs.items()}
+        return {k: np.stack(v, axis=0) if len(v) > 0 else None for k, v in self.logs.items()}
 
     def _update_logs(self) -> None:
         if self._controller_logging:
-            for name, var in zip(self._save_vars, [self.Q, self.J, self.s, self.u]):
-                self.logs[name].append(
-                    var.numpy().copy() if hasattr(var, "numpy") else var.copy()
-                )
+            for name, var in zip(self.save_vars, [self.Q_logged, self.J_logged, self.s_logged, self.u_logged]):
+                if var is not None:
+                    self.logs[name].append(
+                        var.numpy().copy() if hasattr(var, "numpy") else var.copy()
+                    )

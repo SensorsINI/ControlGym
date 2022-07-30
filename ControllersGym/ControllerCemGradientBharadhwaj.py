@@ -61,6 +61,10 @@ class ControllerCemGradientBharadhwaj(Controller):
         # Q: (batch_size x horizon_length x action_space)
         # J: (batch_size)
         self.u = self.Q[np.argmin(self.J), 0, :]
-        self.s = s.copy()
+        self.s_logged = s.copy()
+
+        self.u_logged = self.u.copy()
+        self.J_logged, self.Q_logged = self.J.copy(), self.Q.copy()
+
         self._update_logs()
         return self.u

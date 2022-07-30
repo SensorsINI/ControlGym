@@ -125,11 +125,12 @@ class ControllerMPPIGradient(Controller):
             axis=1,
         )
 
-        return u, Q_keep, best_idx
+        return u, Q_keep, best_idx, self.J
 
     def step(self, s: np.ndarray) -> np.ndarray:
         # s: ndarray(n,)
         self.s = s.copy()
+        self.s_logged = self.s
         self._predictor_environment.reset(s)
         s = self._predictor_environment.get_state()
         # s: Tensor(num_rollouts, n)
@@ -145,8 +146,11 @@ class ControllerMPPIGradient(Controller):
             self.Q.assign(Q_updated)
 
         # Final rollout
-        self.u, Q_keep, best_idx = self._retrieve_action(self.s, self.Q)
+        self.u, Q_keep, best_idx, self.J = self._retrieve_action(self.s, self.Q)
         self.u = self.u.numpy()
+
+        self.u_logged = self.u.numpy()
+        self.J_logged, self.Q_logged = self.J.numpy(), self.Q.numpy()
 
         # Adam variables: m, v (1st/2nd moment of the gradient computation)
         adam_weights = self.opt.get_weights()
