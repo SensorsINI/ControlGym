@@ -465,6 +465,6 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                     trajectory[:, 0] * MAX_X,
                     trajectory[:, 1] * MAX_Y,
                     linewidth=0.5,
-                    alpha=min(5.0 / trajectories, 1.0),
+                    alpha=min(5.0 / trajectories.shape[0], 1.0),
                     color="g",
                 )
