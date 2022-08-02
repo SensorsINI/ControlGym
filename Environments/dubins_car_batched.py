@@ -177,8 +177,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 -1.0
                 * (
                     # 3 * crossTrackError**2
-                    (x - x_target) ** 2
-                    + (y - y_target) ** 2
+                    0.1 * (x - x_target) ** 2
+                    + 0.1 * (y - y_target) ** 2
                     # + 3 * (head_to_target - yaw_car)**2 / MAX_STEER
                     + 5 * self._distance_to_obstacle_cost(x, y)
                 )
@@ -280,7 +280,6 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             # Turn interactive plotting off
             plt.ioff()
         else:
-
             plt.ion()
 
         # Storing tracked trajectory
@@ -314,6 +313,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.plot_car()
         self.ax.set_aspect("equal", adjustable="datalim")
         self.ax.grid(True)
+        self.ax.set_xlim(-MAX_X, MAX_X)
+        self.ax.set_ylim(-MAX_Y, MAX_Y)
         # self.ax.set_title("Simulation")
         plt.pause(0.0001)
 

@@ -151,7 +151,7 @@ class GradCEMPlan:  # jit.ScriptModule):
         else:
             return best_plan[0]
 
-
+""" 
 if __name__ == "__main__":
     from test_energy import get_test_energy2d_env
 
@@ -180,3 +180,4 @@ if __name__ == "__main__":
     plt.contour(X.numpy(), Y.numpy(), -energies.reshape(N, N).numpy(), cmap="seismic")
     plt.scatter(action[:, 0], action[:, 1])
     plt.show()
+ """
