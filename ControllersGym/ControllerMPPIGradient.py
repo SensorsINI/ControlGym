@@ -4,7 +4,7 @@ import tensorflow as tf
 from gym import Env
 
 from ControllersGym import Controller
-from Control_Toolkit.others import TensorFlowLibrary
+from Control_Toolkit.others.environment import TensorFlowLibrary
 
 
 class ControllerMPPIGradient(Controller):

@@ -12,8 +12,8 @@ from gym import spaces
 from gym.utils.renderer import Renderer
 import tensorflow as tf
 
-from Control_Toolkit.others import TensorType
-from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary
+from Control_Toolkit.others.environment import TensorType
+from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
 from Utilities.utils import CurrentRunMemory
 
 # Training constants
@@ -45,7 +45,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
     def __init__(
         self,
         target_point,
-        obstacle_positions: list[list[float]],
+        obstacle_positions: "list[list[float]]",
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode: str = None,

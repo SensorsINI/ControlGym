@@ -10,7 +10,7 @@ from CartPoleSimulation.CartPole.state_utilities import (
     ANGLE_COS_IDX,
 )
 
-from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary, TensorType
+from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary, TensorType
 
 from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
 

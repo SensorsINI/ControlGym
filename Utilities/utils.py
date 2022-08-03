@@ -116,7 +116,7 @@ class SeedMemory:
 class CurrentRunMemory:
     current_controller_name: str
     current_environment_name: str
-    controller_specific_params: dict[str, Any]
+    controller_specific_params: "dict[str, Any]"
 
 
 ### Below is copied from CartPole repo

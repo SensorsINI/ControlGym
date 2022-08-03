@@ -7,7 +7,7 @@ from gym import spaces
 from gym.envs.classic_control import utils
 from gym.envs.classic_control.acrobot import AcrobotEnv
 
-from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
 from Utilities.utils import CurrentRunMemory
 
 

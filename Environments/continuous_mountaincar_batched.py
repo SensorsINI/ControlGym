@@ -5,7 +5,7 @@ import tensorflow as tf
 import torch
 from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
-from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
 from Utilities.utils import CurrentRunMemory
 
 

@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import tensorflow as tf
 import torch
-from Control_Toolkit.others import EnvironmentBatched
+from Control_Toolkit.others.environment import EnvironmentBatched
 from yaml import FullLoader, load
 
 from Predictors import Predictor

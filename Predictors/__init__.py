@@ -1,6 +1,6 @@
 from typing import Any, Optional, Tuple, Union
 
-from Control_Toolkit.others import EnvironmentBatched
+from Control_Toolkit.others.environment import EnvironmentBatched
 
 import numpy as np
 import tensorflow as tf

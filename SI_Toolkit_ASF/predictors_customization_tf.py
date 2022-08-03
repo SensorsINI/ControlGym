@@ -5,7 +5,7 @@ from Utilities.utils import CurrentRunMemory, SeedMemory
 
 from SI_Toolkit.TF.TF_Functions.Compile import Compile
 from Environments import ENV_REGISTRY
-from Control_Toolkit.others import TensorFlowLibrary
+from Control_Toolkit.others.environment import TensorFlowLibrary
 
 from SI_Toolkit_ASF.predictors_customization import STATE_INDICES
 

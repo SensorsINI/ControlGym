@@ -1,7 +1,7 @@
 from importlib import import_module
 import numpy as np
 
-from Control_Toolkit.others import EnvironmentBatched, TensorFlowLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched, TensorFlowLibrary
 
 from ControllersGym import Controller
 from Utilities.utils import CurrentRunMemory, SeedMemory

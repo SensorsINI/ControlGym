@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 def generate_experiment_plots(
     config: dict,
-    controller_output: dict[str, np.ndarray],
+    controller_output: "dict[str, np.ndarray]",
     timestamp: str,
     frames: "list[np.ndarray]" = None,
 ):

@@ -6,7 +6,7 @@ import torch
 from gym import spaces
 from gym.envs.classic_control.pendulum import PendulumEnv
 
-from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
 from Utilities.utils import CurrentRunMemory
 
 

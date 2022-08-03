@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Union
 import mujoco
 import numpy as np
 import tensorflow as tf
-from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
 from gym.envs.mujoco.half_cheetah_v3 import HalfCheetahEnv
 from tf_agents.environments import BatchedPyEnvironment, suite_gym
 
