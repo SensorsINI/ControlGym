@@ -12,10 +12,17 @@ logger = get_logger(__name__)
 # Select a number of experiments
 
 PATH_TO_EXPERIMENTS = "Output"
+# EXPERIMENTS_TO_PLOT = [
+#     "20220802-121426_controller_cem_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+#     "20220802-144131_controller_dist_adam_resamp2_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+#     "20220802-161938_controller_mppi_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+#     "20220802-163455_controller_cem_grad_bharadhwaj_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+# ]
 EXPERIMENTS_TO_PLOT = [
-    "20220730-113046_controller_cem_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-    "20220730-114734_controller_cem_naive_grad_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-    "20220730-122549_controller_dist_adam_resamp2_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+    "20220802-121620_controller_cem_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+    "20220802-144554_controller_dist_adam_resamp2_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+    "20220802-162658_controller_mppi_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+    "20220802-163816_controller_cem_grad_bharadhwaj_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
 ]
 # Compare configs associated with the different experiments
 

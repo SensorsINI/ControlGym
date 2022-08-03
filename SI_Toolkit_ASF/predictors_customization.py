@@ -1,9 +1,8 @@
 from importlib import import_module
 
 import numpy as np
-from Environments import ENV_REGISTRY, NumpyLibrary, register_envs
-from yaml import FullLoader, load
-import gym
+from Environments import ENV_REGISTRY, register_envs
+from Control_Toolkit.others import NumpyLibrary
 
 from Utilities.utils import CurrentRunMemory, SeedMemory
 

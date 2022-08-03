@@ -1,7 +1,7 @@
 from importlib import import_module
 import numpy as np
-import torch
-from Environments import EnvironmentBatched, NumpyLibrary, PyTorchLibrary, TensorFlowLibrary
+
+from Control_Toolkit.others import EnvironmentBatched, TensorFlowLibrary
 
 from ControllersGym import Controller
 from Utilities.utils import CurrentRunMemory, SeedMemory
@@ -20,7 +20,7 @@ class ControllerCartPoleSimulationImport(Controller):
 
         self._controller = getattr(
             import_module(
-                f"CartPoleSimulation.Controllers.{controller_name}"
+                f"Control_Toolkit.Controllers.{controller_name}"
             ),
             controller_name,
         )(**{**controller_config, **{"environment": env_mock, "num_control_inputs": self._m}})

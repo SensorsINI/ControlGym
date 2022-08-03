@@ -1,8 +1,6 @@
 from typing import Any, Optional, Tuple, Union
 
-from Environments import EnvironmentBatched
-
-from numpy.random import Generator, SFC64
+from Control_Toolkit.others import EnvironmentBatched
 
 import numpy as np
 import tensorflow as tf

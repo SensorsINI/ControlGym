@@ -1,11 +1,11 @@
 from typing import Optional, Tuple, Union
-from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
-from gym.envs.mujoco.half_cheetah_v3 import HalfCheetahEnv
 
+import mujoco
 import numpy as np
 import tensorflow as tf
-import mujoco
-from tf_agents.environments import suite_gym, BatchedPyEnvironment
+from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary
+from gym.envs.mujoco.half_cheetah_v3 import HalfCheetahEnv
+from tf_agents.environments import BatchedPyEnvironment, suite_gym
 
 
 class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
@@ -46,7 +46,7 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(seed)
-        self.cost_functions = cost_functions(self)
+        self.cost_functions = self.cost_functions_wrapper(self)
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor]

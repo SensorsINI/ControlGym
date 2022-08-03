@@ -1,7 +1,7 @@
 from importlib import import_module
 import numpy as np
 import torch
-from Environments import EnvironmentBatched, PyTorchLibrary
+from Control_Toolkit.others import EnvironmentBatched, PyTorchLibrary
 
 # Import original paper's code
 from ControllersGym.External.gradcem import GradCEMPlan

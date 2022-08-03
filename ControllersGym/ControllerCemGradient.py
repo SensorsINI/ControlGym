@@ -4,7 +4,7 @@ import tensorflow as tf
 from gym import Env
 
 from ControllersGym import Controller
-from Environments import TensorFlowLibrary
+from Control_Toolkit.others import TensorFlowLibrary
 from Utilities.utils import CompileTF
 
 

@@ -3,11 +3,10 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import tensorflow as tf
 import torch
-from Environments import EnvironmentBatched
+from Control_Toolkit.others import EnvironmentBatched
+from yaml import FullLoader, load
 
 from Predictors import Predictor
-
-from yaml import load, FullLoader
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 

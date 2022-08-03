@@ -64,7 +64,7 @@ def get_name_of_controller_module(controller_name: str) -> str:
     :return: name of module where to find the right controller or wrapper
     :rtype: str
     """
-    if find_spec(f"CartPoleSimulation.Controllers.{controller_name}") is not None:
+    if find_spec(f"Control_Toolkit.Controllers.{controller_name}") is not None:
         logger.info(f"Using a CartPoleSimulation controller: {controller_name}")
         return "ControllerCartPoleSimulationImport"
     elif find_spec(f"ControllersGym.{controller_name}") is not None:

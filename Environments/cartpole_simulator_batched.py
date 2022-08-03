@@ -10,7 +10,7 @@ from CartPoleSimulation.CartPole.state_utilities import (
     ANGLE_COS_IDX,
 )
 
-from Environments import EnvironmentBatched, NumpyLibrary, TensorType, cost_functions
+from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary, TensorType
 
 from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
 
@@ -39,7 +39,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = cost_functions(self)
+        self.cost_functions = self.cost_functions_wrapper(self)
         self.dt = self.lib.to_tensor(kwargs["dt"], self.lib.float32)
 
         self.CartPoleInstance = CartPole()

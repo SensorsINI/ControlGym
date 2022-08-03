@@ -4,8 +4,7 @@ import tensorflow as tf
 from gym import Env
 
 from ControllersGym import Controller
-from Environments import TensorFlowLibrary
-from Utilities.utils import CompileTF
+from Control_Toolkit.others import TensorFlowLibrary
 
 
 class ControllerAdamResampler(Controller):

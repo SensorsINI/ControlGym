@@ -3,10 +3,10 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import tensorflow as tf
 import torch
-from gym import logger, spaces
+from gym import spaces
 from gym.envs.classic_control.cartpole import CartPoleEnv
 
-from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
+from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary
 from Utilities.utils import CurrentRunMemory
 
 
@@ -31,7 +31,7 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = cost_functions(self)
+        self.cost_functions = self.cost_functions_wrapper(self)
     
     def step_tf(self, state: tf.Tensor, action: tf.Tensor):
         state, action = self._expand_arrays(state, action)

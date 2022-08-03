@@ -10,12 +10,10 @@ import math
 import gym
 from gym import spaces
 from gym.utils.renderer import Renderer
-import time
-import itertools
-import datetime
 import tensorflow as tf
 
-from Environments import EnvironmentBatched, NumpyLibrary, TensorType, cost_functions
+from Control_Toolkit.others import TensorType
+from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary
 from Utilities.utils import CurrentRunMemory
 
 # Training constants
@@ -57,7 +55,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = cost_functions(self)
+        self.cost_functions = self.cost_functions_wrapper(self)
 
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)

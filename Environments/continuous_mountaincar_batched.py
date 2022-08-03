@@ -5,7 +5,7 @@ import tensorflow as tf
 import torch
 from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
-from Environments import EnvironmentBatched, NumpyLibrary, cost_functions
+from Control_Toolkit.others import EnvironmentBatched, NumpyLibrary
 from Utilities.utils import CurrentRunMemory
 
 
@@ -34,7 +34,7 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = cost_functions(self)
+        self.cost_functions = self.cost_functions_wrapper(self)
         
     def step_tf(self, state: tf.Tensor, action: tf.Tensor):
         state, action = self._expand_arrays(state, action)

@@ -1,13 +1,11 @@
 from importlib import import_module
 import tensorflow as tf
-import gym
 
 from Utilities.utils import CurrentRunMemory, SeedMemory
-from yaml import load, FullLoader
 
 from SI_Toolkit.TF.TF_Functions.Compile import Compile
-import numpy as np
-from Environments import ENV_REGISTRY, TensorFlowLibrary
+from Environments import ENV_REGISTRY
+from Control_Toolkit.others import TensorFlowLibrary
 
 from SI_Toolkit_ASF.predictors_customization import STATE_INDICES
 
