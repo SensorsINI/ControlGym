@@ -4,7 +4,7 @@ from yaml import load, FullLoader
 import os
 
 from Utilities.utils import get_logger
-from Visualizations.plot_box_plots import BoxPlotPlotter
+from Visualizations.plot_cost_scatter_plots import CostScatterPlotPlotter
 from pprint import pformat
 
 logger = get_logger(__name__)
@@ -12,17 +12,11 @@ logger = get_logger(__name__)
 # Select a number of experiments
 
 PATH_TO_EXPERIMENTS = "Output"
-# EXPERIMENTS_TO_PLOT = [
-#     "20220802-121426_controller_cem_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-#     "20220802-144131_controller_dist_adam_resamp2_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-#     "20220802-161938_controller_mppi_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-#     "20220802-163455_controller_cem_grad_bharadhwaj_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-# ]
+
 EXPERIMENTS_TO_PLOT = [
-    "20220802-121620_controller_cem_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-    "20220802-144554_controller_dist_adam_resamp2_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-    "20220802-162658_controller_mppi_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-    "20220802-163816_controller_cem_grad_bharadhwaj_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+    "20220804-124243_controller_cem_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+    "20220804-135851_controller_dist_adam_resamp2_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+    "20220804-204004_controller_cem_grad_bharadhwaj_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
 ]
 # Compare configs associated with the different experiments
 
@@ -58,7 +52,7 @@ def generate_global_plots() -> None:
             all_total_cost_data[exp].append(total_cost)
 
     logger.info("Generating box plot...")
-    box_plot_plotter = BoxPlotPlotter(
+    box_plot_plotter = CostScatterPlotPlotter(
         datetime.now().strftime("%Y%m%d-%H%M%S"),
         {
             "1_data_generation": {"controller_name": "", "environment_name": ""},
