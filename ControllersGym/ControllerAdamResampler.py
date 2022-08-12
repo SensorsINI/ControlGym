@@ -78,7 +78,6 @@ class ControllerAdamResampler(Controller):
 
         return traj_cost, rollout_trajectory.stack()
 
-    # @CompileTF
     def _grad_step(self, s: tf.Tensor, Q: tf.Variable):
         self._predictor_environment.reset(self.s)
         with tf.GradientTape(watch_accessed_variables=False) as tape:

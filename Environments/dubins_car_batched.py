@@ -3,9 +3,7 @@
 from typing import Optional, Union, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
 from matplotlib.patches import Circle
-from matplotlib.collections import PatchCollection
 import math
 import gym
 from gym import spaces
@@ -14,7 +12,7 @@ import tensorflow as tf
 
 from Control_Toolkit.others.environment import TensorType
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from Utilities.utils import CompileTF, CurrentRunMemory
+from Utilities.utils import CurrentRunMemory
 from SI_Toolkit.TF.TF_Functions.Compile import Compile
 
 # Training constants
@@ -208,24 +206,24 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         )
 
     def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType) -> TensorType:
-        costs = self.lib.unsqueeze(self.lib.zeros(self.lib.shape(x)), 1)
+        costs = None
         for obstacle_position in self.obstacle_positions:
             x_obs, y_obs, radius = obstacle_position
             _d = self.lib.sqrt((x - x_obs) ** 2 + (y - y_obs) ** 2)
             _c = (
-                1.0 - (self.lib.min(self.lib.ones(self.lib.shape(x)), _d / radius)) ** 2
+                1.0 - (self.lib.min(1.0, _d / radius)) ** 2
             )
-            _c = self.lib.unsqueeze(_c, 1)
-            costs = self.lib.concat([costs, _c], 1)
-        return self.lib.reduce_max(costs, 1)
+            _c = self.lib.unsqueeze(_c, -1)
+            costs = _c if costs is None else self.lib.concat([costs, _c], -1)
+        return self.lib.reduce_max(costs, -1)
 
     def get_distance(self, x1, x2):
         # Distance between points x1 and x2
-        return self.lib.sqrt((x1[:, 0] - x2[:, 0]) ** 2 + (x1[:, 1] - x2[:, 1]) ** 2)
+        return self.lib.sqrt((x1[..., 0] - x2[..., 0]) ** 2 + (x1[..., 1] - x2[..., 1]) ** 2)
 
     def get_heading(self, x1, x2):
         # Heading between points x1,x2 with +X axis
-        return self.lib.atan2((x2[:, 1] - x1[:, 1]), (x2[:, 0] - x1[:, 0]))
+        return self.lib.atan2((x2[..., 1] - x1[..., 1]), (x2[..., 0] - x1[..., 0]))
 
     @Compile
     def step_tf(self, state: tf.Tensor, action: tf.Tensor):
@@ -333,7 +331,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
     def close(self):
         # For Gym AI compatibility
-        pass
+        plt.close(self.fig)
 
     def update_state(self, state, action, DT):
         x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, 1)
@@ -346,7 +344,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         x = x + throttle * self.lib.cos(yaw_car) * DT
         y = y + throttle * self.lib.sin(yaw_car) * DT
         steering_rate += steer
-        yaw_car = yaw_car + throttle / WB * self.lib.tan(steering_rate) * DT
+        yaw_car = yaw_car + throttle / WB * self.lib.tan(steer) * DT
         return self.lib.stack([x, y, yaw_car, steering_rate], 1)
 
     def plot_car(self, cabcolor="-r", truckcolor="-k"):  # pragma: no cover

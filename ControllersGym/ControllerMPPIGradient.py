@@ -76,7 +76,6 @@ class ControllerMPPIGradient(Controller):
 
         return traj_cost, rollout_trajectory
 
-    # @CompileTF
     def _grad_step(self, s: tf.Tensor, Q: tf.Variable):
         self._predictor_environment.reset(self.s)
         rollout_trajectory = tf.expand_dims(s, axis=1)
