@@ -178,12 +178,11 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
             raise NotImplementedError("Rendering not implemented for batched mode")
 
     def is_done(self, state):
-        position, velocity = self.lib.unstack(state, 2, 1)
+        position, velocity = self.lib.unstack(state, 2, -1)
         return (position >= self.goal_position) & (velocity >= self.goal_velocity)
 
     def get_reward(self, state, action):
-        state, action = self._expand_arrays(state, action)
-        position, velocity = self.lib.unstack(state, 2, 1)
+        position, velocity = self.lib.unstack(state, 2, -1)
         reward = self.lib.sin(3 * position)
         # This part is not differentiable:
         reward += 100.0 * self.lib.cast(self.is_done(state), self.lib.float32)

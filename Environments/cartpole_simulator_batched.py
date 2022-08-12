@@ -206,7 +206,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         return next_state
 
     def get_reward(self, state, action):
-        reward = -state[..., ANGLE_COS_IDX]
+        reward = state[..., ANGLE_COS_IDX]
         return reward
 
     def is_done(self, state):

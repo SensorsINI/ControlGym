@@ -13,10 +13,11 @@ ENV_REGISTRY = {
     "CustomEnvironments/CartPoleContinuous-v0": "Environments.continuous_cartpole_batched:continuous_cartpole_batched",
     "CustomEnvironments/MountainCarContinuous-v0": "Environments.continuous_mountaincar_batched:continuous_mountaincar_batched",
     "CustomEnvironments/Pendulum-v0": "Environments.pendulum_batched:pendulum_batched",
-    "CustomEnvironments/AcrobotBatched-v0": "Environments.acrobot_batched:acrobot_batched",
+    "CustomEnvironments/Acrobot-v0": "Environments.acrobot_batched:acrobot_batched",
     "CustomEnvironments/DubinsCar-v0": "Environments.dubins_car_batched:dubins_car_batched",
     "CustomEnvironments/CartPoleSimulator-v0": "Environments.cartpole_simulator_batched:cartpole_simulator_batched",
     "CustomEnvironments/HalfCheetahBatched-v0": "Environments.half_cheetah_batched:half_cheetah_batched",
+    "CustomEnvironments/BipedalWalkerBatched-v0": "Environments.bipedal_walker_batched:bipedal_walker_batched",
 }
 
 

@@ -11,7 +11,7 @@ class ControllerCem(Controller):
     def __init__(self, environment: Env, **controller_config) -> None:
         super().__init__(environment, **controller_config)
 
-        self._num_rollouts = controller_config["cem_rollouts"]
+        self._num_rollouts = controller_config["num_rollouts"]
         self._horizon_steps = int(
             controller_config["mpc_horizon"] / controller_config["dt"]
         )

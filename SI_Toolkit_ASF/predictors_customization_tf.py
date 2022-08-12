@@ -42,7 +42,7 @@ class next_state_predictor_ODE_tf:
         )
 
     def step(self, s, Q, params):
-        self.env.reset(s)
+        self.env.state = s
         next_state = self.env.step_tf(s, Q)
         return next_state
 

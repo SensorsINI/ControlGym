@@ -25,7 +25,7 @@ from Utilities.utils import (
 )
 
 # Keep allowing absolute imports within CartPoleSimulation subgit
-sys.path.insert(0, os.path.join(os.path.abspath("."), "CartPoleSimulation"))
+sys.path.append(os.path.join(os.path.abspath("."), "CartPoleSimulation"))
 
 
 # Load config
@@ -128,7 +128,9 @@ def run_data_generator(
         )
 
         frames = []
-        for step in range(config["1_data_generation"]["num_iterations"]):
+        start_time = time.time()
+        num_iterations = config["1_data_generation"]["num_iterations"]
+        for step in range(num_iterations):
             action = controller.step(obs)
             new_obs, reward, done, info = env.step(action)
             controller.realized_cost_logged = np.array([-reward])
@@ -142,9 +144,13 @@ def run_data_generator(
                 break
 
             logger.debug(
-                f"\nStep       : {step+1}/{config['1_data_generation']['num_iterations']}\nObservation: {obs}\nAction     : {action}\n"
+                f"\nStep       : {step+1}/{num_iterations}\nObservation: {obs}\nAction     : {action}\n"
             )
             obs = new_obs
+        
+        end_time = time.time()
+        control_freq = num_iterations / (end_time - start_time)
+        logger.debug(f"Achieved average control frequency of {round(control_freq, 2)}Hz ({round(1.0e3/control_freq, 2)}ms per iteration)")
 
         # Close the env
         env.close()

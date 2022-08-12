@@ -14,12 +14,12 @@ class ControllerCartPoleSimulationImport(Controller):
         planning_env_config = environment.unwrapped.config.copy()
         planning_env_config.update({"computation_lib": TensorFlowLibrary})
         
-        for attr in ["num_rollouts", "cem_rollouts", "mpc_rollouts"]:
+        for attr in ["num_rollouts", "num_rollouts", "mpc_rollouts"]:
             batch_size = controller_config.get(attr, None)
             if batch_size is not None:
                 break
         if batch_size is None:
-            raise ValueError("Controller needs one of num_rollouts, cem_rollouts, mpc_rollouts to be set in config")
+            raise ValueError("Controller needs one of num_rollouts, num_rollouts, mpc_rollouts to be set in config")
         env_mock = environment.__class__(batch_size=batch_size, **planning_env_config)
         env_mock.set_computation_library(TensorFlowLibrary)
 

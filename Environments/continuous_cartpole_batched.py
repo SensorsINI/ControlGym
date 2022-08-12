@@ -169,7 +169,7 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         return self._get_reset_return_val()
 
     def is_done(self, state):
-        x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, 1)
+        x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, -1)
         return (
             (x < -self.x_threshold)
             | (x > self.x_threshold)
@@ -178,7 +178,6 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         )
 
     def get_reward(self, state, action):
-        state, action = self._expand_arrays(state, action)
-        x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, 1)
+        x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, -1)
         reward = -(100*(theta**2) + theta_dot**2 + (x**2) + x_dot**2)
         return reward

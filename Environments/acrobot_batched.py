@@ -139,7 +139,7 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         return False
 
     def get_reward(self, state, action):
-        th1, th2, th1_vel, th2_vel = self.lib.unstack(state, 4, 1)
+        th1, th2, th1_vel, th2_vel = self.lib.unstack(state, 4, -1)
         return (
             -self.lib.cos(th1) - self.lib.cos(th2 + th1)
             - 1.0e-2 * (th1_vel + th2_vel)

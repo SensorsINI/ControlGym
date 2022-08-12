@@ -14,7 +14,8 @@ import tensorflow as tf
 
 from Control_Toolkit.others.environment import TensorType
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from Utilities.utils import CurrentRunMemory
+from Utilities.utils import CompileTF, CurrentRunMemory
+from SI_Toolkit.TF.TF_Functions.Compile import Compile
 
 # Training constants
 MAX_STEER = np.pi / 3
@@ -38,7 +39,7 @@ show_animation = True
 
 
 class dubins_car_batched(EnvironmentBatched, gym.Env):
-    num_states = 3
+    num_states = 4  # [x, y, yaw, steering_rate]
     num_actions = 2
     metadata = {"render_modes": ["console", "single_rgb_array", "rgb_array", "human"]}
 
@@ -67,8 +68,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             np.array([MAX_SPEED, MAX_STEER]),
             dtype=np.float32,
         )  # Action space for [throttle, steer]
-        low = np.array([-1.0, -1.0, -4.0])  # low range of observation space
-        high = np.array([1.0, 1.0, 4.0])  # high range of observation space
+        low = np.array([-1.0, -1.0, -4.0, -0.5])  # low range of observation space
+        high = np.array([1.0, 1.0, 4.0, 0.5])  # high range of observation space
         self.observation_space = spaces.Box(
             low, high, dtype=np.float32
         )  # Observation space for [x, y, theta]
@@ -136,8 +137,9 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             yaw = self.lib.uniform(
                 self.rng, (1, 1), theta - MAX_STEER, theta + MAX_STEER, self.lib.float32
             )
+            rate = self.lib.to_tensor([[0.0]], self.lib.float32)
 
-            self.state = self.lib.stack([x, y, yaw], 1)
+            self.state = self.lib.stack([x, y, yaw, rate], 1)
             self.traj_x = [float(x * MAX_X)]
             self.traj_y = [float(y * MAX_Y)]
             self.traj_yaw = [float(yaw)]
@@ -156,8 +158,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         return self._get_reset_return_val()
 
     def get_reward(self, state, action):
-        state, action = self._expand_arrays(state, action)
-        x, y, yaw_car = self.lib.unstack(state, 3, 1)
+        x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, -1)
         x_target, y_target, yaw_target = self.target
 
         head_to_target = self.get_heading(state, self.lib.unsqueeze(self.target, 0))
@@ -188,7 +189,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         return reward
 
     def is_done(self, state):
-        x, y, yaw_car = self.lib.unstack(state, 3, 1)
+        x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, -1)
         x_target, y_target, yaw_target = self.target
 
         car_in_bounds = self._car_in_bounds(x, y)
@@ -226,6 +227,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         # Heading between points x1,x2 with +X axis
         return self.lib.atan2((x2[:, 1] - x1[:, 1]), (x2[:, 0] - x1[:, 0]))
 
+    @Compile
     def step_tf(self, state: tf.Tensor, action: tf.Tensor):
         state, action = self._expand_arrays(state, action)
 
@@ -234,6 +236,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             action += self._generate_actuator_noise()
 
         state = self.update_state(state, action, 0.005)
+        state = self.lib.squeeze(state)
 
         return state
 
@@ -333,7 +336,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         pass
 
     def update_state(self, state, action, DT):
-        x, y, yaw_car = self.lib.unstack(state, 3, 1)
+        x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, 1)
         throttle, steer = self.lib.unstack(action, 2, 1)
         # Update the pose as per Dubin's equations
 
@@ -342,8 +345,9 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         x = x + throttle * self.lib.cos(yaw_car) * DT
         y = y + throttle * self.lib.sin(yaw_car) * DT
-        yaw_car = yaw_car + throttle / WB * self.lib.tan(steer) * DT
-        return self.lib.stack([x, y, yaw_car], 1)
+        steering_rate += steer
+        yaw_car = yaw_car + throttle / WB * self.lib.tan(steering_rate) * DT
+        return self.lib.stack([x, y, yaw_car, steering_rate], 1)
 
     def plot_car(self, cabcolor="-r", truckcolor="-k"):  # pragma: no cover
         # print("Plotting Car")
