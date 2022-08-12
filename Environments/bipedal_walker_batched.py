@@ -14,9 +14,6 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
     num_actions = 4
     num_states = 24
 
-    def __init__(self) -> None:
-        super().__init__()
-
     def __init__(
         self, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs
     ):
@@ -27,6 +24,7 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
             **{"render_mode": self.render_mode},
         }
         CurrentRunMemory.controller_specific_params = self.config
+        self.dt = kwargs["dt"]
 
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)

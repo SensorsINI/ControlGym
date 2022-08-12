@@ -1,7 +1,7 @@
 1_data_generation:
   controller_names:
-  - controller_cem_tf
-  - controller_cem_naive_grad_tf
+  # - controller_cem_tf
+  # - controller_cem_naive_grad_tf
   - controller_dist_adam_resamp2_tf
   # - controller_mppi_tf
   # - controller_cem_grad_bharadhwaj_tf
@@ -10,30 +10,33 @@
   environment_names:
   # - CustomEnvironments/MountainCarContinuous-v0
   # - CustomEnvironments/Acrobot-v0
-  - CustomEnvironments/Pendulum-v0
-  - CustomEnvironments/CartPoleSimulator-v0
+  # - CustomEnvironments/Pendulum-v0
+  # - CustomEnvironments/CartPoleSimulator-v0
   # - CustomEnvironments/CartPoleContinuous-v0
-  # - CustomEnvironments/DubinsCar-v0
+  - CustomEnvironments/DubinsCar-v0
   logging_level: DEBUG
   num_experiments: 1
-  num_iterations: 100
+  num_iterations: 200
   render_for_humans: true
   save_plots_to_file: false
   seed_entropy: 94172
   split:
   - 0.6
   - 0.2
-  use_gpu: true
+  use_gpu: false
 2_environments:
   CustomEnvironments/CartPoleContinuous-v0:
     actuator_noise:
     - 0.0
+    dt: 0.02
   CustomEnvironments/MountainCarContinuous-v0:
     actuator_noise:
     - 0.0
+    dt: 1.0
   CustomEnvironments/Pendulum-v0:
     actuator_noise:
     - 0.2
+    dt: 0.05
   CustomEnvironments/DubinsCar-v0:
     actuator_noise:
     - 0.2
@@ -41,6 +44,7 @@
     target_point: [0.9, 0.0, 0.0]
     obstacle_positions: null
     # - [0.0, 0.0, 0.2]
+    dt: 0.005
   CustomEnvironments/HalfCheetahBatched-v0:
     actuator_noise:
     - 0.0
@@ -48,9 +52,11 @@
     ctrl_cost_weight: 0.1
     reset_noise_scale: 0.1
     exclude_current_positions_from_observation: true
+    dt: 0.02
   CustomEnvironments/Acrobot-v0:
     actuator_noise:
     - 0.0
+    dt: 0.2
   CustomEnvironments/CartPoleSimulator-v0:
     actuator_noise:
     - 0.0
@@ -64,8 +70,7 @@
     prediction_error_stdev: 0.1
 4_controllers:
   controller_logging: true
-  dt: 0.02
-  mpc_horizon: 1.0
+  mpc_horizon: 50  # steps
 
 ######################################################################################
 
@@ -75,8 +80,8 @@
     cem_LR: 0.05
     cem_R: 1
     cem_best_k: 4
-    cem_outer_it: 20
-    num_rollouts: 10
+    cem_outer_it: 5
+    num_rollouts: 32
     cem_initial_action_stdev: 0.5
     cem_stdev_min: 0.2
     gradmax_clip: 5
@@ -131,7 +136,7 @@
     num_rollouts: 32
     opt_keep_k: 4
     outer_its: 20
-    predictor_intermediate_steps: 10
+    predictor_intermediate_steps: 1
     predictor_name: predictor_ODE_tf
     resamp_per: 5
     sample_stdev: 0.5
@@ -157,7 +162,7 @@
   controller_mppi_tf:
     GAMMA: 1.0
     GP_NAME: SGP_30
-    LBD: 100.0
+    LBD: 0.1
     LOGGING: false
     NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
     NU: 1000.0
@@ -166,13 +171,8 @@
     SQRTRHOINV: 0.5
     WASH_OUT_LEN: 100
     cc_weight: 1.0
-    ccrc_weight: 1.0
     control_noise: 0.0
     cost_noise: 0.0
-    dd_weight: 120.0
-    ekc_weight: 5.0
-    ekp_weight: 0.01
-    ep_weight: 50000.0
     num_rollouts: 1000
     predictor_intermediate_steps: 10
     predictor_name: predictor_ODE_tf

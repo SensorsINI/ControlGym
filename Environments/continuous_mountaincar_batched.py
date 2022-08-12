@@ -28,6 +28,7 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
             **{"render_mode": self.render_mode, "goal_velocity": self.goal_velocity},
         }
         CurrentRunMemory.controller_specific_params = self.config
+        self.dt = kwargs["dt"]
 
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
@@ -49,7 +50,7 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
             self.lib.to_tensor(self.max_action, self.lib.float32),
         )
         velocity_new = (
-            velocity + force * self.power - 0.0025 * self.lib.cos(3 * position)
+            velocity + self.dt * (force * self.power - 0.0025 * self.lib.cos(3 * position))
         )
         velocity = self.lib.clip(
             velocity_new,
@@ -57,7 +58,7 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
             self.lib.to_tensor(self.max_speed, self.lib.float32),
         )
 
-        position_new = position + velocity
+        position_new = position + self.dt * velocity
         position = self.lib.clip(
             position_new,
             self.lib.to_tensor(self.min_position, self.lib.float32),
@@ -96,7 +97,7 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         )
 
         velocity_new = (
-            velocity + force * self.power - 0.0025 * self.lib.cos(3 * position)
+            velocity + self.dt * (force * self.power - 0.0025 * self.lib.cos(3 * position))
         )
         velocity = self.lib.clip(
             velocity_new,
@@ -104,7 +105,7 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
             self.lib.to_tensor(np.array(self.max_speed), self.lib.float32),
         )
 
-        position_new = position + velocity
+        position_new = position + self.dt * velocity
         position = self.lib.clip(
             position_new,
             self.lib.to_tensor(np.array(self.min_position), self.lib.float32),

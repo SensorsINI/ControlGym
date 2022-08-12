@@ -23,6 +23,7 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode="human",
+        **kwargs,
     ) -> None:
         self._envs = BatchedPyEnvironment(
             [
@@ -43,6 +44,7 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
 
         self._batch_size = batch_size
         self._actuator_noise = np.array(actuator_noise, dtype=np.float32)
+        self.dt = kwargs["dt"]
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(seed)

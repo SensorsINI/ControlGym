@@ -22,6 +22,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
             **{"render_mode": self.render_mode, "g": g},
         }
         CurrentRunMemory.controller_specific_params = self.config
+        self.dt = kwargs["dt"]
 
         high = np.array([np.pi, self.max_speed, 1.0, 1.0], dtype=np.float32)
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
@@ -32,11 +33,6 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
         self.cost_functions = self.cost_functions_wrapper(self)
-
-        self.g_tf = tf.convert_to_tensor(self.g, dtype=tf.float32)
-        self.m_tf = tf.convert_to_tensor(self.m, dtype=tf.float32)
-        self.l_tf = tf.convert_to_tensor(self.l, dtype=tf.float32)
-        self.dt_tf = tf.convert_to_tensor(self.dt, dtype=tf.float32)
 
     def _angle_normalize(self, x):
         _pi = self.lib.to_tensor(np.pi, self.lib.float32)
@@ -51,10 +47,9 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
         th, thdot, sinth, costh = self.lib.unstack(state, 4, 1)  # th := theta
 
-        g = self.g_tf
-        m = self.m_tf
-        l = self.l_tf
-        dt = self.dt_tf
+        g = self.g
+        m = self.m
+        l = self.l
 
         action = self.lib.clip(
             action,
@@ -64,14 +59,14 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
         newthdot = (
             thdot
-            + (3 * g / (2 * l) * self.lib.sin(th) + 3.0 / (m * l**2) * action[:, 0]) * dt
+            + (3 * g / (2 * l) * self.lib.sin(th) + 3.0 / (m * l**2) * action[:, 0]) * self.dt
         )
         newthdot = self.lib.clip(
             newthdot,
             self.lib.to_tensor(-self.max_speed, self.lib.float32),
             self.lib.to_tensor(self.max_speed, self.lib.float32),
         )
-        newth = th + newthdot * dt
+        newth = th + newthdot * self.dt
 
         state = self.lib.stack([newth, newthdot, self.lib.sin(newth), self.lib.cos(newth)], 1)
         # state = self.lib.squeeze(state)
@@ -98,7 +93,6 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         g = self.g
         m = self.m
         l = self.l
-        dt = self.dt
 
         action = self.lib.clip(
             action,
@@ -109,14 +103,14 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
         newthdot = (
             thdot
-            + (3 * g / (2 * l) * self.lib.sin(th) + 3.0 / (m * l**2) * action[:, 0]) * dt
+            + (3 * g / (2 * l) * self.lib.sin(th) + 3.0 / (m * l**2) * action[:, 0]) * self.dt
         )
         newthdot = self.lib.clip(
             newthdot,
             self.lib.to_tensor(np.array(-self.max_speed), self.lib.float32),
             self.lib.to_tensor(np.array(self.max_speed), self.lib.float32),
         )
-        newth = th + newthdot * dt
+        newth = th + newthdot * self.dt
 
         self.state = self.lib.stack([newth, newthdot, self.lib.sin(newth), self.lib.cos(newth)], 1)
 

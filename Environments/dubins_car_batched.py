@@ -76,6 +76,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.num_obstacles = 8 + math.floor(
             float(self.lib.uniform(self.rng, (), 0, 8, self.lib.float32))
         )
+        self.dt = kwargs["dt"]
 
         if obstacle_positions is None:
             self.obstacle_positions = []
@@ -206,20 +207,20 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         )
 
     def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType) -> TensorType:
-        costs = None
+        costs = self.lib.unsqueeze(tf.zeros_like(x), -1)
         for obstacle_position in self.obstacle_positions:
             x_obs, y_obs, radius = obstacle_position
             _d = self.lib.sqrt((x - x_obs) ** 2 + (y - y_obs) ** 2)
-            _c = (
-                1.0 - (self.lib.min(1.0, _d / radius)) ** 2
-            )
+            _c = 1.0 - (self.lib.min(1.0, _d / radius)) ** 2
             _c = self.lib.unsqueeze(_c, -1)
-            costs = _c if costs is None else self.lib.concat([costs, _c], -1)
-        return self.lib.reduce_max(costs, -1)
+            costs = self.lib.concat([costs, _c], -1)
+        return self.lib.reduce_max(costs[..., 1:], -1)
 
     def get_distance(self, x1, x2):
         # Distance between points x1 and x2
-        return self.lib.sqrt((x1[..., 0] - x2[..., 0]) ** 2 + (x1[..., 1] - x2[..., 1]) ** 2)
+        return self.lib.sqrt(
+            (x1[..., 0] - x2[..., 0]) ** 2 + (x1[..., 1] - x2[..., 1]) ** 2
+        )
 
     def get_heading(self, x1, x2):
         # Heading between points x1,x2 with +X axis
@@ -233,7 +234,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         if self._batch_size == 1:
             action += self._generate_actuator_noise()
 
-        state = self.update_state(state, action, 0.005)
+        state = self.update_state(state, action, self.dt)
         state = self.lib.squeeze(state)
 
         return state
@@ -254,7 +255,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         info = {}
 
-        self.state = self.update_state(self.state, action, 0.005)
+        self.state = self.update_state(self.state, action, self.dt)
 
         done = self.is_done(self.state)
         reward = self.get_reward(self.state, action)

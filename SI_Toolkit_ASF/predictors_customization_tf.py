@@ -40,10 +40,13 @@ class next_state_predictor_ODE_tf:
         self.t_step = tf.convert_to_tensor(
             dt / float(self.intermediate_steps), dtype=tf.float32
         )
+        self.env.dt = self.t_step
 
     def step(self, s, Q, params):
         self.env.state = s
-        next_state = self.env.step_tf(s, Q)
+        for _ in tf.range(self.intermediate_steps):
+            next_state = self.env.step_tf(s, Q)
+            s = next_state
         return next_state
 
 

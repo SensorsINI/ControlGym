@@ -1,8 +1,9 @@
-from Utilities.utils import get_logger
+from Utilities.utils import CurrentRunMemory, get_logger
 from main import run_data_generator
 
 # Automatically create new path to save everything in
 
+import tensorflow as tf
 import yaml, os
 config_SI = yaml.load(open(os.path.join('SI_Toolkit_ASF', 'config_training.yml')), Loader=yaml.FullLoader)
 config_GymEnv = yaml.load(open('config.yml'), Loader=yaml.FullLoader)
@@ -25,7 +26,7 @@ def get_record_path():
 if __name__ == '__main__':
     record_path = get_record_path()
     
-    controller_names, environment_names = config_GymEnv["controller_names"], config_GymEnv["environment_names"]
+    controller_names, environment_names = config_GymEnv["1_data_generation"]["controller_names"], config_GymEnv["1_data_generation"]["environment_names"]
     if isinstance(controller_names, list):
         if len(controller_names) > 1:
             logger.warning("Multiple controller names supplied. Only using the first one.")
@@ -47,5 +48,18 @@ if __name__ == '__main__':
     yaml.dump(config_GymEnv, open(record_path + "/GymEnv_config_savefile.yml", "w"), default_flow_style=False)
 
     # Run data generator
-    run_data_generator(controller_name, environment_name, run_for_ML_Pipeline=True, record_path=record_path)
+    CurrentRunMemory.current_controller_name = controller_name
+    CurrentRunMemory.current_environment_name = environment_name
+
+    device_name = "/CPU:0"
+    if config_GymEnv["1_data_generation"]["use_gpu"]:
+        if len(tf.config.list_physical_devices("GPU")) > 0:
+            device_name = "/GPU:0"
+        else:
+            logger.info(
+                "GPU use specified in config but no device available. Using CPU instead."
+            )
+
+    with tf.device(device_name):
+        run_data_generator(controller_name, environment_name, run_for_ML_Pipeline=True, record_path=record_path)
     

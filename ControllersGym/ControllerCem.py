@@ -12,9 +12,7 @@ class ControllerCem(Controller):
         super().__init__(environment, **controller_config)
 
         self._num_rollouts = controller_config["num_rollouts"]
-        self._horizon_steps = int(
-            controller_config["mpc_horizon"] / controller_config["dt"]
-        )
+        self._horizon_steps: int = controller_config["mpc_horizon"]
         self._outer_it = controller_config["cem_outer_it"]
         self._best_k = controller_config["cem_best_k"]
         self._stdev_min = controller_config["cem_stdev_min"]

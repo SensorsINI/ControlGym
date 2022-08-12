@@ -22,6 +22,7 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
             **{"render_mode": self.render_mode},
         }
         CurrentRunMemory.controller_specific_params = self.config
+        self.dt = kwargs["dt"]
 
         self.action_space = spaces.Box(
             low=-self.force_mag, high=self.force_mag, shape=(1,), dtype=np.float32
@@ -57,15 +58,15 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
 
         if self.kinematics_integrator == "euler":
-            x = x + self.tau * x_dot
-            x_dot = x_dot + self.tau * xacc
-            theta = theta + self.tau * theta_dot
-            theta_dot = theta_dot + self.tau * thetaacc
+            x = x + self.dt * x_dot
+            x_dot = x_dot + self.dt * xacc
+            theta = theta + self.dt * theta_dot
+            theta_dot = theta_dot + self.dt * thetaacc
         else:  # semi-implicit euler
-            x_dot = x_dot + self.tau * xacc
-            x = x + self.tau * x_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-            theta = theta + self.tau * theta_dot
+            x_dot = x_dot + self.dt * xacc
+            x = x + self.dt * x_dot
+            theta_dot = theta_dot + self.dt * thetaacc
+            theta = theta + self.dt * theta_dot
 
         state = self.lib.stack([x, x_dot, theta, theta_dot], 1)
         state = self.lib.squeeze(state)
@@ -112,15 +113,15 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
 
         if self.kinematics_integrator == "euler":
-            x = x + self.tau * x_dot
-            x_dot = x_dot + self.tau * xacc
-            theta = theta + self.tau * theta_dot
-            theta_dot = theta_dot + self.tau * thetaacc
+            x = x + self.dt * x_dot
+            x_dot = x_dot + self.dt * xacc
+            theta = theta + self.dt * theta_dot
+            theta_dot = theta_dot + self.dt * thetaacc
         else:  # semi-implicit euler
-            x_dot = x_dot + self.tau * xacc
-            x = x + self.tau * x_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-            theta = theta + self.tau * theta_dot
+            x_dot = x_dot + self.dt * xacc
+            x = x + self.dt * x_dot
+            theta_dot = theta_dot + self.dt * thetaacc
+            theta = theta + self.dt * theta_dot
 
         self.state = self.lib.stack([x, x_dot, theta, theta_dot], 1)
 

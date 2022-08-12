@@ -86,7 +86,7 @@ def run_data_generator(
         config["4_controllers"][controller_name].update(
             {
                 k: config["4_controllers"][k]
-                for k in ["controller_logging", "mpc_horizon", "dt"]
+                for k in ["controller_logging", "mpc_horizon"]
             }
         )
 
@@ -168,7 +168,7 @@ def run_data_generator(
             else:
                 csv = os.path.join(record_path, "Test")
             os.makedirs(csv, exist_ok=True)
-            save_to_csv(config, controller, csv)
+            save_to_csv(config, controller, environment_name, csv)
         elif config["4_controllers"]["controller_logging"]:
             if render_mode != "human":
                 # Generate and save plots in default location

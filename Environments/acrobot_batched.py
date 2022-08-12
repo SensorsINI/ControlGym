@@ -23,6 +23,7 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
             **{"render_mode": self.render_mode},
         }
         CurrentRunMemory.controller_specific_params = self.config
+        self.dt = kwargs["dt"]
 
         high = np.array(
             [np.pi, np.pi, self.MAX_VEL_1, self.MAX_VEL_2], dtype=np.float32

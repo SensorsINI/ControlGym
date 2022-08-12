@@ -1,11 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple
 from CartPoleSimulation.CartPole import CartPole
-from CartPoleSimulation.CartPole.cartpole_model import Q2u
 from CartPoleSimulation.CartPole.cartpole_model_tf import _cartpole_ode, cartpole_integration_tf
-from CartPoleSimulation.CartPole.cartpole_tf import _cartpole_fine_integration_tf
 from CartPoleSimulation.CartPole.state_utilities import (
     ANGLE_COS_IDX,
 )
