@@ -35,7 +35,7 @@ class CostScatterPlotPlotter(Plotter):
 
         self.ax.set_ylabel("Realized total cost per experiment")
         self.ax.set_title(
-            f"Comparison of different control methods, N={num_datapoints_per_experiment}\nShowing median, Q1, Q3, IQR. Outliers not shown."
+            f"Comparison of different control methods, N={num_datapoints_per_experiment}\Each marker represents the total cost of an experiment."
         )
         self.ax.set_xticklabels([])
         self.ax.set_xlim(0, num_experiments+1)
