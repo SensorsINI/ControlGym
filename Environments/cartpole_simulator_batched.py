@@ -146,7 +146,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
         # Perturb action if not in planning mode
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         state_updated = self.step_physics(state, action)
 
@@ -157,7 +157,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
         # Perturb action if not in planning mode
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         self.state = self.step_physics(self.state, action)
 

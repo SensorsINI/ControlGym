@@ -43,7 +43,7 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
 
         # Perturb action if not in planning mode
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         torque = action
         s_augmented = self.lib.concat([state, torque], 1)
@@ -74,7 +74,7 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
 
         # Perturb action if not in planning mode
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         torque = action
         s_augmented = self.lib.concat([self.state, torque], 1)

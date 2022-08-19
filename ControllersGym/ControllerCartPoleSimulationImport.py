@@ -36,7 +36,7 @@ class ControllerCartPoleSimulationImport(Controller):
         self.u = np.array(self._controller.step(s))
         if self.u.ndim == 0:
             self.u = self.u[np.newaxis]
-        self.u_logged = self.u
+        self.u_logged = self.u.copy()
         self.Q_logged = self._controller.Q_logged.copy()
         self.J_logged = self._controller.J_logged.copy()
         

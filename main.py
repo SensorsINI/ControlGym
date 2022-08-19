@@ -144,7 +144,7 @@ def run_data_generator(
                 break
 
             logger.debug(
-                f"\nStep       : {step+1}/{num_iterations}\nObservation: {obs}\nAction     : {action}\n"
+                f"\nStep          : {step+1}/{num_iterations}\nObservation   : {obs}\nPlanned Action: {action}\n"
             )
             obs = new_obs
         

@@ -259,7 +259,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         # Perturb action if not in planning mode
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         state = self.update_state(state, action, self.dt)
         state = self.lib.squeeze(state)
@@ -278,7 +278,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         # Perturb action if not in planning mode
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         info = {}
 
@@ -480,7 +480,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 Circle(
                     (pos_x * MAX_X, pos_y * MAX_Y),
                     radius * np.sqrt(MAX_X * MAX_Y),
-                    fill=False,
+                    fill=True,
+                    facecolor="k",
                     edgecolor="k",
                 )
             )

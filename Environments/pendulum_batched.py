@@ -43,7 +43,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
         # Perturb action if not in planning mode
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         th, thdot, sinth, costh = self.lib.unstack(state, 4, 1)  # th := theta
 
@@ -86,7 +86,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
         # Perturb action if not in planning mode
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         th, thdot, sinth, costh = self.lib.unstack(self.state, 4, 1)  # th := theta
 

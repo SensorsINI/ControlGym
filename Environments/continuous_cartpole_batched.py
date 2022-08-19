@@ -38,7 +38,7 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         state, action = self._expand_arrays(state, action)
 
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, 1)
         force = self.lib.clip(
@@ -85,7 +85,7 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
         # Perturb action if not in planning mode
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         err_msg = f"{action!r} ({type(action)}) invalid"
         # assert np.all(

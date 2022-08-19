@@ -37,7 +37,7 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
         state, action = self._expand_arrays(state, action)
         
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
         
         position, velocity = self.lib.unstack(state, 2, 1)
 
@@ -60,7 +60,7 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
 
         # Perturb action if not in planning mode
         if self._batch_size == 1:
-            action += self._generate_actuator_noise()
+            action = self._apply_actuator_noise(action)
 
         position, velocity = self.lib.unstack(self.state, 2, 1)
 
