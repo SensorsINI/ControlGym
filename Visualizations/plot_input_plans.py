@@ -31,12 +31,14 @@ class InputPlanPlotter(Plotter):
                 sharex=True,
                 squeeze=True,
                 gridspec_kw={"top": 0.9, "bottom": 0.15},
+                dpi=300.0,
             )
             self.axs_r = self.subfig_r.subplots(
                 nrows=1,
                 ncols=1,
                 squeeze=True,
                 gridspec_kw={"top": 0.9, "bottom": 0.15},
+                dpi=300.0,
             )
             self.axs_l = (
                 [self.axs_l] if isinstance(self.axs_l, plt.Axes) else self.axs_l

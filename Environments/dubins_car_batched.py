@@ -316,7 +316,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         # for stopping simulation with the esc key.
         if self.fig is None:
-            self.fig, self.ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6))
+            self.fig, self.ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), dpi=100.0)
         self.ax.cla()
         self.fig.canvas.mpl_connect(
             "key_release_event",

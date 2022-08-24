@@ -19,6 +19,7 @@ class HorizonCostPlotter(Plotter):
                     "top": 0.9,
                     "bottom": 0.1,
                 },
+                dpi=300.0,
             )
         self.ax.clear()
         num_steps, num_samples = costs.shape

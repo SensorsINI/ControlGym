@@ -23,7 +23,9 @@ class CostScatterPlotPlotter(Plotter):
 
         if self.ax is None:
             self.fig, self.ax = plt.subplots(
-                figsize=(num_experiments, 8), gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.3}, dpi=300.0,
+                figsize=(num_experiments, 8),
+                gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.3},
+                dpi=300.0,
             )
         self.ax.clear()
         data = np.array([c for c in costs.values()]).ravel()
