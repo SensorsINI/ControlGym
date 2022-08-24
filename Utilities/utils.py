@@ -76,14 +76,16 @@ def get_name_of_controller_module(controller_name: str) -> str:
 
 class OutputPath:
     RUN_NUM = 1
+    collection_folder_name = ""
 
     @classmethod
-    def get_output_path(cls, timestamp: str, filename: str, suffix: str):
+    def get_output_path(cls, timestamp: str, filename: str, suffix: str) -> str:
         controller_name = CurrentRunMemory.current_controller_name
         env_name = CurrentRunMemory.current_environment_name
         predictor_name = config["4_controllers"][controller_name]["predictor_name"]
         folder = os.path.join(
             "Output",
+            cls.collection_folder_name,
             f"{timestamp}_{controller_name}_{env_name}_{predictor_name}".replace(
                 "/", "_"
             ),

@@ -14,9 +14,11 @@ logger = get_logger(__name__)
 PATH_TO_EXPERIMENTS = "Output"
 
 EXPERIMENTS_TO_PLOT = [
-    "20220804-124243_controller_cem_tf_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-    "20220804-135851_controller_dist_adam_resamp2_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
-    "20220804-204004_controller_cem_grad_bharadhwaj_CustomEnvironments_DubinsCar-v0_predictor_ODE_tf",
+    "sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=0/20220824-113202_controller_dist_adam_resamp2_tf_CustomEnvironments_MountainCarContinuous-v0_predictor_ODE_tf",
+    "sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=1/20220824-113445_controller_dist_adam_resamp2_tf_CustomEnvironments_MountainCarContinuous-v0_predictor_ODE_tf",
+    "sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=5/20220824-113940_controller_dist_adam_resamp2_tf_CustomEnvironments_MountainCarContinuous-v0_predictor_ODE_tf",
+    "sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=10/20220824-114927_controller_dist_adam_resamp2_tf_CustomEnvironments_MountainCarContinuous-v0_predictor_ODE_tf",
+    "sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=20/20220824-120515_controller_dist_adam_resamp2_tf_CustomEnvironments_MountainCarContinuous-v0_predictor_ODE_tf",
 ]
 # Compare configs associated with the different experiments
 
@@ -48,7 +50,7 @@ def generate_global_plots() -> None:
         )
         for cost_filepath in cost_filepaths:
             cost_log: np.ndarray = np.load(cost_filepath)
-            total_cost = float(np.squeeze(cost_log.sum()))
+            total_cost = float(np.squeeze(cost_log.mean()))
             all_total_cost_data[exp].append(total_cost)
 
     logger.info("Generating box plot...")

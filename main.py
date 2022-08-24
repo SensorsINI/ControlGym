@@ -5,6 +5,7 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from itertools import product
+from typing import Any
 import tensorflow as tf
 import numpy as np
 
@@ -29,11 +30,11 @@ sys.path.append(os.path.join(os.path.abspath("."), "CartPoleSimulation"))
 
 
 # Load config
-config = load(open("config.yml", "r"), Loader=FullLoader)
+CONFIG = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAMES, ENVIRONMENT_NAMES, NUM_EXPERIMENTS = (
-    config["1_data_generation"]["controller_names"],
-    config["1_data_generation"]["environment_names"],
-    config["1_data_generation"]["num_experiments"],
+    CONFIG["1_data_generation"]["controller_names"],
+    CONFIG["1_data_generation"]["environment_names"],
+    CONFIG["1_data_generation"]["num_experiments"],
 )
 CONTROLLER_NAMES = (
     [CONTROLLER_NAMES] if isinstance(CONTROLLER_NAMES, str) else CONTROLLER_NAMES
@@ -51,6 +52,8 @@ register_envs()
 def run_data_generator(
     controller_name: str,
     environment_name: str,
+    num_experiments: int,
+    config: "dict[str, Any]",
     run_for_ML_Pipeline=False,
     record_path=None,
 ):
@@ -61,7 +64,7 @@ def run_data_generator(
         seed_entropy = int(timestamp.timestamp())
         logger.info("No seed entropy specified. Setting to posix timestamp.")
 
-    seed_sequences = SeedSequence(entropy=seed_entropy).spawn(NUM_EXPERIMENTS)
+    seed_sequences = SeedSequence(entropy=seed_entropy).spawn(num_experiments)
     timestamp_str = timestamp.strftime("%Y%m%d-%H%M%S")
 
     if run_for_ML_Pipeline:
@@ -75,7 +78,7 @@ def run_data_generator(
     )
 
     # Loop through independent experiments
-    for i in range(NUM_EXPERIMENTS):
+    for i in range(num_experiments):
         # Generate new seeds for environment and controller
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.set_seeds(seeds)
@@ -161,9 +164,9 @@ def run_data_generator(
 
         if run_for_ML_Pipeline:
             # Save data as csv
-            if i < int(frac_train * NUM_EXPERIMENTS):
+            if i < int(frac_train * num_experiments):
                 csv = os.path.join(record_path, "Train")
-            elif i < int((frac_train + frac_val) * NUM_EXPERIMENTS):
+            elif i < int((frac_train + frac_val) * num_experiments):
                 csv = os.path.join(record_path, "Validate")
             else:
                 csv = os.path.join(record_path, "Test")
@@ -192,7 +195,7 @@ if __name__ == "__main__":
         CurrentRunMemory.current_environment_name = environment_name
 
         device_name = "/CPU:0"
-        if config["1_data_generation"]["use_gpu"]:
+        if CONFIG["1_data_generation"]["use_gpu"]:
             if len(tf.config.list_physical_devices("GPU")) > 0:
                 device_name = "/GPU:0"
             else:
@@ -201,4 +204,4 @@ if __name__ == "__main__":
                 )
 
         with tf.device(device_name):
-            run_data_generator(controller_name, environment_name)
+            run_data_generator(controller_name, environment_name, NUM_EXPERIMENTS, CONFIG)

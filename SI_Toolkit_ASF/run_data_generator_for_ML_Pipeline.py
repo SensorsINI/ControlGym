@@ -26,7 +26,7 @@ def get_record_path():
 if __name__ == '__main__':
     record_path = get_record_path()
     
-    controller_names, environment_names = config_GymEnv["1_data_generation"]["controller_names"], config_GymEnv["1_data_generation"]["environment_names"]
+    controller_names, environment_names, num_experiments = config_GymEnv["1_data_generation"]["controller_names"], config_GymEnv["1_data_generation"]["environment_names"], config_GymEnv["1_data_generation"]["num_experiments"]
     if isinstance(controller_names, list):
         if len(controller_names) > 1:
             logger.warning("Multiple controller names supplied. Only using the first one.")
@@ -61,5 +61,5 @@ if __name__ == '__main__':
             )
 
     with tf.device(device_name):
-        run_data_generator(controller_name, environment_name, run_for_ML_Pipeline=True, record_path=record_path)
+        run_data_generator(controller_name, environment_name, num_experiments, config_GymEnv, run_for_ML_Pipeline=True, record_path=record_path)
     

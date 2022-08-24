@@ -23,7 +23,7 @@ class CostScatterPlotPlotter(Plotter):
 
         if self.ax is None:
             self.fig, self.ax = plt.subplots(
-                figsize=(num_experiments, 8), gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.3}
+                figsize=(num_experiments, 8), gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.3}, dpi=300.0,
             )
         self.ax.clear()
         data = np.array([c for c in costs.values()]).ravel()
@@ -33,16 +33,16 @@ class CostScatterPlotPlotter(Plotter):
                 np.repeat(k+1, num_datapoints_per_experiment), data, marker="x", label=exp_name
             )
 
-        self.ax.set_ylabel("Realized total cost per experiment")
+        self.ax.set_ylabel("Realized mean cost per experiment")
         self.ax.set_title(
-            f"Comparison of different control methods, N={num_datapoints_per_experiment}\Each marker represents the total cost of an experiment."
+            f"Comparison of different control methods, N={num_datapoints_per_experiment}\nEach marker represents the total cost of an experiment."
         )
         self.ax.set_xticklabels([])
         self.ax.set_xlim(0, num_experiments+1)
 
         self.ax.legend(
             loc="lower center",
-            bbox_to_anchor=(0.5, -0.16),
+            bbox_to_anchor=(0.5, -0.3),
         )
 
         if save_to_image:
