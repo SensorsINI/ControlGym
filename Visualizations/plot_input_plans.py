@@ -23,7 +23,7 @@ class InputPlanPlotter(Plotter):
         num_steps, num_samples, horizon_length, num_actions = actions.shape
 
         if self.fig is None:
-            self.fig = plt.figure(figsize=(10, 5), layout="constrained")
+            self.fig = plt.figure(figsize=(10, 5), layout="constrained", dpi=300.0)
             self.subfig_l, self.subfig_r = self.fig.subfigures(1, 2, wspace=0.1)
             self.axs_l = self.subfig_l.subplots(
                 nrows=num_actions,
@@ -31,14 +31,12 @@ class InputPlanPlotter(Plotter):
                 sharex=True,
                 squeeze=True,
                 gridspec_kw={"top": 0.9, "bottom": 0.15},
-                dpi=300.0,
             )
             self.axs_r = self.subfig_r.subplots(
                 nrows=1,
                 ncols=1,
                 squeeze=True,
                 gridspec_kw={"top": 0.9, "bottom": 0.15},
-                dpi=300.0,
             )
             self.axs_l = (
                 [self.axs_l] if isinstance(self.axs_l, plt.Axes) else self.axs_l

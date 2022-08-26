@@ -4,21 +4,18 @@ import sys
 import time
 from copy import deepcopy
 from datetime import datetime
-from itertools import product
 from typing import Any
-import tensorflow as tf
 import numpy as np
 
 import gym
 from numpy.random import SeedSequence
-from yaml import FullLoader, dump, load
+from yaml import dump
 
 from ControllersGym import Controller
 from Environments import register_envs
 from Utilities.csv_helpers import save_to_csv
 from Utilities.generate_plots import generate_experiment_plots
 from Utilities.utils import (
-    CurrentRunMemory,
     OutputPath,
     SeedMemory,
     get_logger,
@@ -27,21 +24,6 @@ from Utilities.utils import (
 
 # Keep allowing absolute imports within CartPoleSimulation subgit
 sys.path.append(os.path.join(os.path.abspath("."), "CartPoleSimulation"))
-
-
-# Load config
-CONFIG = load(open("config.yml", "r"), Loader=FullLoader)
-CONTROLLER_NAMES, ENVIRONMENT_NAMES, NUM_EXPERIMENTS = (
-    CONFIG["1_data_generation"]["controller_names"],
-    CONFIG["1_data_generation"]["environment_names"],
-    CONFIG["1_data_generation"]["num_experiments"],
-)
-CONTROLLER_NAMES = (
-    [CONTROLLER_NAMES] if isinstance(CONTROLLER_NAMES, str) else CONTROLLER_NAMES
-)
-ENVIRONMENT_NAMES = (
-    [ENVIRONMENT_NAMES] if isinstance(ENVIRONMENT_NAMES, str) else ENVIRONMENT_NAMES
-)
 
 logger = get_logger(__name__)
 
@@ -185,23 +167,3 @@ def run_data_generator(
                 OutputPath.get_output_path(timestamp_str, "config", ".yml"), "w"
             ) as f:
                 dump(config, f)
-
-
-if __name__ == "__main__":
-    for controller_name, environment_name in product(
-        CONTROLLER_NAMES, ENVIRONMENT_NAMES
-    ):
-        CurrentRunMemory.current_controller_name = controller_name
-        CurrentRunMemory.current_environment_name = environment_name
-
-        device_name = "/CPU:0"
-        if CONFIG["1_data_generation"]["use_gpu"]:
-            if len(tf.config.list_physical_devices("GPU")) > 0:
-                device_name = "/GPU:0"
-            else:
-                logger.info(
-                    "GPU use specified in config but no device available. Using CPU instead."
-                )
-
-        with tf.device(device_name):
-            run_data_generator(controller_name, environment_name, NUM_EXPERIMENTS, CONFIG)

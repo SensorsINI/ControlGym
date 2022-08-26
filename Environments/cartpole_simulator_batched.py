@@ -101,14 +101,18 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             self._set_up_rng(seed)
         
         if state is None:
-            high = np.array([self.lib.pi / 2, 1.0e-1, 1.0e-1, 1.0e-1])
+            low = np.array([-self.lib.pi / 4, 1.0e-1, 1.0e-1, 1.0e-1])
+            high = np.array([self.lib.pi / 4, 1.0e-1, 1.0e-1, 1.0e-1])
             angle, angleD, position, positionD = self.lib.unstack(
                 self.lib.uniform(
-                    self.rng, [self._batch_size, 4], -high, high, self.lib.float32
+                    self.rng, [self._batch_size, 4], low, high, self.lib.float32
                 ),
                 4,
                 1,
             )
+            mask = angle >= 0
+            angle[mask] -= np.pi
+            angle[~mask] += np.pi
             self.state = self.lib.stack(
                 [
                     angle,

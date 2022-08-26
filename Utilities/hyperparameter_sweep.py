@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 
 import tensorflow as tf
@@ -7,8 +8,8 @@ from yaml import FullLoader, load
 from Utilities.utils import CurrentRunMemory, OutputPath, get_logger
 
 CONTROLLER_TO_ANALYZE = "controller_dist_adam_resamp2_tf"
-PARAMETER_TO_SWEEP = "outer_its"
-SWEEP_VALUES = [0, 1, 5, 10, 20]
+PARAMETER_TO_SWEEP = "cem_LR"
+SWEEP_VALUES = [0.001, 0.005, 0.01, 0.05, 0.1]
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAMES, ENVIRONMENT_NAMES, NUM_EXPERIMENTS = (
@@ -28,7 +29,7 @@ logger = get_logger(__name__)
 
 if __name__ == "__main__":
     for sweep_value in SWEEP_VALUES:
-        OutputPath.collection_folder_name = os.path.join(f"sweep_{PARAMETER_TO_SWEEP}_{CONTROLLER_TO_ANALYZE}", f"{PARAMETER_TO_SWEEP}={sweep_value}")
+        OutputPath.collection_folder_name = os.path.join(f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_sweep_{PARAMETER_TO_SWEEP}_{CONTROLLER_TO_ANALYZE}", f"{PARAMETER_TO_SWEEP}={sweep_value}")
         CurrentRunMemory.current_controller_name = CONTROLLER_TO_ANALYZE
         CurrentRunMemory.current_environment_name = ENVIRONMENT_NAMES[0]
 
