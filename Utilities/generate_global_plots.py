@@ -3,10 +3,12 @@ from glob import glob
 import numpy as np
 from yaml import load, FullLoader
 import os
+from natsort import natsorted
 
 from Utilities.utils import get_logger
 from Visualizations.plot_cost_scatter_plots import CostScatterPlotPlotter
 from pprint import pformat
+import re
 
 logger = get_logger(__name__)
 
@@ -22,9 +24,19 @@ logger = get_logger(__name__)
 # ]
 
 ## Option 2: Specify a top-level folder
-EXPERIMENT_FOLDER = "sweep_controllers"
-EXPERIMENTS_TO_PLOT = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*", recursive="True")
-EXPERIMENTS_TO_PLOT.sort()
+EXPERIMENT_FOLDER = "20220828-185348_sweep_resamp_per_controller_dist_adam_resamp2_tf"
+ENVIRONMENT_NAME = "CartPoleSimulator"
+EXPERIMENTS_TO_PLOT = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*", recursive="True")
+EXPERIMENTS_TO_PLOT = natsorted(EXPERIMENTS_TO_PLOT)
+
+# Specify what the sweeped value is (labeled on x-axis)
+SWEEP_VALUE = "resamp_per"
+sweep_values = {
+    "Resamp every": list(map(
+        lambda x: x.split("=")[1].split("/")[0].split("\\")[0],
+        [re.search(f"{SWEEP_VALUE}=.*(/|\\\)", path).group() for path in EXPERIMENTS_TO_PLOT]
+    ))
+}
 
 # Compare configs associated with the different experiments
 
@@ -67,7 +79,7 @@ def generate_global_plots() -> None:
             "2_environments": {"": {"actuator_noise": 0}},
         },
     )
-    box_plot_plotter.plot(all_total_cost_data, True)
+    box_plot_plotter.plot(all_total_cost_data, sweep_values, True)
     logger.info(pformat({k: sorted(v) for k, v in all_total_cost_data.items()}))
     logger.info("...done.")
 

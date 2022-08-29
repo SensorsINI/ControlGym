@@ -14,11 +14,12 @@ def _build_color_seq(n):
 
 
 class CostScatterPlotPlotter(Plotter):
-    def plot(self, costs: "dict[str, list]", save_to_image):
-        num_datapoints_per_experiment = len(list(costs.values())[0])
+    def plot(self, costs: "dict[str, list]", axis_info: dict, save_to_image):
+        num_datapoints_per_experiment = [len(v) for v in list(costs.values())]
         num_experiments = len(costs.values())
+        sweep_var, sweep_values = list(axis_info.keys())[0], list(map(int, list(axis_info.values())[0]))
         assert all(
-            [len(c) == num_datapoints_per_experiment for c in costs.values()]
+            v == num_datapoints_per_experiment[0] for v in num_datapoints_per_experiment
         ), "All compared experiment series should have same number of trials"
 
         if self.ax is None:
@@ -28,24 +29,26 @@ class CostScatterPlotPlotter(Plotter):
                 dpi=300.0,
             )
         self.ax.clear()
-        data = np.array([c for c in costs.values()]).ravel()
         
         for k, (exp_name, data) in enumerate(costs.items()):
             self.ax.scatter(
-                np.repeat(k+1, num_datapoints_per_experiment), data, marker="x", label=exp_name
+                np.repeat(sweep_values[k], num_datapoints_per_experiment[k]), data, marker="x", label=exp_name
             )
+        # self.ax.boxplot(np.array(list(costs.values())).T, positions=sweep_values)
 
         self.ax.set_ylabel("Realized mean cost per experiment")
         self.ax.set_title(
-            f"Comparison of different control methods, N={num_datapoints_per_experiment}\nEach marker represents the total cost of an experiment."
+            f"Comparison of different control methods, N={num_datapoints_per_experiment[0]}"
         )
-        self.ax.set_xticklabels([])
-        self.ax.set_xlim(0, num_experiments+1)
+        self.ax.set_xlabel(sweep_var)
+        self.ax.set_xticks(sweep_values, labels=sweep_values)
+        self.ax.minorticks_off()
+        self.ax.set_xlim(0, max(sweep_values)*1.05)
 
-        self.ax.legend(
-            loc="lower center",
-            bbox_to_anchor=(0.5, -0.3),
-        )
+        # self.ax.legend(
+        #     loc="lower center",
+        #     bbox_to_anchor=(0.5, -0.3),
+        # )
 
         if save_to_image:
             self.fig.savefig(
