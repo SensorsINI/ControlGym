@@ -29,7 +29,7 @@ if __name__ == "__main__":
     for controller_name, environment_name in product(
         CONTROLLER_NAMES, ENVIRONMENT_NAMES
     ):
-        OutputPath.collection_folder_name = os.path.join(f"{datetime_str}_sweep_controllers", f"controller_name={controller_name}")
+        OutputPath.collection_folder_name = os.path.join(f"{datetime_str}_sweep_controller_name", f"controller_name={controller_name}")
         CurrentRunMemory.current_controller_name = controller_name
         CurrentRunMemory.current_environment_name = environment_name
 

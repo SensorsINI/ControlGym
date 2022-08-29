@@ -8,8 +8,10 @@ from yaml import FullLoader, load
 from Utilities.utils import CurrentRunMemory, OutputPath, get_logger
 
 CONTROLLER_TO_ANALYZE = "controller_dist_adam_resamp2_tf"
-PARAMETERS_TO_SWEEP = ("num_rollouts", "opt_keep_k")
-SWEEP_VALUES = [[1, 8, 32, 128, 512], [0, 2, 8, 32, 128]]
+PARAMETERS_TO_SWEEP = ["num_rollouts", "opt_keep_k"]
+SWEEP_VALUES = [[32, 128, 512], [8, 32, 128]]
+# PARAMETERS_TO_SWEEP = ["resamp_per"]
+# SWEEP_VALUES = [[10, 20]]
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAMES, ENVIRONMENT_NAMES, NUM_EXPERIMENTS = (
@@ -30,7 +32,7 @@ logger = get_logger(__name__)
 if __name__ == "__main__":
     datetime_str = datetime.now().strftime('%Y%m%d-%H%M%S')
     for sweep_value in zip(*SWEEP_VALUES):
-        OutputPath.collection_folder_name = os.path.join(f"{datetime_str}_sweep_{PARAMETERS_TO_SWEEP}_{CONTROLLER_TO_ANALYZE}", f"{PARAMETERS_TO_SWEEP}={sweep_value}")
+        OutputPath.collection_folder_name = os.path.join(f"{datetime_str}_sweep_{','.join(PARAMETERS_TO_SWEEP)}_{CONTROLLER_TO_ANALYZE}", f"{','.join(PARAMETERS_TO_SWEEP)}={','.join(list(map(str, sweep_value)))}")
         CurrentRunMemory.current_controller_name = CONTROLLER_TO_ANALYZE
         CurrentRunMemory.current_environment_name = ENVIRONMENT_NAMES[0]
 
