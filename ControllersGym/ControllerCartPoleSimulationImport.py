@@ -46,6 +46,12 @@ class ControllerCartPoleSimulationImport(Controller):
             l = getattr(CurrentRunMemory, "controller_logs", {})
             l.update({"rollout_trajectories_logged": self.rollout_trajectories_logged})
             setattr(CurrentRunMemory, "controller_logs", l)
+        self.trajectory_ages_logged = getattr(self._controller, "trajectory_ages_logged", None)
+        if self.trajectory_ages_logged is not None:
+            self.trajectory_ages_logged = self.trajectory_ages_logged.copy()
+            l = getattr(CurrentRunMemory, "controller_logs", {})
+            l.update({"trajectory_ages_logged": self.trajectory_ages_logged})
+            setattr(CurrentRunMemory, "controller_logs", l)
         # Q: (batch_size x horizon_length x action_space)
         # J: (batch_size)
         self.s_logged = s.copy()

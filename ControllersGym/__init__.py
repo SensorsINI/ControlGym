@@ -26,6 +26,7 @@ class Controller:
             "realized_cost_logged",
             "s_logged",
             "u_logged",
+            "trajectory_ages_logged",
         ]
         self.logs = {s: [] for s in self.save_vars}
         for v in self.save_vars:

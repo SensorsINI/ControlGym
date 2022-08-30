@@ -9,7 +9,8 @@ from Utilities.utils import CurrentRunMemory, OutputPath, get_logger
 
 CONTROLLER_TO_ANALYZE = "controller_dist_adam_resamp2_tf"
 PARAMETERS_TO_SWEEP = ["num_rollouts", "opt_keep_k"]
-SWEEP_VALUES = [[32, 128, 512], [8, 32, 128]]
+SWEEP_VALUES = [[4, 8], [1, 2]]
+# SWEEP_VALUES = [[16, 32, 64], [4, 8, 16]]
 # PARAMETERS_TO_SWEEP = ["resamp_per"]
 # SWEEP_VALUES = [[10, 20]]
 

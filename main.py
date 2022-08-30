@@ -119,7 +119,8 @@ def run_data_generator(
             action = controller.step(obs)
             new_obs, reward, done, info = env.step(action)
             controller.realized_cost_logged = np.array([-reward])
-            controller.update_logs()
+            if config["4_controllers"]["controller_logging"]:
+                controller.update_logs()
             frames.append(env.render())
 
             time.sleep(0.001)

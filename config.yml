@@ -1,21 +1,21 @@
 1_data_generation:
   controller_names:
-  - controller_cem_tf
+  # - controller_cem_tf
   # - controller_cem_gmm_tf
   # - controller_cem_naive_grad_tf
   # - controller_mppi_tf
-  - controller_cem_grad_bharadhwaj_tf
+  # - controller_cem_grad_bharadhwaj_tf
   # - controller_gradient_tf
   - controller_dist_adam_resamp2_tf
   debug: false  # false to use tf.compile
   use_jit_compilation: false  # false for reproducibility
   environment_names:
-  - CustomEnvironments/MountainCarContinuous-v0
+  # - CustomEnvironments/MountainCarContinuous-v0
   # - CustomEnvironments/Acrobot-v0
   # - CustomEnvironments/Pendulum-v0
   - CustomEnvironments/CartPoleSimulator-v0
   # - CustomEnvironments/CartPoleContinuous-v0
-  - CustomEnvironments/DubinsCar-v0
+  # - CustomEnvironments/DubinsCar-v0
   logging_level: DEBUG
   num_experiments: 100
   num_iterations: 200

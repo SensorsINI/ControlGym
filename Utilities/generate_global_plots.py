@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 # ]
 
 ## Option 2: Specify a top-level folder
-EXPERIMENT_FOLDER = "20220829-132619_sweep_controllers"
+EXPERIMENT_FOLDER = "20220829-134752_sweep_num_rollouts,opt_keep_k_controller_dist_adam_resamp2_tf"
 ENVIRONMENT_NAME = "CartPoleSimulator"
 EXPERIMENTS_TO_PLOT = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*", recursive="True")
 EXPERIMENTS_TO_PLOT = natsorted(EXPERIMENTS_TO_PLOT)
@@ -81,6 +81,17 @@ def generate_global_plots() -> None:
     )
     box_plot_plotter.plot(all_total_cost_data, sweep_values, True)
     logger.info(pformat({k: sorted(v) for k, v in all_total_cost_data.items()}))
+    logger.info("...done.")
+
+    logger.info("Generating box plot...")
+    box_plot_plotter = CostScatterPlotPlotter(
+        datetime.now().strftime("%Y%m%d-%H%M%S"),
+        {
+            "1_data_generation": {"controller_name": "", "environment_name": ""},
+            "2_environments": {"": {"actuator_noise": 0}},
+        },
+    )
+    box_plot_plotter.plot(all_total_cost_data, sweep_values, True)
     logger.info("...done.")
 
 
