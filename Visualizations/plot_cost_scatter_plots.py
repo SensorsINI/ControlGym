@@ -24,28 +24,34 @@ class CostScatterPlotPlotter(Plotter):
 
         if self.ax is None:
             self.fig, self.ax = plt.subplots(
-                figsize=(num_experiments, 8),
+                figsize=(6, 5),
                 gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.3},
                 dpi=300.0,
             )
         self.ax.clear()
         
-        x_loc = [k + 1 if isinstance(x, str) else x for k, x in enumerate(sweep_values)]
+        # x_loc = [k + 1 if isinstance(x, str) else x for k, x in enumerate(sweep_values)]
+        x_loc = list(range(1, num_experiments + 1))
+
         # for k, (exp_name, data) in enumerate(costs.items()):
         #     self.ax.scatter(
-        #         np.repeat(x_loc[k], num_datapoints_per_experiment[k]), data, marker="x", label=exp_name
+        #         np.repeat(x_loc[k], num_datapoints_per_experiment[k]), data, marker=".", label=exp_name, color="k"
         #     )
-        self.ax.boxplot(np.array(list(costs.values())).T, positions=x_loc)
+        c = np.array(list(costs.values())).T
+        self.ax.boxplot(c, positions=x_loc)
 
         self.ax.set_ylabel("Realized mean cost per experiment")
         self.ax.set_title(
-            f"Comparison of different control methods, N={num_datapoints_per_experiment[0]}"
+            f"Variation of {sweep_var}, {num_datapoints_per_experiment[0]} Random Trials"
         )
         self.ax.set_xlabel(sweep_var)
         self.ax.set_xticks(x_loc, labels=sweep_values)
         self.ax.minorticks_off()
-        min_x = 0 if isinstance(max(sweep_values), str) else min(sweep_values)*0.9
-        max_x = num_experiments + 1 if isinstance(max(sweep_values), str) else max(sweep_values)*1.1
+        # min_x = 0 if isinstance(max(sweep_values), str) else min(sweep_values)*0.9
+        # max_x = num_experiments + 1 if isinstance(max(sweep_values), str) else max(sweep_values)*1.1
+        min_x = 0
+        max_x = num_experiments + 1
+        
         self.ax.set_xlim(min_x, max_x)
 
         # self.ax.legend(
@@ -55,7 +61,7 @@ class CostScatterPlotPlotter(Plotter):
 
         if save_to_image:
             self.fig.savefig(
-                os.path.join("Output", self._timestamp),
+                os.path.join("Output", f"{self._timestamp}_cost_scatter_plot"),
                 bbox_inches="tight",
             )
         else:

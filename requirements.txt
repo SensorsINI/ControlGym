@@ -1,4 +1,4 @@
-./SI_Toolkit
+-e ./SI_Toolkit
 casadi
 derivative
 do-mpc==4.1.1
@@ -9,6 +9,7 @@ gpflow
 gym[classic_control,mujoco,box2d]
 imageio
 matplotlib
+natsort
 nni
 numba
 numpy<1.23

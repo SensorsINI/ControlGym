@@ -40,7 +40,7 @@ import tensorflow as tf
 from Control_Toolkit.others.environment import TensorType
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
 from Utilities.utils import CurrentRunMemory
-from SI_Toolkit.TF.TF_Functions.Compile import Compile
+from SI_Toolkit.Functions.TF.Compile import Compile
 
 # Training constants
 MAX_STEER = np.pi / 3
@@ -262,7 +262,6 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             action = self._apply_actuator_noise(action)
 
         state = self.update_state(state, action, self.dt)
-        state = self.lib.squeeze(state)
 
         return state
 
@@ -293,7 +292,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             self.renderer.render_step()
             return self.lib.to_numpy(self.state), float(reward), bool(done), {}
 
-        return self.state, reward, done, {}
+        return self.state, reward, done, info
 
     def render(self, mode="human"):
         if self.render_mode is not None:

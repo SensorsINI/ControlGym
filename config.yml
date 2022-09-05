@@ -13,11 +13,11 @@
   # - CustomEnvironments/MountainCarContinuous-v0
   # - CustomEnvironments/Acrobot-v0
   # - CustomEnvironments/Pendulum-v0
-  - CustomEnvironments/CartPoleSimulator-v0
+  # - CustomEnvironments/CartPoleSimulator-v0
   # - CustomEnvironments/CartPoleContinuous-v0
-  # - CustomEnvironments/DubinsCar-v0
+  - CustomEnvironments/DubinsCar-v0
   logging_level: DEBUG
-  num_experiments: 100
+  num_experiments: 50
   num_iterations: 200
   render_for_humans: false
   save_plots_to_file: false
@@ -155,7 +155,7 @@
     rtol: 1.0e-3
     num_rollouts: 32
     opt_keep_k: 8
-    outer_its: 2
+    outer_its: 5
     predictor_intermediate_steps: 1
     predictor_name: predictor_ODE_tf
     resamp_per: 10

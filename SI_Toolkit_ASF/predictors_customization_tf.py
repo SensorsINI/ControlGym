@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from Utilities.utils import CurrentRunMemory, SeedMemory
 
-from SI_Toolkit.TF.TF_Functions.Compile import Compile
+from SI_Toolkit.Functions.TF.Compile import Compile
 from Environments import ENV_REGISTRY
 from Control_Toolkit.others.environment import TensorFlowLibrary
 
