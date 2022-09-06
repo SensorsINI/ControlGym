@@ -5,15 +5,15 @@
   # - controller_cem_naive_grad_tf
   # - controller_mppi_tf
   # - controller_cem_grad_bharadhwaj_tf
-  # - controller_gradient_tf
-  - controller_dist_adam_resamp2_tf
+  - controller_gradient_tf
+  # - controller_dist_adam_resamp2_tf
   debug: false  # false to use tf.compile
   use_jit_compilation: false  # false for reproducibility
   environment_names:
-  # - CustomEnvironments/MountainCarContinuous-v0
+  - CustomEnvironments/MountainCarContinuous-v0
   # - CustomEnvironments/Acrobot-v0
   # - CustomEnvironments/Pendulum-v0
-  # - CustomEnvironments/CartPoleSimulator-v0
+  - CustomEnvironments/CartPoleSimulator-v0
   # - CustomEnvironments/CartPoleContinuous-v0
   - CustomEnvironments/DubinsCar-v0
   logging_level: DEBUG
@@ -25,7 +25,7 @@
   split:
   - 0.6
   - 0.2
-  use_gpu: false
+  use_gpu: true
 2_environments:
   CustomEnvironments/CartPoleContinuous-v0:
     actuator_noise:
@@ -98,14 +98,16 @@
     learning_rate: 0.05
     adam_beta_1: 0.9
     adam_beta_2: 0.999
-    adam_epsilon: 1.0e-07
-    gradient_steps: 50
-    mpc_rollouts: 100
+    adam_epsilon: 1.0e-08
+    gradient_steps: 5
+    mpc_rollouts: 32
     initial_action_stdev: 0.5
     gradmax_clip: 5
-    predictor_intermediate_steps: 10
+    predictor_intermediate_steps: 1
     predictor_name: predictor_ODE_tf
     rtol: 1.0e-3
+    warmup: true
+    warmup_iterations: 250
   controller_cem_naive_grad_tf:
     CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     cem_LR: 0.05
@@ -155,7 +157,7 @@
     rtol: 1.0e-3
     num_rollouts: 32
     opt_keep_k: 8
-    outer_its: 5
+    outer_its: 2
     predictor_intermediate_steps: 1
     predictor_name: predictor_ODE_tf
     resamp_per: 10
