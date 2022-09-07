@@ -23,13 +23,13 @@ class TrajectoryAgePlotter(Plotter):
                 )
             self.ax.clear()
 
-            self.ax.hist(data_series, bins=20, edgecolor="black", color="white")
+            self.ax.hist(data_series, bins=np.max(data_series)-np.min(data_series), edgecolor="black", color="white")
             
             self.ax.set_ylabel("Count")
             self.ax.set_title(
                 f"Age of trajectory from which MPC control was selected, histogram, {num_datapoints_per_experiment[0]} control steps"
             )
-            self.ax.set_xlabel("Age of trajectory")
+            self.ax.set_xlabel("Age of Input Plan")
 
             if save_to_image:
                 path = os.path.join("Output", f"{self._timestamp}_trajectory_ages")
