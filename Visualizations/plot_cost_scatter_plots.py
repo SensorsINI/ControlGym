@@ -38,7 +38,10 @@ class CostScatterPlotPlotter(Plotter):
         #         np.repeat(x_loc[k], num_datapoints_per_experiment[k]), data, marker=".", label=exp_name, color="k"
         #     )
         c = np.array(list(costs.values())).T
-        self.ax.boxplot(c, positions=x_loc)
+        boxplot = self.ax.boxplot(c, positions=x_loc, patch_artist=True)#, flierprops={"markerfacecolor": "white"})
+        for patch in boxplot["boxes"]:
+            patch.set_facecolor("white")
+        self.ax.grid(visible=True, which="major", axis="y")
 
         self.ax.set_ylabel("Realized mean cost per experiment")
         self.ax.set_title(

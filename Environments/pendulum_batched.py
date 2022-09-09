@@ -14,14 +14,21 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
     num_actions = 1
     num_states = 4
 
-    def __init__(self, g=10, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs):
+    def __init__(
+        self,
+        g=10,
+        batch_size=1,
+        computation_lib=NumpyLibrary,
+        render_mode="human",
+        parent_env: EnvironmentBatched = None,
+        **kwargs,
+    ):
         super().__init__(render_mode=render_mode, g=g)
 
         self.config = {
             **kwargs,
             **{"render_mode": self.render_mode, "g": g},
         }
-        CurrentRunMemory.controller_specific_params = self.config
         self.dt = kwargs["dt"]
 
         high = np.array([np.pi, self.max_speed, 1.0, 1.0], dtype=np.float32)

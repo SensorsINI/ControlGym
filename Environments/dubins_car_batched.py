@@ -71,10 +71,12 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
     def __init__(
         self,
         target_point,
+        shuffle_target_every: int,
         obstacle_positions: "list[list[float]]",
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode: str = None,
+        parent_env: EnvironmentBatched = None,
         **kwargs
     ):
         super().__init__()
@@ -99,7 +101,9 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             low, high, dtype=np.float32
         )  # Observation space for [x, y, theta]
 
-        self.target = target_point
+        self.parent_env = self if parent_env is None else parent_env
+        self.target_point = tf.Variable(target_point)
+        self.shuffle_target_every = shuffle_target_every
         self.num_obstacles = 8 + math.floor(
             float(self.lib.uniform(self.rng, (), 0, 8, self.lib.float32))
         )
@@ -135,11 +139,11 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             **kwargs,
             **dict(
                 render_mode=self.render_mode,
-                target_point=self.target,
+                target_point=self.parent_env.target_point,
                 obstacle_positions=self.obstacle_positions,
+                shuffle_target_every=self.shuffle_target_every
             ),
         }
-        CurrentRunMemory.controller_specific_params = self.config
 
         self.fig: plt.Figure = None
         self.ax: plt.Axes = None
@@ -153,12 +157,14 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
     ) -> Tuple[np.ndarray, Optional[dict]]:
         if seed is not None:
             self._set_up_rng(seed)
+        
+        self.count = 0
 
         if state is None:
             x = self.lib.uniform(self.rng, (1, 1), -1.0, -0.9, self.lib.float32)
             y = self.lib.uniform(self.rng, (1, 1), -1.0, 1.0, self.lib.float32)
             theta = self.get_heading(
-                self.lib.concat([x, y], 1), self.lib.unsqueeze(self.target, 0)
+                self.lib.concat([x, y], 1), self.lib.unsqueeze(self.lib.to_tensor(self.parent_env.target_point, self.lib.float32), 0)
             )
             yaw = self.lib.uniform(
                 self.rng, (1, 1), theta - MAX_STEER, theta + MAX_STEER, self.lib.float32
@@ -185,11 +191,12 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
     def get_reward(self, state, action):
         x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, -1)
-        x_target, y_target, yaw_target = self.target
+        target = self.lib.to_tensor(self.parent_env.target_point, self.lib.float32)
+        x_target, y_target, yaw_target = self.lib.unstack(target, 3, 0)
 
-        head_to_target = self.get_heading(state, self.lib.unsqueeze(self.target, 0))
+        head_to_target = self.get_heading(state, self.lib.unsqueeze(target, 0))
         alpha = head_to_target - yaw_car
-        ld = self.get_distance(state, self.lib.unsqueeze(self.target, 0))
+        ld = self.get_distance(state, self.lib.unsqueeze(target, 0))
         crossTrackError = self.lib.sin(alpha) * ld
 
         car_in_bounds = self._car_in_bounds(x, y)
@@ -216,7 +223,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
     def is_done(self, state):
         x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, -1)
-        x_target, y_target, yaw_target = self.target
+        target = self.lib.to_tensor(self.parent_env.target_point, self.lib.float32)
+        x_target, y_target, yaw_target = self.lib.unstack(target, 3, 0)
 
         car_in_bounds = self._car_in_bounds(x, y)
         car_at_target = self._car_at_target(x, y, x_target, y_target)
@@ -273,6 +281,16 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         Union[np.ndarray, bool],
         dict,
     ]:
+        if self.count % self.shuffle_target_every == 0:
+            target_new = tf.convert_to_tensor([
+                self.target_point[0],
+                self.lib.uniform(
+                    self.rng, [], -1.0, 1.0, self.lib.float32
+                ),
+                self.target_point[2],
+            ])
+            self.target_point.assign(target_new)
+        self.count += 1
         self.state, action = self._expand_arrays(self.state, action)
 
         # Perturb action if not in planning mode
@@ -331,8 +349,9 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         #         "^r",
         #         label="waypoint",
         #     )
+        target = self.lib.to_tensor(self.parent_env.target_point, self.lib.float32)
         self.ax.plot(
-            self.target[0] * MAX_X, self.target[1] * MAX_Y, "xg", label="target"
+            target[0] * MAX_X, target[1] * MAX_Y, "xg", label="target"
         )
         self.plot_obstacles()
         self.plot_trajectory_plans()

@@ -17,17 +17,23 @@ class TrajectoryAgePlotter(Plotter):
             name = re.split("/|\\\\", name)[-2]
             if self.ax is None:
                 self.fig, self.ax = plt.subplots(
-                    figsize=(6, 5),
+                    figsize=(6, 4),
                     gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.3},
                     dpi=300.0,
                 )
             self.ax.clear()
 
-            self.ax.hist(data_series, bins=np.max(data_series)-np.min(data_series), edgecolor="black", color="white")
+            self.ax.hist(data_series, bins=np.max(data_series)-np.min(data_series), edgecolor="black", color="white", zorder=3)
+            self.ax.grid(
+                visible=True,
+                which="major",
+                axis="y",
+                zorder=0,
+            )
             
             self.ax.set_ylabel("Count")
             self.ax.set_title(
-                f"Age of trajectory from which MPC control was selected, histogram, {num_datapoints_per_experiment[0]} control steps"
+                f"Age of Trajectory from which MPC Control is Selected, Histogram"
             )
             self.ax.set_xlabel("Age of Input Plan")
 

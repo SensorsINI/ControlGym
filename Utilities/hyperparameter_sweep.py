@@ -12,8 +12,8 @@ CONTROLLER_TO_ANALYZE = "controller_dist_adam_resamp2_tf"
 # SWEEP_VALUES = [[1, 2, 4, 8, 16, 32, 64], [0, 1, 1, 2, 4, 8, 16]]
 # SWEEP_VALUES = [[128], [32]]
 # SWEEP_VALUES = [[16, 32, 64], [4, 8, 16]]
-PARAMETERS_TO_SWEEP = ["outer_its"]
-SWEEP_VALUES = [[0, 1, 2, 3, 4, 5, 10, 20, 30]]
+PARAMETERS_TO_SWEEP = ["resamp_per"]
+SWEEP_VALUES = [[10, 20, 30]]
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAMES, ENVIRONMENT_NAMES, NUM_EXPERIMENTS = (

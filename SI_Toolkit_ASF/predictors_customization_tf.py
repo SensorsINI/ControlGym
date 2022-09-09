@@ -5,7 +5,7 @@ from Utilities.utils import CurrentRunMemory, SeedMemory
 
 from SI_Toolkit.Functions.TF.Compile import Compile
 from Environments import ENV_REGISTRY
-from Control_Toolkit.others.environment import TensorFlowLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched, TensorFlowLibrary
 
 from SI_Toolkit_ASF.predictors_customization import STATE_INDICES
 
@@ -20,19 +20,10 @@ STATE_INDICES_TF = tf.lookup.StaticHashTable(  # TF style dictionary
 
 
 class next_state_predictor_ODE_tf:
-    def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
+    def __init__(self, dt: float, intermediate_steps: int, batch_size: int, planning_environment: EnvironmentBatched, **kwargs):
         self.s = None
 
-        env_name = CurrentRunMemory.current_environment_name
-        planning_env_config = {
-            **CurrentRunMemory.controller_specific_params,
-            **{"seed": SeedMemory.get_seeds()[0]},
-            **{"computation_lib": TensorFlowLibrary},
-        }
-        EnvClass, EnvName = ENV_REGISTRY[env_name].split(":")
-        self.env = getattr(import_module(EnvClass), EnvName)(
-            batch_size=batch_size, **planning_env_config
-        )
+        self.env = planning_environment
 
         self.intermediate_steps = tf.convert_to_tensor(
             intermediate_steps, dtype=tf.int32

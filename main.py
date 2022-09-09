@@ -12,7 +12,7 @@ from numpy.random import SeedSequence
 from yaml import dump
 
 from ControllersGym import Controller
-from Environments import register_envs
+from Environments import ENV_REGISTRY, register_envs
 from Utilities.csv_helpers import save_to_csv
 from Utilities.generate_plots import generate_experiment_plots
 from Utilities.utils import (
@@ -104,7 +104,7 @@ def run_data_generator(
         controller: Controller = getattr(controller_module, controller_module_name)(
             **{
                 **{
-                    "environment": deepcopy(env.unwrapped),
+                    "environment": env.unwrapped,
                     "controller_name": controller_name,
                 },
                 **config["4_controllers"][controller_name],

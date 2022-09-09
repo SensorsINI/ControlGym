@@ -1,11 +1,12 @@
 import numpy as np
 import tensorflow as tf
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 from CartPoleSimulation.CartPole import CartPole
 from CartPoleSimulation.CartPole.cartpole_model_tf import _cartpole_ode, cartpole_integration_tf
 from CartPoleSimulation.CartPole.state_utilities import (
     ANGLE_COS_IDX,
+    POSITION_IDX,
 )
 
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary, TensorType
@@ -22,26 +23,31 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
     num_states = 6
 
     def __init__(
-        self, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs
+        self,
+        batch_size=1,
+        computation_lib=NumpyLibrary,
+        render_mode="human",
+        parent_env: EnvironmentBatched = None,
+        **kwargs,
     ):
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
         self.render_mode = render_mode
         self.renderer = Renderer(self.render_mode, self._render)
 
+        self.shuffle_target_every = kwargs["shuffle_target_every"]
         self.config = {
             **kwargs,
             **{"render_mode": self.render_mode},
         }
-        CurrentRunMemory.controller_specific_params = self.config
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
         self.cost_functions = self.cost_functions_wrapper(self)
         self.dt = self.lib.to_tensor(kwargs["dt"], self.lib.float32)
 
-        self.CartPoleInstance = CartPole()
-        self.CartPoleInstance.dt_simulation = self.dt
+        # self.CartPoleInstance = CartPole()
+        # self.CartPoleInstance.dt_simulation = self.dt
         self.mode = kwargs["mode"]
 
         if self.mode != "stabilization":
@@ -54,6 +60,9 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         usable_track_length = kwargs["usable_track_length"]
         track_half_length = np.array(usable_track_length - cart_length / 2.0)
         self.u_max = kwargs["u_max"]
+
+        self.parent_env: cartpole_simulator_batched = self if parent_env is None else parent_env
+        self.target_position = tf.Variable(0., dtype=tf.float32)
 
         self.x_threshold = (
             0.9 * track_half_length
@@ -85,8 +94,8 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self.state = None
         self.action = None
         self.reward = None
-        self.target = None
         self.done = False
+        self.count = 0
 
         self.steps_beyond_done = None
 
@@ -99,6 +108,8 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
     ) -> Tuple[np.ndarray, Optional[dict]]:
         if seed is not None:
             self._set_up_rng(seed)
+        
+        self.count = 0
         
         if state is None:
             low = np.array([-self.lib.pi / 4, 1.0e-1, 1.0e-1, 1.0e-1])
@@ -124,9 +135,6 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
                 ],
                 1,
             )
-            self.target = self.lib.to_tensor(
-                self.CartPoleInstance.target_position, self.lib.float32
-            )
             self.steps_beyond_done = None
         else:
             if self.lib.ndim(state) < 2:
@@ -141,9 +149,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         if self._batch_size == 1:
             self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
 
-        if return_info:
-            return tuple((self.state, {}))
-        return self.state
+        return tuple((self.state, {})) if return_info else self.state
 
     def step_tf(self, state: tf.Tensor, action: tf.Tensor):
         state, action = self._expand_arrays(state, action)
@@ -166,10 +172,13 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self.state = self.step_physics(self.state, action)
 
         # Update the total time of the simulation
-        self.CartPoleInstance.step_time()
-        self.CartPoleInstance.target_position = (
-            0.0  # TODO: Make option of random target position
-        )
+        # self.CartPoleInstance.step_time()
+        if self.count % self.shuffle_target_every == 0:
+            new_target = self.lib.uniform(
+                self.rng, [], -self.x_threshold, self.x_threshold, self.lib.float32
+            )
+            self.target_position.assign(new_target)
+        self.count += 1
 
         reward = self.get_reward(self.state, action)
         done = self.is_done(self.state)
@@ -183,7 +192,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             self.state,
             reward,
             done,
-            {"target": self.CartPoleInstance.target_position},
+            {"target": self.lib.to_numpy(self.parent_env.target_position)},
         )
 
     def step_physics(self, state: TensorType, action: TensorType):
@@ -208,7 +217,11 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         return next_state
 
     def get_reward(self, state, action):
-        reward = state[..., ANGLE_COS_IDX]
+        target_position = self.lib.to_tensor(self.parent_env.target_position, self.lib.float32)
+        reward = (
+            state[..., ANGLE_COS_IDX]
+            - (state[..., POSITION_IDX] - target_position)**2
+        )
         return reward
 
     def is_done(self, state):

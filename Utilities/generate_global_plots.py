@@ -18,16 +18,16 @@ logger = get_logger(__name__)
 
 ## Option 1: Specify paths manually
 # EXPERIMENTS_TO_PLOT = [
-#     "Output/sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=0/20220824-113202_controller_dist_adam_resamp2_tf_CustomEnvironments_MountainCarContinuous-v0_predictor_ODE_tf",
-#     "Output/sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=1/20220824-113445_controller_dist_adam_resamp2_tf_CustomEnvironments_MountainCarContinuous-v0_predictor_ODE_tf",
-#     "Output/sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=5/20220824-113940_controller_dist_adam_resamp2_tf_CustomEnvironments_MountainCarContinuous-v0_predictor_ODE_tf",
-#     "Output/sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=10/20220824-114927_controller_dist_adam_resamp2_tf_CustomEnvironments_MountainCarContinuous-v0_predictor_ODE_tf",
-#     "Output/sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=20/20220824-120515_controller_dist_adam_resamp2_tf_CustomEnvironments_MountainCarContinuous-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=0/20220905-151037_controller_dist_adam_resamp2_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=1/20220905-153936_controller_dist_adam_resamp2_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=2/20220905-162358_controller_dist_adam_resamp2_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=3/20220905-172320_controller_dist_adam_resamp2_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=4/20220905-183528_controller_dist_adam_resamp2_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf"
 # ]
 
 ## Option 2: Specify a top-level folder
-EXPERIMENT_FOLDER = "20220905-142109_sweep_controller_name"
-ENVIRONMENT_NAME = "CartPoleSimulator"
+EXPERIMENT_FOLDER = "20220908-224633_sweep_controller_name"
+ENVIRONMENT_NAME = "DubinsCar"
 EXPERIMENTS_TO_PLOT = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*", recursive="True")
 EXPERIMENTS_TO_PLOT = natsorted(EXPERIMENTS_TO_PLOT)
 

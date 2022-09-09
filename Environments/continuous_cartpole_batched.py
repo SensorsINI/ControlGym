@@ -14,14 +14,20 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
     num_actions = 1
     num_states = 4
 
-    def __init__(self, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs):
+    def __init__(
+        self,
+        batch_size=1,
+        computation_lib=NumpyLibrary,
+        render_mode="human",
+        parent_env: EnvironmentBatched = None,
+        **kwargs,
+    ):
         super().__init__(render_mode=render_mode)
 
         self.config = {
             **kwargs,
             **{"render_mode": self.render_mode},
         }
-        CurrentRunMemory.controller_specific_params = self.config
         self.dt = kwargs["dt"]
 
         self.action_space = spaces.Box(
