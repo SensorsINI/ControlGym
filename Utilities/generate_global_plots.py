@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 # ]
 
 ## Option 2: Specify a top-level folder
-EXPERIMENT_FOLDER = "20220908-224633_sweep_controller_name"
+EXPERIMENT_FOLDER = "20220910-104007_sweep_cem_LR_controller_dist_adam_resamp2_tf"
 ENVIRONMENT_NAME = "DubinsCar"
 EXPERIMENTS_TO_PLOT = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*", recursive="True")
 EXPERIMENTS_TO_PLOT = natsorted(EXPERIMENTS_TO_PLOT)
@@ -34,7 +34,7 @@ EXPERIMENTS_TO_PLOT = natsorted(EXPERIMENTS_TO_PLOT)
 # Specify what the sweeped value is (labeled on x-axis)
 sweep_value = EXPERIMENT_FOLDER.split("sweep_")[1].split("_controller")[0]
 sweep_values = {
-    "Controller": list(map(
+    "Learning Rate": list(map(
         lambda x: x.split("=")[1].split("/")[0].split("\\")[0],
         [re.search(f"{sweep_value}=.*(/|\\\)", path).group() for path in EXPERIMENTS_TO_PLOT]
     ))
@@ -47,14 +47,16 @@ sweep_values = {
 
 def generate_global_plots() -> None:
     all_total_cost_data: "dict[str, list[float]]" = {}
+    all_trajectory_cost_data: "dict[str, list[float]]" = {}
     all_ages_data: "dict[str, list[float]]" = {}
 
     # Prepare average cost data
     for exp in EXPERIMENTS_TO_PLOT:
-        all_total_cost_data[exp] = []
+        path_to_experiment = exp
+        exp = exp.replace(".", "_")
+        all_total_cost_data[exp], all_trajectory_cost_data[exp] = [], []
         all_ages_data[exp] = []
 
-        path_to_experiment = exp
         config_filepaths = filter(
             lambda x: x.endswith(".yml"), os.listdir(path_to_experiment)
         )
@@ -63,12 +65,20 @@ def generate_global_plots() -> None:
         )
         config = load(open(config_filepaths[0], "r"), FullLoader)
 
-        cost_filepaths = filter(
+        realized_cost_filepaths = filter(
             lambda x: "realized_cost_logged" in x and x.endswith(".npy"),
             os.listdir(path_to_experiment),
         )
-        cost_filepaths = map(
-            lambda x: os.path.join(path_to_experiment, x), cost_filepaths
+        realized_cost_filepaths = map(
+            lambda x: os.path.join(path_to_experiment, x), realized_cost_filepaths
+        )
+
+        trajectory_cost_filepaths = filter(
+            lambda x: "J_logged" in x and x.endswith(".npy"),
+            os.listdir(path_to_experiment),
+        )
+        trajectory_cost_filepaths = map(
+            lambda x: os.path.join(path_to_experiment, x), trajectory_cost_filepaths
         )
 
         trajectory_age_filepaths = filter(
@@ -79,10 +89,15 @@ def generate_global_plots() -> None:
             lambda x: os.path.join(path_to_experiment, x), trajectory_age_filepaths
         )
 
-        for cost_filepath in cost_filepaths:
+        for cost_filepath in realized_cost_filepaths:
             cost_log: np.ndarray = np.load(cost_filepath)
             total_cost = float(np.squeeze(cost_log.mean()))
             all_total_cost_data[exp].append(total_cost)
+
+        for cost_filepath in trajectory_cost_filepaths:
+            costs: np.ndarray = np.load(cost_filepath)
+            average_best_trajectory = float(costs.min(axis=1).mean())
+            all_trajectory_cost_data[exp].append(average_best_trajectory)
 
         for trajectory_age_filepath in trajectory_age_filepaths:
             try:
@@ -102,6 +117,8 @@ def generate_global_plots() -> None:
             "2_environments": {"": {"actuator_noise": 0}},
         },
     )
+    # box_plot_plotter.plot(all_trajectory_cost_data, sweep_values, True)
+    # c = np.array(list(all_trajectory_cost_data.values())).T
     box_plot_plotter.plot(all_total_cost_data, sweep_values, True)
     c = np.array(list(all_total_cost_data.values())).T
     logger.info(f"Average costs per experiment {np.around(np.mean(c, axis=0), 2)}")
