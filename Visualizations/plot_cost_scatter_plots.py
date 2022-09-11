@@ -19,7 +19,7 @@ class CostScatterPlotPlotter(Plotter):
 
         :param costs: _description_
         :type costs: dict[str, list]
-        :param axis_info: A dictionary with keys "description", "xlabel", "sweep_values"
+        :param axis_info: A dictionary with keys "description", "xlabel", "ylabel", "sweep_values"
         :type axis_info: dict
         :param save_to_image: _description_
         :type save_to_image: _type_
@@ -52,7 +52,7 @@ class CostScatterPlotPlotter(Plotter):
             patch.set_facecolor("white")
         self.ax.grid(visible=True, which="major", axis="y")
 
-        self.ax.set_ylabel("Realized mean cost per experiment")
+        self.ax.set_ylabel(axis_info["ylabel"])
         self.ax.set_title(
             f"Variation of {axis_info['description']}, {num_datapoints_per_experiment[0]} Random Trials"
         )
