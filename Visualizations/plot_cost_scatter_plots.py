@@ -15,9 +15,18 @@ def _build_color_seq(n):
 
 class CostScatterPlotPlotter(Plotter):
     def plot(self, costs: "dict[str, list]", axis_info: dict, save_to_image):
+        """_summary_
+
+        :param costs: _description_
+        :type costs: dict[str, list]
+        :param axis_info: A dictionary with keys "description", "xlabel", "sweep_values"
+        :type axis_info: dict
+        :param save_to_image: _description_
+        :type save_to_image: _type_
+        """
         num_datapoints_per_experiment = [len(v) for v in list(costs.values())]
         num_experiments = len(costs.values())
-        sweep_var, sweep_values = list(axis_info.keys())[0], list(map(lambda x: int(x) if x.isnumeric() else x, list(axis_info.values())[0]))
+        sweep_values = list(map(lambda x: int(x) if x.isnumeric() else x, axis_info["sweep_values"]))
         assert all(
             v == num_datapoints_per_experiment[0] for v in num_datapoints_per_experiment
         ), "All compared experiment series should have same number of trials"
@@ -45,9 +54,9 @@ class CostScatterPlotPlotter(Plotter):
 
         self.ax.set_ylabel("Realized mean cost per experiment")
         self.ax.set_title(
-            f"Variation of {sweep_var}, {num_datapoints_per_experiment[0]} Random Trials"
+            f"Variation of {axis_info['description']}, {num_datapoints_per_experiment[0]} Random Trials"
         )
-        self.ax.set_xlabel(sweep_var)
+        self.ax.set_xlabel(axis_info["xlabel"])
         self.ax.set_xticks(x_loc, labels=sweep_values)
         self.ax.minorticks_off()
         # min_x = 0 if isinstance(max(sweep_values), str) else min(sweep_values)*0.9
