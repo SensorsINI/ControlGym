@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 # ]
 
 ## Option 2: Specify a top-level folder
-EXPERIMENT_FOLDER = "20220911-134417_sweep_controller_name"
+EXPERIMENT_FOLDER = "20220911-210554_sweep_interpolation_step_controller_dist_adam_resamp2_tf"
 ENVIRONMENT_NAME = "DubinsCar"
 EXPERIMENTS_TO_PLOT = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*", recursive="True")
 EXPERIMENTS_TO_PLOT = natsorted(EXPERIMENTS_TO_PLOT)
@@ -34,8 +34,8 @@ EXPERIMENTS_TO_PLOT = natsorted(EXPERIMENTS_TO_PLOT)
 # Specify what the sweeped value is (labeled on x-axis)
 sweep_value = EXPERIMENT_FOLDER.split("sweep_")[1].split("_controller")[0]
 sweep_values = {
-    "description": "Controller",
-    "xlabel": r"Controller",
+    "description": "Interpolation Interval",
+    "xlabel": r"Interpolation Interval",
     "sweep_values": list(map(
         lambda x: x.split("=")[1].split("/")[0].split("\\")[0],
         [re.search(f"{sweep_value}=.*(/|\\\)", path).group() for path in EXPERIMENTS_TO_PLOT]

@@ -9,11 +9,12 @@ from Utilities.utils import CurrentRunMemory, OutputPath, get_logger
 
 CONTROLLER_TO_ANALYZE = "controller_dist_adam_resamp2_tf"
 # PARAMETERS_TO_SWEEP = ["num_rollouts", "opt_keep_k"]
-# SWEEP_VALUES = [[1, 2, 4, 8, 16, 32, 64], [0, 1, 1, 2, 4, 8, 16]]
+# SWEEP_VALUES = [[32, 32], [0, 32]]
+# SWEEP_VALUES = [[1, 2, 4, 8, 16, 32, 64, 128, 256, 0], [0, 1, 1, 2, 4, 8, 16, 32, 64, 0]]
 # SWEEP_VALUES = [[128], [32]]
 # SWEEP_VALUES = [[16, 32, 64], [4, 8, 16]]
-PARAMETERS_TO_SWEEP = ["resamp_per"]
-SWEEP_VALUES = [[10, 20, 30]]
+PARAMETERS_TO_SWEEP = ["interpolation_step"]
+SWEEP_VALUES = [[1, 5, 10, 20, 50, 200]]
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAMES, ENVIRONMENT_NAMES, NUM_EXPERIMENTS = (

@@ -1,14 +1,15 @@
 1_data_generation:
   controller_names:
-  - controller_cem_tf
-  - controller_mppi_tf
-  - controller_cem_grad_bharadhwaj_tf
-  - controller_gradient_tf
+  # - controller_cem_tf
+  # - controller_mppi_tf
+  # - controller_cem_grad_bharadhwaj_tf
+  # - controller_gradient_tf
+  # - controller_random_action
   - controller_dist_adam_resamp2_tf
   environment_names:
-  - CustomEnvironments/MountainCarContinuous-v0
+  # - CustomEnvironments/MountainCarContinuous-v0
   - CustomEnvironments/CartPoleSimulator-v0
-  - CustomEnvironments/DubinsCar-v0
+  # - CustomEnvironments/DubinsCar-v0
   # - CustomEnvironments/Acrobot-v0
   # - CustomEnvironments/Pendulum-v0
   # - CustomEnvironments/CartPoleContinuous-v0
@@ -17,7 +18,7 @@
   use_gpu: false
   logging_level: DEBUG
   num_experiments: 50
-  num_iterations: 200
+  num_iterations: 1000
   render_for_humans: false
   save_plots_to_file: false
   seed_entropy: 49604
@@ -108,6 +109,11 @@
     rtol: 1.0e-3
     warmup: false
     warmup_iterations: 250
+  controller_random_action:
+    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
+    num_rollouts: 320
+    predictor_intermediate_steps: 1
+    predictor_name: predictor_ODE_tf
   controller_cem_naive_grad_tf:
     CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     cem_LR: 0.05
