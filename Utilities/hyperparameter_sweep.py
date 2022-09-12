@@ -14,7 +14,7 @@ CONTROLLER_TO_ANALYZE = "controller_dist_adam_resamp2_tf"
 # SWEEP_VALUES = [[128], [32]]
 # SWEEP_VALUES = [[16, 32, 64], [4, 8, 16]]
 PARAMETERS_TO_SWEEP = ["interpolation_step"]
-SWEEP_VALUES = [[1, 5, 10, 20, 50, 200]]
+SWEEP_VALUES = [[1, 5, 10, 20, 50]]
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAMES, ENVIRONMENT_NAMES, NUM_EXPERIMENTS = (

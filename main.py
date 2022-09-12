@@ -121,7 +121,8 @@ def run_data_generator(
             controller.realized_cost_logged = np.array([-reward])
             if config["4_controllers"]["controller_logging"]:
                 controller.update_logs()
-            frames.append(env.render())
+            if config["1_data_generation"]["render_for_humans"] or config["1_data_generation"]["save_plots_to_file"]:
+                frames.append(env.render())
 
             time.sleep(0.001)
 
@@ -156,7 +157,7 @@ def run_data_generator(
             os.makedirs(csv, exist_ok=True)
             save_to_csv(config, controller, environment_name, csv)
         elif config["4_controllers"]["controller_logging"]:
-            if render_mode != "human":
+            if config["1_data_generation"]["save_plots_to_file"]:
                 # Generate and save plots in default location
                 generate_experiment_plots(
                     config=config,
@@ -164,6 +165,14 @@ def run_data_generator(
                     timestamp=timestamp_str,
                     frames=frames if len(frames) > 0 else None,
                 )
+            # Save .npy files 
+            for n, a in controller_output.items():
+                with open(
+                    OutputPath.get_output_path(timestamp_str, str(n), ".npy"),
+                    "wb",
+                ) as f:
+                    np.save(f, a)
+            # Save 
             with open(
                 OutputPath.get_output_path(timestamp_str, "config", ".yml"), "w"
             ) as f:
