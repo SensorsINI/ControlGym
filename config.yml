@@ -87,8 +87,8 @@
     num_rollouts: 32
     cem_best_k: 8
     cem_outer_it: 2
-    cem_initial_action_stdev: 0.5
-    cem_stdev_min: 0.01
+    cem_initial_action_stdev: 2
+    cem_stdev_min: 1.e-6
     gradmax_clip: 5
     predictor_intermediate_steps: 1
     predictor_name: predictor_ODE_tf
@@ -191,7 +191,7 @@
   controller_mppi_tf:
     GAMMA: 1.0
     GP_NAME: SGP_30
-    LBD: 0.1
+    LBD: 1.0e-1
     LOGGING: false
     NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
     NU: 1000.0
@@ -199,7 +199,7 @@
     SAMPLING_TYPE: None
     SQRTRHOINV: 0.05
     WASH_OUT_LEN: 100
-    cc_weight: 1.0
+    cc_weight: 0.0
     control_noise: 0.0
     cost_noise: 0.0
     num_rollouts: 320
