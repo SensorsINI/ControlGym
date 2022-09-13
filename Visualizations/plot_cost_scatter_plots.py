@@ -52,11 +52,11 @@ class CostScatterPlotPlotter(Plotter):
             patch.set_facecolor(color)
         self.ax.grid(visible=True, which="major", axis="y")
 
-        self.ax.set_ylabel(axis_info["ylabel"])
-        self.ax.set_title(
-            f"Variation of {axis_info['description']}, {num_datapoints_per_experiment[0]} Random Trials"
-        )
-        self.ax.set_xlabel(axis_info["xlabel"])
+        self.ax.set_ylabel(axis_info["ylabel"], fontsize=14)
+        # self.ax.set_title(
+        #     f"Variation of {axis_info['description']}, {num_datapoints_per_experiment[0]} Random Trials"
+        # )
+        self.ax.set_xlabel(axis_info["xlabel"], fontsize=14)
         self.ax.set_xticks(x_loc, labels=sweep_values)
         self.ax.minorticks_off()
         # min_x = 0 if isinstance(max(sweep_values), str) else min(sweep_values)*0.9

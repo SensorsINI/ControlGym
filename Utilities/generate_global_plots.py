@@ -132,17 +132,17 @@ def generate_global_plots() -> None:
     logger.info(f"Stdev costs per experiment {np.around(np.std(c, axis=0), 2)}")
     logger.info("...done.")
 
-    if all(len(v)>0 for v in all_ages_data.values()):
-        logger.info("Generating trajectory age plot...")
-        trajectory_age_plot = TrajectoryAgePlotter(
-            datetime.now().strftime("%Y%m%d-%H%M%S"),
-            {
-                "1_data_generation": {"controller_name": "", "environment_name": ""},
-                "2_environments": {"": {"actuator_noise": 0}},
-            },
-        )
-        trajectory_age_plot.plot(all_ages_data, True)
-        logger.info("...done.")
+    # if all(len(v)>0 for v in all_ages_data.values()):
+    #     logger.info("Generating trajectory age plot...")
+    #     trajectory_age_plot = TrajectoryAgePlotter(
+    #         datetime.now().strftime("%Y%m%d-%H%M%S"),
+    #         {
+    #             "1_data_generation": {"controller_name": "", "environment_name": ""},
+    #             "2_environments": {"": {"actuator_noise": 0}},
+    #         },
+    #     )
+    #     trajectory_age_plot.plot(all_ages_data, True)
+    #     logger.info("...done.")
 
 
 if __name__ == "__main__":
