@@ -8,7 +8,17 @@ Main features:
 * Can implement new controllers and test them
 
 ### Reproduction of Simulation Results
-* `config.yml` contains the right parameters
+* `config.yml` contains the right controller parameters
+* To run a standard set of simulations:
+    * At the top of `config.yml`: Set the list of environments and controllers to run
+    * `python -m Utilities.controller_comparison`
+* To run a variation of a hyperparameter:
+    * Set the variables (`CONTROLLER_TO_ANALYZE`, `PARAMETERS_TO_SWEEP`, `SWEEP_VALUES`) at the top of `Utilities/hyperparameter_sweep.py`
+    * Select one environment in `config.yml`
+    * `python -m Utilities.hyperparameter_sweep`
+* To evaluate the results and generate plots:
+    * Set `EXPERIMENT_FOLDER` (within `/Output`), `ENVIRONMENT_NAME` and `sweep_values` (for plot labelling only)
+    * `python -m Utilities.generate_global_plots`
 
 ### References
 
