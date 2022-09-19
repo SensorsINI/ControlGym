@@ -33,7 +33,7 @@ class CostScatterPlotPlotter(Plotter):
 
         if self.ax is None:
             self.fig, self.ax = plt.subplots(
-                figsize=(6, 5),
+                figsize=(4, 3),
                 gridspec_kw={"wspace": 0.1, "top": 0.9, "bottom": 0.3},
                 dpi=300.0,
             )
@@ -73,7 +73,12 @@ class CostScatterPlotPlotter(Plotter):
 
         if save_to_image:
             self.fig.savefig(
-                os.path.join("Output", f"{self._timestamp}_cost_scatter_plot"),
+                os.path.join("Output", f"{self._timestamp}_cost_scatter_plot.eps"),
+                bbox_inches="tight",
+                format="eps",
+            )
+            self.fig.savefig(
+                os.path.join("Output", f"{self._timestamp}_cost_scatter_plot.png"),
                 bbox_inches="tight",
             )
         else:
