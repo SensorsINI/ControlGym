@@ -73,6 +73,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         target_point,
         shuffle_target_every: int,
         obstacle_positions: "list[list[float]]",
+        initial_state: "list[float]",
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode: str = None,
@@ -107,6 +108,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.num_obstacles = 8 + math.floor(
             float(self.lib.uniform(self.rng, (), 0, 8, self.lib.float32))
         )
+        self.initial_state = initial_state
         self.dt = kwargs["dt"]
 
         if obstacle_positions is None:
@@ -139,6 +141,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             **kwargs,
             **dict(
                 render_mode=self.render_mode,
+                initial_state=self.initial_state,
                 target_point=self.parent_env.target_point,
                 obstacle_positions=self.obstacle_positions,
                 shuffle_target_every=self.shuffle_target_every
@@ -158,20 +161,24 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         if seed is not None:
             self._set_up_rng(seed)
         
-        self.count = 0
+        self.count = 1
 
         if state is None:
-            x = self.lib.uniform(self.rng, (1, 1), -1.0, -0.9, self.lib.float32)
-            y = self.lib.uniform(self.rng, (1, 1), -1.0, 1.0, self.lib.float32)
-            theta = self.get_heading(
-                self.lib.concat([x, y], 1), self.lib.unsqueeze(self.lib.to_tensor(self.parent_env.target_point, self.lib.float32), 0)
-            )
-            yaw = self.lib.uniform(
-                self.rng, (1, 1), theta - MAX_STEER, theta + MAX_STEER, self.lib.float32
-            )
-            rate = self.lib.to_tensor([[0.0]], self.lib.float32)
+            if self.initial_state is None:
+                x = self.lib.uniform(self.rng, (1, 1), -1.0, -0.9, self.lib.float32)
+                y = self.lib.uniform(self.rng, (1, 1), -1.0, 1.0, self.lib.float32)
+                theta = self.lib.unsqueeze(self.get_heading(
+                    self.lib.concat([x, y], 1), self.lib.unsqueeze(self.lib.to_tensor(self.parent_env.target_point, self.lib.float32), 0)
+                ), 0)
+                yaw = self.lib.uniform(
+                    self.rng, (1, 1), theta - MAX_STEER, theta + MAX_STEER, self.lib.float32
+                )
+                rate = self.lib.to_tensor([[0.0]], self.lib.float32)
 
-            self.state = self.lib.stack([x, y, yaw, rate], 1)
+                self.state = self.lib.concat([x, y, yaw, rate], 1)
+            else:
+                self.state = self.lib.unsqueeze(self.lib.to_numpy(self.initial_state), 0)
+                x, y, theta, yaw = self.lib.unstack(self.state, 4, 1)
             self.traj_x = [float(x * MAX_X)]
             self.traj_y = [float(y * MAX_Y)]
             self.traj_yaw = [float(yaw)]
@@ -499,20 +506,31 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                     (pos_x * MAX_X, pos_y * MAX_Y),
                     radius * np.sqrt(MAX_X * MAX_Y),
                     fill=True,
-                    facecolor="k",
-                    edgecolor="k",
+                    facecolor="dimgray",
+                    edgecolor="dimgray",
+                    zorder=5,
                 )
             )
 
     def plot_trajectory_plans(self):
         controller_logs = getattr(CurrentRunMemory, "controller_logs", {})
         trajectories = controller_logs.get("rollout_trajectories_logged", None)
+        costs = controller_logs.get("J_logged")
         if trajectories is not None:
-            for trajectory in trajectories:
+            for i, trajectory in enumerate(trajectories):
+                if i == np.argmin(costs):
+                    color = "r"
+                    alpha = 1.0
+                    zorder = 5
+                else:
+                    color = "g"
+                    alpha = min(5.0 / trajectories.shape[0], 1.0)
+                    zorder = 4
                 self.ax.plot(
                     trajectory[:, 0] * MAX_X,
                     trajectory[:, 1] * MAX_Y,
                     linewidth=0.5,
-                    alpha=min(5.0 / trajectories.shape[0], 1.0),
-                    color="g",
+                    alpha=alpha,
+                    color=color,
+                    zorder=zorder,
                 )

@@ -1,24 +1,24 @@
 1_data_generation:
   controller_names:
-  # - controller_cem_tf
-  # - controller_mppi_tf
-  # - controller_cem_grad_bharadhwaj_tf
-  # - controller_gradient_tf
-  # - controller_random_action
+  - controller_cem_tf
+  - controller_mppi_tf
+  - controller_cem_grad_bharadhwaj_tf
+  - controller_gradient_tf
+  - controller_random_action
   - controller_dist_adam_resamp2_tf
   environment_names:
-  # - CustomEnvironments/MountainCarContinuous-v0
+  - CustomEnvironments/MountainCarContinuous-v0
   - CustomEnvironments/CartPoleSimulator-v0
-  # - CustomEnvironments/DubinsCar-v0
-  # - CustomEnvironments/Acrobot-v0
-  # - CustomEnvironments/Pendulum-v0
-  # - CustomEnvironments/CartPoleContinuous-v0
+  - CustomEnvironments/DubinsCar-v0
+  - CustomEnvironments/Acrobot-v0
+  - CustomEnvironments/Pendulum-v0
+  - CustomEnvironments/CartPoleContinuous-v0
   debug: false  # false to use tf.compile
   use_jit_compilation: false  # false for reproducibility
   use_gpu: false
   logging_level: DEBUG
   num_experiments: 50
-  num_iterations: 1000
+  num_iterations: 200
   render_for_humans: false
   save_plots_to_file: false
   seed_entropy: 49604
@@ -43,7 +43,56 @@
     - 0.0
     - 0.0
     target_point: [0.9, 0.0, 0.0]
-    obstacle_positions: null
+    initial_state: null
+    # initial_state: [-0.95, 0.0, 0.0, 0.0]
+    obstacle_positions: []
+    # obstacle_positions:
+    # - [-0.6, +0.8, 0.2]
+    # - [-0.6, +0.6, 0.2]
+    # - [-0.6, +0.4, 0.2]
+    # - [-0.6, +0.2, 0.2]
+    # - [-0.6, -0.4, 0.2]
+    # - [-0.6, -0.6, 0.2]
+    # - [-0.6, -0.8, 0.2]
+    # - [-0.2, -0.4, 0.2]
+    # - [-0.2, -0.6, 0.2]
+    # - [-0.2, -0.8, 0.2]
+    # - [+0.2, +0.6, 0.2]
+    # - [+0.2, +0.0, 0.2]
+    # - [+0.2, -0.2, 0.2]
+    # - [+0.2, -0.4, 0.2]
+    # - [+0.2, -0.6, 0.2]
+    # - [+0.2, -0.8, 0.2]
+    # obstacle_positions:
+    # - [-0.8, +0.2, 0.1]
+    # - [-0.8, -0.2, 0.1]
+    # - [-0.7, +0.2, 0.1]
+    # - [-0.7, -0.2, 0.1]
+    # - [-0.6, +0.2, 0.1]
+    # - [-0.6, -0.2, 0.1]
+    # - [-0.5, +0.2, 0.1]
+    # - [-0.5, -0.2, 0.1]
+    # - [-0.4, +0.2, 0.1]
+    # - [-0.4, -0.2, 0.1]
+    # - [-0.1, +0.2, 0.1]
+    # - [-0.1, -0.2, 0.1]
+    # - [+0.0, +0.2, 0.1]
+    # - [+0.0, -0.2, 0.1]
+    # - [+0.1, +0.2, 0.1]
+    # - [+0.1, -0.2, 0.1]
+    # - [+0.2, +0.2, 0.1]
+    # - [+0.2, -0.2, 0.1]
+    # - [+0.3, +0.2, 0.1]
+    # - [+0.3, -0.2, 0.1]
+    # - [+0.4, +0.2, 0.1]
+    # - [+0.4, -0.2, 0.1]
+    # - [+0.5, +0.2, 0.1]
+    # - [+0.5, -0.2, 0.1]
+    # - [+0.6, +0.2, 0.1]
+    # - [+0.6, -0.2, 0.1]
+    # - [+0.6, +0.1, 0.1]
+    # - [+0.6, -0.1, 0.1]
+    # - [+0.6, +0.0, 0.1]
     dt: 0.005
     shuffle_target_every: 1000000
   CustomEnvironments/HalfCheetahBatched-v0:
