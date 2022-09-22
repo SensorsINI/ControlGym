@@ -7,7 +7,7 @@ from yaml import FullLoader, load
 
 from Utilities.utils import CurrentRunMemory, OutputPath, get_logger
 
-CONTROLLER_TO_ANALYZE = "controller_dist_adam_resamp2_tf"
+CONTROLLER_TO_ANALYZE = "controller_rpgd_tf"
 # PARAMETERS_TO_SWEEP = ["num_rollouts", "opt_keep_k"]
 # SWEEP_VALUES = [[32, 32], [0, 32]]
 # SWEEP_VALUES = [[1, 2, 4, 8, 16, 32, 64, 128, 256, 0], [0, 1, 1, 2, 4, 8, 16, 32, 64, 0]]

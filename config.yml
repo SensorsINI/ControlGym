@@ -5,7 +5,7 @@
   - controller_cem_grad_bharadhwaj_tf
   - controller_gradient_tf
   - controller_random_action
-  - controller_dist_adam_resamp2_tf
+  - controller_rpgd_tf
   environment_names:
   - CustomEnvironments/MountainCarContinuous-v0
   - CustomEnvironments/CartPoleSimulator-v0
@@ -200,7 +200,7 @@
     cem_stdev_min: 0.01
     predictor_intermediate_steps: 1
     predictor_name: predictor_ODE_tf
-  controller_dist_adam_resamp2_tf:
+  controller_rpgd_tf:
     NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
     SAMPLING_TYPE: interpolated
     interpolation_step: 10

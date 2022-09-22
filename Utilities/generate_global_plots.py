@@ -18,15 +18,15 @@ logger = get_logger(__name__)
 
 ## Option 1: Specify paths manually
 # EXPERIMENTS_TO_PLOT = [
-#     "Output/20220905-151036_sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=0/20220905-151037_controller_dist_adam_resamp2_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
-#     "Output/20220905-151036_sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=1/20220905-153936_controller_dist_adam_resamp2_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
-#     "Output/20220905-151036_sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=2/20220905-162358_controller_dist_adam_resamp2_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
-#     "Output/20220905-151036_sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=3/20220905-172320_controller_dist_adam_resamp2_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
-#     "Output/20220905-151036_sweep_outer_its_controller_dist_adam_resamp2_tf/outer_its=4/20220905-183528_controller_dist_adam_resamp2_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf"
+#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=0/20220905-151037_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=1/20220905-153936_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=2/20220905-162358_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=3/20220905-172320_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=4/20220905-183528_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf"
 # ]
 
 ## Option 2: Specify a top-level folder
-EXPERIMENT_FOLDER = "20220913-001701_sweep_resamp_per_controller_dist_adam_resamp2_tf"
+EXPERIMENT_FOLDER = "20220913-001701_sweep_resamp_per_controller_rpgd_tf"
 ENVIRONMENT_NAME = "CartPoleSimulator"
 EXPERIMENTS_TO_PLOT = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*", recursive="True")
 EXPERIMENTS_TO_PLOT = natsorted(EXPERIMENTS_TO_PLOT)
