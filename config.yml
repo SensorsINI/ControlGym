@@ -1,25 +1,25 @@
 1_data_generation:
   controller_names:
-  - controller_cem_tf
-  - controller_mppi_tf
-  - controller_cem_grad_bharadhwaj_tf
-  - controller_gradient_tf
-  - controller_random_action
+  # - controller_cem_tf
+  # - controller_mppi_tf
+  # - controller_cem_grad_bharadhwaj_tf
+  # - controller_gradient_tf
+  # - controller_random_action
   - controller_rpgd_tf
   environment_names:
-  - CustomEnvironments/MountainCarContinuous-v0
-  - CustomEnvironments/CartPoleSimulator-v0
+  # - CustomEnvironments/MountainCarContinuous-v0
+  # - CustomEnvironments/CartPoleSimulator-v0
   - CustomEnvironments/DubinsCar-v0
-  - CustomEnvironments/Acrobot-v0
-  - CustomEnvironments/Pendulum-v0
-  - CustomEnvironments/CartPoleContinuous-v0
+  # - CustomEnvironments/Acrobot-v0
+  # - CustomEnvironments/Pendulum-v0
+  # - CustomEnvironments/CartPoleContinuous-v0
   debug: false  # false to use tf.compile
   use_jit_compilation: false  # false for reproducibility
   use_gpu: false
   logging_level: DEBUG
-  num_experiments: 50
+  num_experiments: 1
   num_iterations: 200
-  render_for_humans: false
+  render_for_humans: true
   save_plots_to_file: false
   seed_entropy: 49604
   split:
@@ -94,7 +94,7 @@
     # - [+0.6, -0.1, 0.1]
     # - [+0.6, +0.0, 0.1]
     dt: 0.005
-    shuffle_target_every: 1000000
+    shuffle_target_every: 30
   CustomEnvironments/HalfCheetahBatched-v0:
     actuator_noise:
     - 0.0
@@ -115,7 +115,7 @@
     cart_length: 4.4e-2
     usable_track_length: 44.0e-2
     u_max: 2.62
-    shuffle_target_every: 1000000
+    shuffle_target_every: 100
 3_predictors:
   PredictorGaussianError:
     prediction_error_stdev: 0.1
