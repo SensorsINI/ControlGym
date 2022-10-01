@@ -16,13 +16,6 @@ def generate_experiment_plots(
     timestamp: str,
     frames: "list[np.ndarray]" = None,
 ):
-    for n, a in controller_output.items():
-        with open(
-            OutputPath.get_output_path(timestamp, str(n), ".npy"),
-            "wb",
-        ) as f:
-            np.save(f, a)
-
     if (
         controller_output["s_logged"] is not None
         and controller_output["u_logged"] is not None

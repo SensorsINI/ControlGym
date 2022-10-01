@@ -15,7 +15,12 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
     num_states = 24
 
     def __init__(
-        self, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs
+        self,
+        batch_size=1,
+        computation_lib=NumpyLibrary,
+        render_mode="human",
+        parent_env: EnvironmentBatched = None,
+        **kwargs,
     ):
         super().__init__(render_mode=render_mode, hardcore=False)
 
@@ -23,7 +28,6 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
             **kwargs,
             **{"render_mode": self.render_mode},
         }
-        CurrentRunMemory.controller_specific_params = self.config
         self.dt = kwargs["dt"]
 
         self._batch_size = batch_size

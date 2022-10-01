@@ -19,7 +19,13 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
     num_states = 2
 
     def __init__(
-        self, goal_velocity=0, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs
+        self,
+        goal_velocity=0,
+        batch_size=1,
+        computation_lib=NumpyLibrary,
+        render_mode="human",
+        parent_env: EnvironmentBatched = None,
+        **kwargs,
     ):
         super().__init__(render_mode=render_mode, goal_velocity=goal_velocity)
 
@@ -27,7 +33,6 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
             **kwargs,
             **{"render_mode": self.render_mode, "goal_velocity": self.goal_velocity},
         }
-        CurrentRunMemory.controller_specific_params = self.config
         self.dt = kwargs["dt"]
 
         self._batch_size = batch_size

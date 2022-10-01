@@ -7,9 +7,14 @@ from yaml import FullLoader, load
 
 from Utilities.utils import CurrentRunMemory, OutputPath, get_logger
 
-CONTROLLER_TO_ANALYZE = "controller_dist_adam_resamp2_tf"
-PARAMETER_TO_SWEEP = "cem_LR"
-SWEEP_VALUES = [0.001, 0.005, 0.01, 0.05, 0.1]
+CONTROLLER_TO_ANALYZE = "controller_rpgd_tf"
+# PARAMETERS_TO_SWEEP = ["num_rollouts", "opt_keep_k"]
+# SWEEP_VALUES = [[32, 32], [0, 32]]
+# SWEEP_VALUES = [[1, 2, 4, 8, 16, 32, 64, 128, 256, 0], [0, 1, 1, 2, 4, 8, 16, 32, 64, 0]]
+# SWEEP_VALUES = [[128], [32]]
+# SWEEP_VALUES = [[16, 32, 64], [4, 8, 16]]
+PARAMETERS_TO_SWEEP = ["interpolation_step"]
+SWEEP_VALUES = [[1, 5, 10, 20, 50]]
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 CONTROLLER_NAMES, ENVIRONMENT_NAMES, NUM_EXPERIMENTS = (
@@ -28,14 +33,16 @@ assert len(ENVIRONMENT_NAMES) == 1, "Can only sweep over one environment"
 logger = get_logger(__name__)
 
 if __name__ == "__main__":
-    for sweep_value in SWEEP_VALUES:
-        OutputPath.collection_folder_name = os.path.join(f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_sweep_{PARAMETER_TO_SWEEP}_{CONTROLLER_TO_ANALYZE}", f"{PARAMETER_TO_SWEEP}={sweep_value}")
+    datetime_str = datetime.now().strftime('%Y%m%d-%H%M%S')
+    for sweep_value in zip(*SWEEP_VALUES):
+        OutputPath.collection_folder_name = os.path.join(f"{datetime_str}_sweep_{','.join(PARAMETERS_TO_SWEEP)}_{CONTROLLER_TO_ANALYZE}", f"{','.join(PARAMETERS_TO_SWEEP)}={','.join(list(map(str, sweep_value)))}")
         CurrentRunMemory.current_controller_name = CONTROLLER_TO_ANALYZE
         CurrentRunMemory.current_environment_name = ENVIRONMENT_NAMES[0]
 
-        if PARAMETER_TO_SWEEP not in config["4_controllers"][CONTROLLER_TO_ANALYZE]:
-            raise ValueError(f"{PARAMETER_TO_SWEEP} is not used in {CONTROLLER_TO_ANALYZE}")
-        config["4_controllers"][CONTROLLER_TO_ANALYZE][PARAMETER_TO_SWEEP] = sweep_value
+        for param_name, param_value in zip(PARAMETERS_TO_SWEEP, sweep_value):
+            if param_name not in config["4_controllers"][CONTROLLER_TO_ANALYZE]:
+                raise ValueError(f"{param_name} is not used in {CONTROLLER_TO_ANALYZE}")
+            config["4_controllers"][CONTROLLER_TO_ANALYZE][param_name] = param_value
 
         device_name = "/CPU:0"
         if config["1_data_generation"]["use_gpu"]:

@@ -2,7 +2,7 @@ from importlib import import_module
 
 import numpy as np
 from Environments import ENV_REGISTRY, register_envs
-from Control_Toolkit.others.environment import NumpyLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
 
 from Utilities.utils import CurrentRunMemory, SeedMemory
 
@@ -27,19 +27,10 @@ register_envs()
 
 
 class next_state_predictor_ODE:
-    def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
+    def __init__(self, dt: float, intermediate_steps: int, batch_size: int, planning_environment: EnvironmentBatched, **kwargs):
         self.s = None
-        env_name = CurrentRunMemory.current_environment_name
 
-        planning_env_config = {
-            **CurrentRunMemory.controller_specific_params,
-            **{"seed": SeedMemory.get_seeds()[0]},
-            **{"computation_lib": NumpyLibrary},
-        }
-        EnvClass, EnvName = ENV_REGISTRY[env_name].split(":")
-        self.env = getattr(import_module(EnvClass), EnvName)(
-            batch_size=batch_size, **planning_env_config
-        )
+        self.env = planning_environment
 
         self.intermediate_steps = intermediate_steps
         self.t_step = np.float32(dt / float(self.intermediate_steps))
