@@ -39,13 +39,13 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
         self.cost_functions = self.cost_functions_wrapper(self)
-    
-    def step_tf(self, state: tf.Tensor, action: tf.Tensor):
-        state, action = self._expand_arrays(state, action)
 
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
-
+    def step_dynamics(
+        self,
+        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        dt: float,
+    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
         x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, 1)
         force = self.lib.clip(
             action[:, 0],
@@ -75,7 +75,6 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
             theta = theta + self.dt * theta_dot
 
         state = self.lib.stack([x, x_dot, theta, theta_dot], 1)
-        state = self.lib.squeeze(state)
 
         return state
 
@@ -90,57 +89,21 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         self.state, action = self._expand_arrays(self.state, action)
 
         # Perturb action if not in planning mode
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
+        assert self._batch_size == 1
+        action = self._apply_actuator_noise(action)
 
         err_msg = f"{action!r} ({type(action)}) invalid"
-        # assert np.all(
-        #     [self.action_space.contains(a) for a in self.lib.to_numpy(action)]
-        # ), err_msg
         assert self.state is not None, "Call reset before using step method."
 
-        x, x_dot, theta, theta_dot = self.lib.unstack(self.state, 4, 1)
-        force = self.lib.clip(
-            action[:, 0],
-            self.lib.to_tensor(self.action_space.low, self.lib.float32),
-            self.lib.to_tensor(self.action_space.high, self.lib.float32),
-        )
-        costheta = self.lib.cos(theta)
-        sintheta = self.lib.sin(theta)
-
-        # For the interested reader:
-        # https://coneural.org/florian/papers/05_cart_pole.pdf
-        temp = (
-            force + self.polemass_length * theta_dot**2 * sintheta
-        ) / self.total_mass
-        thetaacc = (self.gravity * sintheta - costheta * temp) / (
-            self.length * (4.0 / 3.0 - self.masspole * costheta**2 / self.total_mass)
-        )
-        xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
-
-        if self.kinematics_integrator == "euler":
-            x = x + self.dt * x_dot
-            x_dot = x_dot + self.dt * xacc
-            theta = theta + self.dt * theta_dot
-            theta_dot = theta_dot + self.dt * thetaacc
-        else:  # semi-implicit euler
-            x_dot = x_dot + self.dt * xacc
-            x = x + self.dt * x_dot
-            theta_dot = theta_dot + self.dt * thetaacc
-            theta = theta + self.dt * theta_dot
-
-        self.state = self.lib.stack([x, x_dot, theta, theta_dot], 1)
+        self.state = self.step_dynamics(self.state, action, self.dt)
 
         done = self.is_done(self.state)
         reward = self.get_reward(self.state, action)
 
         self.state = self.lib.squeeze(self.state)
-
-        if self._batch_size == 1:
-            self.renderer.render_step()
-            return self.lib.to_numpy(self.state), float(reward), bool(done), {}
-
-        return self.state, reward, done, {}
+        
+        self.renderer.render_step()
+        return self.lib.to_numpy(self.state), float(reward), bool(done), {}
 
     def reset(
         self,
@@ -186,5 +149,5 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
     def get_reward(self, state, action):
         x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, -1)
-        reward = -(100*(theta**2) + theta_dot**2 + (x**2) + x_dot**2)
+        reward = -(100 * (theta**2) + theta_dot**2 + (x**2) + x_dot**2)
         return reward

@@ -20,19 +20,13 @@ class ControllerCartPoleSimulationImport(Controller):
                 break
         if batch_size is None:
             raise ValueError("Controller needs one of num_rollouts, num_rollouts, mpc_rollouts to be set in config")
-        env_mock = environment.__class__(
-            batch_size=batch_size,
-            computation_lib=TensorFlowLibrary,
-            parent_env=environment,
-            **environment.config.copy()
-        )
 
         self._controller = getattr(
             import_module(
                 f"Control_Toolkit.Controllers.{controller_name}"
             ),
             controller_name,
-        )(**{**controller_config, **{"environment_model": env_mock, "num_control_inputs": self._m}})
+        )(**{**controller_config, **{"environment": environment, "num_control_inputs": self._m}})
 
     def step(self, s: np.ndarray) -> np.ndarray:
         # self._predictor_environment.reset(s)

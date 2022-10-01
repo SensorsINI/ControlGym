@@ -36,6 +36,7 @@ import gym
 from gym import spaces
 from gym.utils.renderer import Renderer
 import tensorflow as tf
+import torch
 
 from Control_Toolkit.others.environment import TensorType
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
@@ -111,7 +112,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.initial_state = initial_state
         self.dt = kwargs["dt"]
 
-        if obstacle_positions is None:
+        if obstacle_positions is None or obstacle_positions == []:
             self.obstacle_positions = []
             # TODO: Assign obstacles here
             # Ensure the planning env takes the same obstacles, does not generate new ones
@@ -144,7 +145,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 initial_state=self.initial_state,
                 target_point=self.parent_env.target_point,
                 obstacle_positions=self.obstacle_positions,
-                shuffle_target_every=self.shuffle_target_every
+                shuffle_target_every=self.shuffle_target_every,
             ),
         }
 
@@ -160,24 +161,39 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
     ) -> Tuple[np.ndarray, Optional[dict]]:
         if seed is not None:
             self._set_up_rng(seed)
-        
+
         self.count = 1
 
         if state is None:
             if self.initial_state is None:
                 x = self.lib.uniform(self.rng, (1, 1), -1.0, -0.9, self.lib.float32)
                 y = self.lib.uniform(self.rng, (1, 1), -1.0, 1.0, self.lib.float32)
-                theta = self.lib.unsqueeze(self.get_heading(
-                    self.lib.concat([x, y], 1), self.lib.unsqueeze(self.lib.to_tensor(self.parent_env.target_point, self.lib.float32), 0)
-                ), 0)
+                theta = self.lib.unsqueeze(
+                    self.get_heading(
+                        self.lib.concat([x, y], 1),
+                        self.lib.unsqueeze(
+                            self.lib.to_tensor(
+                                self.parent_env.target_point, self.lib.float32
+                            ),
+                            0,
+                        ),
+                    ),
+                    0,
+                )
                 yaw = self.lib.uniform(
-                    self.rng, (1, 1), theta - MAX_STEER, theta + MAX_STEER, self.lib.float32
+                    self.rng,
+                    (1, 1),
+                    theta - MAX_STEER,
+                    theta + MAX_STEER,
+                    self.lib.float32,
                 )
                 rate = self.lib.to_tensor([[0.0]], self.lib.float32)
 
                 self.state = self.lib.concat([x, y, yaw, rate], 1)
             else:
-                self.state = self.lib.unsqueeze(self.lib.to_numpy(self.initial_state), 0)
+                self.state = self.lib.unsqueeze(
+                    self.lib.to_numpy(self.initial_state), 0
+                )
                 x, y, theta, yaw = self.lib.unstack(self.state, 4, 1)
             self.traj_x = [float(x * MAX_X)]
             self.traj_y = [float(y * MAX_Y)]
@@ -269,16 +285,13 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         return self.lib.atan2((x2[..., 1] - x1[..., 1]), (x2[..., 0] - x1[..., 0]))
 
     @Compile
-    def step_tf(self, state: tf.Tensor, action: tf.Tensor):
-        state, action = self._expand_arrays(state, action)
-
-        # Perturb action if not in planning mode
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
-
-        state = self.update_state(state, action, self.dt)
-
-        return state
+    def step_dynamics(
+        self,
+        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        dt: float,
+    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
+        return self.update_state(state, action, dt)
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor]
@@ -289,35 +302,29 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         dict,
     ]:
         if self.count % self.shuffle_target_every == 0:
-            target_new = tf.convert_to_tensor([
-                self.target_point[0],
-                self.lib.uniform(
-                    self.rng, [], -1.0, 1.0, self.lib.float32
-                ),
-                self.target_point[2],
-            ])
+            target_new = tf.convert_to_tensor(
+                [
+                    self.target_point[0],
+                    self.lib.uniform(self.rng, [], -1.0, 1.0, self.lib.float32),
+                    self.target_point[2],
+                ]
+            )
             self.target_point.assign(target_new)
         self.count += 1
         self.state, action = self._expand_arrays(self.state, action)
 
-        # Perturb action if not in planning mode
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
+        assert self._batch_size == 1
+        action = self._apply_actuator_noise(action)
 
-        info = {}
-
-        self.state = self.update_state(self.state, action, self.dt)
+        self.state = self.lib.to_numpy(self.step_dynamics(self.state, action, self.dt))
 
         done = self.is_done(self.state)
         reward = self.get_reward(self.state, action)
 
         self.state = self.lib.squeeze(self.state)
 
-        if self._batch_size == 1:
-            self.renderer.render_step()
-            return self.lib.to_numpy(self.state), float(reward), bool(done), {}
-
-        return self.state, reward, done, info
+        self.renderer.render_step()
+        return self.lib.to_numpy(self.state), float(reward), bool(done), {}
 
     def render(self, mode="human"):
         if self.render_mode is not None:
@@ -340,7 +347,9 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         # for stopping simulation with the esc key.
         if self.fig is None:
-            self.fig, self.ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), dpi=100.0)
+            self.fig, self.ax = plt.subplots(
+                nrows=1, ncols=1, figsize=(6, 6), dpi=100.0
+            )
         self.ax.cla()
         self.fig.canvas.mpl_connect(
             "key_release_event",
@@ -357,9 +366,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         #         label="waypoint",
         #     )
         target = self.lib.to_tensor(self.parent_env.target_point, self.lib.float32)
-        self.ax.plot(
-            target[0] * MAX_X, target[1] * MAX_Y, "xg", label="target"
-        )
+        self.ax.plot(target[0] * MAX_X, target[1] * MAX_Y, "xg", label="target")
         self.plot_obstacles()
         self.plot_trajectory_plans()
         self.plot_car()

@@ -10,6 +10,7 @@ import numpy as np
 import gym
 from numpy.random import SeedSequence
 from yaml import dump
+from Control_Toolkit.others.environment import TensorFlowLibrary
 
 from ControllersGym import Controller
 from Environments import ENV_REGISTRY, register_envs
@@ -92,6 +93,7 @@ def run_data_generator(
         env = gym.make(
             environment_name,
             **config["2_environments"][environment_name],
+            computation_lib=TensorFlowLibrary,
             render_mode=render_mode,
         )
         obs = env.reset(seed=int(seeds[1]))

@@ -11,6 +11,7 @@ from Utilities.utils import CurrentRunMemory
 
 class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
     """Accepts batches of data to environment"""
+
     num_actions = 4
     num_states = 24
 
@@ -36,36 +37,13 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
         self.cost_functions = self.cost_functions_wrapper(self)
-        
-    def step_tf(self, state: tf.Tensor, action: tf.Tensor):
-        state, action = self._expand_arrays(state, action)
-        
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
-        
-        position, velocity = self.lib.unstack(state, 2, 1)
 
-        # ...
-        
-        state = self.lib.stack([position, velocity], 1)
-        state = self.lib.squeeze(state)
-
-        return state
-    
-    def step(
-        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
-    ) -> Tuple[
-        Union[np.ndarray, tf.Tensor, torch.Tensor],
-        Union[np.ndarray, float],
-        Union[np.ndarray, bool],
-        dict,
-    ]:
-        self.state, action = self._expand_arrays(self.state, action)
-
-        # Perturb action if not in planning mode
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
-
+    def step_dynamics(
+        self,
+        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        dt: float,
+    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
         position, velocity = self.lib.unstack(self.state, 2, 1)
 
         assert self.hull is not None
@@ -73,19 +51,35 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
         # self.hull.ApplyForceToCenter((0, 20), True) -- Uncomment this to receive a bit of stability help
         control_speed = False  # Should be easier as well
         if control_speed:
-            self.joints[0].motorSpeed = float(SPEED_HIP) * self.lib.clip(action[:, 0], -1, 1)
-            self.joints[1].motorSpeed = float(SPEED_KNEE) * self.lib.clip(action[:, 1], -1, 1)
-            self.joints[2].motorSpeed = float(SPEED_HIP) * self.lib.clip(action[:, 2], -1, 1)
-            self.joints[3].motorSpeed = float(SPEED_KNEE) * self.lib.clip(action[:, 3], -1, 1)
+            self.joints[0].motorSpeed = float(SPEED_HIP) * self.lib.clip(
+                action[:, 0], -1, 1
+            )
+            self.joints[1].motorSpeed = float(SPEED_KNEE) * self.lib.clip(
+                action[:, 1], -1, 1
+            )
+            self.joints[2].motorSpeed = float(SPEED_HIP) * self.lib.clip(
+                action[:, 2], -1, 1
+            )
+            self.joints[3].motorSpeed = float(SPEED_KNEE) * self.lib.clip(
+                action[:, 3], -1, 1
+            )
         else:
             self.joints[0].motorSpeed = float(SPEED_HIP) * self.lib.sign(action[:, 0])
-            self.joints[0].maxMotorTorque = float(MOTORS_TORQUE) * self.lib.clip(self.lib.abs(action[:, 0]), 0, 1)
+            self.joints[0].maxMotorTorque = float(MOTORS_TORQUE) * self.lib.clip(
+                self.lib.abs(action[:, 0]), 0, 1
+            )
             self.joints[1].motorSpeed = float(SPEED_KNEE) * self.lib.sign(action[:, 1])
-            self.joints[1].maxMotorTorque = float(MOTORS_TORQUE) * self.lib.clip(self.lib.abs(action[:, 1]), 0, 1)
+            self.joints[1].maxMotorTorque = float(MOTORS_TORQUE) * self.lib.clip(
+                self.lib.abs(action[:, 1]), 0, 1
+            )
             self.joints[2].motorSpeed = float(SPEED_HIP) * self.lib.sign(action[:, 2])
-            self.joints[2].maxMotorTorque = float(MOTORS_TORQUE) * self.lib.clip(self.lib.abs(action[:, 2]), 0, 1)
+            self.joints[2].maxMotorTorque = float(MOTORS_TORQUE) * self.lib.clip(
+                self.lib.abs(action[:, 2]), 0, 1
+            )
             self.joints[3].motorSpeed = float(SPEED_KNEE) * self.lib.sign(action[:, 3])
-            self.joints[3].maxMotorTorque = float(MOTORS_TORQUE) * self.lib.clip(self.lib.abs(action[:, 3]), 0, 1)
+            self.joints[3].maxMotorTorque = float(MOTORS_TORQUE) * self.lib.clip(
+                self.lib.abs(action[:, 3]), 0, 1
+            )
 
         self.world.Step(1.0 / FPS, 6 * 30, 2 * 30)
 
@@ -101,28 +95,51 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
             )
             self.world.RayCast(self.lidar[i], self.lidar[i].p1, self.lidar[i].p2)
 
-        state = self.lib.stack([
-            self.hull.angle,  # Normal angles up to 0.5 here, but sure more is possible.
-            2.0 * self.hull.angularVelocity / FPS,
-            0.3 * vel.x * (VIEWPORT_W / SCALE) / FPS,  # Normalized to get -1..1 range
-            0.3 * vel.y * (VIEWPORT_H / SCALE) / FPS,
-            self.joints[0].angle,
-            # This will give 1.1 on high up, but it's still OK (and there should be spikes on hiting the ground, that's normal too)
-            self.joints[0].speed / SPEED_HIP,
-            self.joints[1].angle + 1.0,
-            self.joints[1].speed / SPEED_KNEE,
-            self.lib.cast(self.legs[1].ground_contact, self.lib.float32),
-            self.joints[2].angle,
-            self.joints[2].speed / SPEED_HIP,
-            self.joints[3].angle + 1.0,
-            self.joints[3].speed / SPEED_KNEE,
-            self.lib.cast(self.legs[3].ground_contact, self.lib.float32),
-        ], 1)
-        state = self.lib.concat([
-            state,
-            self.lib.stack([l.fraction for l in self.lidar], 1)
-        ], 1)
+        state = self.lib.stack(
+            [
+                self.hull.angle,  # Normal angles up to 0.5 here, but sure more is possible.
+                2.0 * self.hull.angularVelocity / FPS,
+                0.3
+                * vel.x
+                * (VIEWPORT_W / SCALE)
+                / FPS,  # Normalized to get -1..1 range
+                0.3 * vel.y * (VIEWPORT_H / SCALE) / FPS,
+                self.joints[0].angle,
+                # This will give 1.1 on high up, but it's still OK (and there should be spikes on hiting the ground, that's normal too)
+                self.joints[0].speed / SPEED_HIP,
+                self.joints[1].angle + 1.0,
+                self.joints[1].speed / SPEED_KNEE,
+                self.lib.cast(self.legs[1].ground_contact, self.lib.float32),
+                self.joints[2].angle,
+                self.joints[2].speed / SPEED_HIP,
+                self.joints[3].angle + 1.0,
+                self.joints[3].speed / SPEED_KNEE,
+                self.lib.cast(self.legs[3].ground_contact, self.lib.float32),
+            ],
+            1,
+        )
+        state = self.lib.concat(
+            [state, self.lib.stack([l.fraction for l in self.lidar], 1)], 1
+        )
         assert self.lib.shape(state)[1] == 24
+
+        return state
+
+    def step(
+        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
+    ) -> Tuple[
+        Union[np.ndarray, tf.Tensor, torch.Tensor],
+        Union[np.ndarray, float],
+        Union[np.ndarray, bool],
+        dict,
+    ]:
+        self.state, action = self._expand_arrays(self.state, action)
+
+        # Perturb action if not in planning mode
+        assert self._batch_size == 1
+        action = self._apply_actuator_noise(action)
+        
+        self.state = self.step_dynamics(self.state, action, self.dt)
 
         if self._batch_size == 1:
             self.scroll = pos.x - VIEWPORT_W / SCALE / 5
@@ -149,8 +166,6 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
             terminated = True
         if pos[0] > (TERRAIN_LENGTH - TERRAIN_GRASS) * TERRAIN_STEP:
             terminated = True
-
-
 
         done = self.is_done(self.state)
         reward = self.get_reward(self.state, action)
@@ -233,5 +248,5 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
             # normalized to about -50.0 using heuristic, more optimal agent should spend less
 
         reward[self.game_over or pos[:, 0] < 0] = -100
-        
+
         return reward

@@ -24,7 +24,7 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         **kwargs,
     ):
         super().__init__(render_mode=render_mode)
-        
+
         self.config = {
             **kwargs,
             **{"render_mode": self.render_mode},
@@ -35,7 +35,7 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
             [np.pi, np.pi, self.MAX_VEL_1, self.MAX_VEL_2], dtype=np.float32
         )
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
-        self.action_space = spaces.Box(low=-1., high=1., dtype=np.float32)
+        self.action_space = spaces.Box(low=-1.0, high=1.0, dtype=np.float32)
 
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
@@ -44,21 +44,26 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         self._set_up_rng(kwargs["seed"])
         self.cost_functions = self.cost_functions_wrapper(self)
 
-    def step_tf(self, state: tf.Tensor, action: tf.Tensor):
-        state, action = self._expand_arrays(state, action)
-
-        # Perturb action if not in planning mode
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
-
+    def step_dynamics(
+        self,
+        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        dt: float,
+    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
         torque = action
         s_augmented = self.lib.concat([state, torque], 1)
 
-        th1_new, th2_new, th1_vel_new, th2_vel_new = self.lib.unstack(self.rk4(self._dsdt, s_augmented, [0, self.dt]), 4, 1)
+        th1_new, th2_new, th1_vel_new, th2_vel_new = self.lib.unstack(
+            self.rk4(self._dsdt, s_augmented, [0, self.dt]), 4, 1
+        )
 
         # Wrap angles
-        th1_new = self.lib.floormod(th1_new+self.lib.pi, 2*self.lib.pi) - self.lib.pi
-        th2_new = self.lib.floormod(th2_new+self.lib.pi, 2*self.lib.pi) - self.lib.pi
+        th1_new = (
+            self.lib.floormod(th1_new + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
+        )
+        th2_new = (
+            self.lib.floormod(th2_new + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
+        )
 
         # Clip angular velocities
         th1_vel_new = self.lib.clip(th1_vel_new, -self.MAX_VEL_1, self.MAX_VEL_1)
@@ -78,18 +83,23 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
     ]:
         self.state, action = self._expand_arrays(self.state, action)
 
-        # Perturb action if not in planning mode
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
+        assert self._batch_size == 1
+        action = self._apply_actuator_noise(action)
 
         torque = action
         s_augmented = self.lib.concat([self.state, torque], 1)
 
-        th1_new, th2_new, th1_vel_new, th2_vel_new = self.lib.unstack(self.rk4(self._dsdt, s_augmented, [0, self.dt]), 4, 1)
+        th1_new, th2_new, th1_vel_new, th2_vel_new = self.lib.unstack(
+            self.rk4(self._dsdt, s_augmented, [0, self.dt]), 4, 1
+        )
 
         # Wrap angles
-        th1_new = self.lib.floormod(th1_new+self.lib.pi, 2*self.lib.pi) - self.lib.pi
-        th2_new = self.lib.floormod(th2_new+self.lib.pi, 2*self.lib.pi) - self.lib.pi
+        th1_new = (
+            self.lib.floormod(th1_new + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
+        )
+        th2_new = (
+            self.lib.floormod(th2_new + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
+        )
 
         # Clip angular velocities
         th1_vel_new = self.lib.clip(th1_vel_new, -self.MAX_VEL_1, self.MAX_VEL_1)
@@ -100,17 +110,14 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         reward = self.get_reward(self.state, action)
 
         self.state = self.lib.squeeze(self.state)
-        
-        if self._batch_size == 1:
-            self.renderer.render_step()
-            return (
-                self.lib.to_numpy(self.lib.squeeze(self.state)),
-                float(reward),
-                done,
-                {},
-            )
 
-        return self.state, reward, False, {}
+        self.renderer.render_step()
+        return (
+            self.lib.to_numpy(self.lib.squeeze(self.state)),
+            float(reward),
+            done,
+            {},
+        )
 
     def reset(
         self,
@@ -123,10 +130,10 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
             self._set_up_rng(seed)
 
         if state is None:
-            low, high = utils.maybe_parse_reset_bounds(
-                options, -0.1, 0.1
+            low, high = utils.maybe_parse_reset_bounds(options, -0.1, 0.1)
+            ns = self.lib.uniform(
+                self.rng, (self._batch_size, 4), low, high, self.lib.float32
             )
-            ns = self.lib.uniform(self.rng, (self._batch_size, 4), low, high, self.lib.float32)
         else:
             if self.lib.ndim(state) < 2:
                 state = self.lib.unsqueeze(
@@ -139,7 +146,7 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
 
         # Augment state with sin/cos
         self.state = ns
-        
+
         return self._get_reset_return_val()
 
     def is_done(self, state):
@@ -148,22 +155,24 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
     def get_reward(self, state, action):
         th1, th2, th1_vel, th2_vel = self.lib.unstack(state, 4, -1)
         return (
-            -self.lib.cos(th1) - self.lib.cos(th2 + th1)
-            - 1.0e-2 * (th1_vel + th2_vel)
+            -self.lib.cos(th1) - self.lib.cos(th2 + th1) - 1.0e-2 * (th1_vel + th2_vel)
         )
-    
+
     def _convert_to_state(self, state):
         if self.lib.shape(state)[-1] == self.num_states:
             return state
-        return self.lib.concat([
-            self.lib.cos(self.lib.unsqueeze(state[..., 0], 1)),
-            self.lib.sin(self.lib.unsqueeze(state[..., 0], 1)),
-            self.lib.cos(self.lib.unsqueeze(state[..., 1], 1)),
-            self.lib.sin(self.lib.unsqueeze(state[..., 1], 1)),
-            self.lib.unsqueeze(state[..., 2], 1),
-            self.lib.unsqueeze(state[..., 3], 1),
-        ], 1)
-    
+        return self.lib.concat(
+            [
+                self.lib.cos(self.lib.unsqueeze(state[..., 0], 1)),
+                self.lib.sin(self.lib.unsqueeze(state[..., 0], 1)),
+                self.lib.cos(self.lib.unsqueeze(state[..., 1], 1)),
+                self.lib.sin(self.lib.unsqueeze(state[..., 1], 1)),
+                self.lib.unsqueeze(state[..., 2], 1),
+                self.lib.unsqueeze(state[..., 3], 1),
+            ],
+            1,
+        )
+
     def _dsdt(self, s_augmented):
         m1 = self.LINK_MASS_1
         m2 = self.LINK_MASS_2
@@ -196,10 +205,22 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
             # the following line is consistent with the java implementation and the
             # book
             ddtheta2 = (
-                a + d2 / d1 * phi1 - m2 * l1 * lc2 * dtheta1**2 * self.lib.sin(theta2) - phi2
+                a
+                + d2 / d1 * phi1
+                - m2 * l1 * lc2 * dtheta1**2 * self.lib.sin(theta2)
+                - phi2
             ) / (m2 * lc2**2 + I2 - d2**2 / d1)
         ddtheta1 = -(d2 * ddtheta2 + phi1) / d1
-        return self.lib.stack([dtheta1, dtheta2, ddtheta1, ddtheta2, self.lib.zeros([self._batch_size,], self.lib.float32)], 1)
+        return self.lib.stack(
+            [
+                dtheta1,
+                dtheta2,
+                ddtheta1,
+                ddtheta2,
+                self.lib.zeros_like(dtheta1),
+            ],
+            1,
+        )
 
     def bound(self, x, m, M=None):
         """Either have m as scalar, so bound(x,m,M) which returns m <= x <= M *OR*
@@ -218,7 +239,6 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
             m = m[0]
         # bound x between min (m) and Max (M)
         return self.lib.min(self.lib.max(x, m), M)
-
 
     def rk4(self, derivs, y0, t):
         """
