@@ -36,7 +36,6 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode="human",
-        parent_env: EnvironmentBatched = None,
         **kwargs,
     ):
         self._batch_size = batch_size
@@ -70,9 +69,6 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         track_half_length = np.array(usable_track_length - cart_length / 2.0)
         self.u_max = kwargs["u_max"]
 
-        self.parent_env: cartpole_simulator_batched = (
-            self if parent_env is None else parent_env
-        )
         self.target_position = tf.Variable(0.0, dtype=tf.float32)
 
         self.x_threshold = (
@@ -201,7 +197,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             self.state,
             reward,
             done,
-            {"target": self.lib.to_numpy(self.parent_env.target_position)},
+            {"target": self.lib.to_numpy(self.target_position)},
         )
 
     def step_physics(self, state: TensorType, action: TensorType):
@@ -231,7 +227,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
     def get_reward(self, state, action):
         target_position = self.lib.to_tensor(
-            self.parent_env.target_position, self.lib.float32
+            self.target_position, self.lib.float32
         )
         reward = (
             state[..., ANGLE_COS_IDX]

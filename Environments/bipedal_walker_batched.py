@@ -20,7 +20,6 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode="human",
-        parent_env: EnvironmentBatched = None,
         **kwargs,
     ):
         super().__init__(render_mode=render_mode, hardcore=False)

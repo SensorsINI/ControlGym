@@ -25,7 +25,6 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode="human",
-        parent_env: EnvironmentBatched = None,
         **kwargs,
     ):
         super().__init__(render_mode=render_mode, goal_velocity=goal_velocity)

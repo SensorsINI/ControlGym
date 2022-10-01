@@ -20,7 +20,6 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode="human",
-        parent_env: EnvironmentBatched = None,
         **kwargs,
     ):
         super().__init__(render_mode=render_mode, g=g)

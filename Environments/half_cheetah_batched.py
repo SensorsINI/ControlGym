@@ -23,7 +23,6 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode="human",
-        parent_env: EnvironmentBatched = None,
         **kwargs,
     ) -> None:
         self._envs = BatchedPyEnvironment(
