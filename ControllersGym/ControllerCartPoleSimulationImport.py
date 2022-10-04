@@ -14,12 +14,12 @@ class ControllerCartPoleSimulationImport(Controller):
         super().__init__(environment, **controller_config)
         controller_name = controller_config["controller_name"]
         
-        for attr in ["num_rollouts", "num_rollouts", "mpc_rollouts"]:
+        for attr in ["num_rollouts", "mpc_rollouts"]:
             batch_size = controller_config.get(attr, None)
             if batch_size is not None:
                 break
         if batch_size is None:
-            raise ValueError("Controller needs one of num_rollouts, num_rollouts, mpc_rollouts to be set in config")
+            raise ValueError("Controller needs one of num_rollouts, mpc_rollouts to be set in config")
 
         self._controller = getattr(
             import_module(
@@ -29,8 +29,6 @@ class ControllerCartPoleSimulationImport(Controller):
         )(**{**controller_config, **{"environment": environment, "num_control_inputs": self._m}})
 
     def step(self, s: np.ndarray) -> np.ndarray:
-        # self._predictor_environment.reset(s)
-
         self.u = np.array(self._controller.step(s))
         if self.u.ndim == 0:
             self.u = self.u[np.newaxis]

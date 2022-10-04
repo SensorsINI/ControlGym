@@ -18,6 +18,7 @@ ENV_REGISTRY = {
     "CustomEnvironments/CartPoleSimulator-v0": "Environments.cartpole_simulator_batched:cartpole_simulator_batched",
     "CustomEnvironments/HalfCheetahBatched-v0": "Environments.half_cheetah_batched:half_cheetah_batched",
     "CustomEnvironments/BipedalWalkerBatched-v0": "Environments.bipedal_walker_batched:bipedal_walker_batched",
+    "CustomEnvironments/ObstacleAvoidance-v0": "Environments.obstacle_avoidance_batched:obstacle_avoidance_batched",
 }
 
 

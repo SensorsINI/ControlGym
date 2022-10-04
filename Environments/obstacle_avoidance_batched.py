@@ -1,0 +1,486 @@
+"""
+This file has been modified from source https://github.com/gargivaidya/dubin_model_gymenv/blob/main/dubin_gymenv.py
+
+This was in turn adapted from https://github.com/AtsushiSakai/PythonRobotics under...
+
+The MIT License (MIT)
+
+Copyright (c) 2016 - 2022 Atsushi Sakai and other contributors:
+https://github.com/AtsushiSakai/PythonRobotics/contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+from typing import Optional, Union, Tuple
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
+import math
+import gym
+from gym import spaces
+from gym.utils.renderer import Renderer
+import tensorflow as tf
+import torch
+from skspatial.objects import Sphere
+
+from Control_Toolkit.others.environment import TensorType
+from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
+from Utilities.utils import CurrentRunMemory
+from SI_Toolkit.Functions.TF.Compile import Compile
+
+# Training constants
+MAX_ACCELERATION = 5.0
+MAX_POSITION = 1.0
+MAX_VELOCITY = 1.0
+
+THRESHOLD_DISTANCE_2_GOAL = 0.01
+max_ep_length = 800
+
+# Vehicle parameters
+LENGTH = 0.45  # [m]
+WIDTH = 0.2  # [m]
+BACKTOWHEEL = 0.1  # [m]
+WHEEL_LEN = 0.03  # [m]
+WHEEL_WIDTH = 0.02  # [m]
+TREAD = 0.07  # [m]
+WB = 0.25  # [m]
+
+
+class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
+    num_states = None
+    num_actions = None
+    metadata = {"render_modes": ["console", "single_rgb_array", "rgb_array", "human"]}
+
+    def __init__(
+        self,
+        target_point,
+        shuffle_target_every: int,
+        obstacle_positions: "list[list[float]]",
+        initial_state: "list[float]",
+        num_dimensions: int,
+        batch_size=1,
+        computation_lib=NumpyLibrary,
+        render_mode: str = None,
+        **kwargs
+    ):
+        super().__init__()
+
+        self.set_computation_library(computation_lib)
+        self._set_up_rng(kwargs["seed"])
+        self.cost_functions = self.cost_functions_wrapper(self)
+        self.num_dimensions = num_dimensions
+        self.__class__.num_states = 2 * self.num_dimensions  # One position and velocity per dimension
+        self.__class__.num_actions = self.num_dimensions  # One acceleration per dimension
+
+        self._batch_size = batch_size
+        self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
+        self.render_mode = render_mode
+        self.renderer = Renderer(self.render_mode, self._render)
+        
+        action_high = np.repeat(MAX_ACCELERATION, self.num_dimensions)
+        observation_high = np.concatenate([
+            np.repeat(MAX_POSITION, self.num_dimensions),
+            np.repeat(MAX_VELOCITY, self.num_dimensions)
+        ], dtype=np.float32)
+        
+        self.action_space = spaces.Box(
+            -action_high, action_high, dtype=np.float32,
+        )
+        self.observation_space = spaces.Box(
+            -observation_high, observation_high, dtype=np.float32
+        )
+
+        if target_point is None:
+            target_point = self.lib.uniform(self.rng, (self.num_dimensions,), -1.0, 1.0, self.lib.float32)
+        self.target_point = tf.Variable(target_point)
+        self.shuffle_target_every = shuffle_target_every
+        self.num_obstacles = math.floor(
+            float(self.lib.uniform(self.rng, (), 2**self.num_dimensions, 3**self.num_dimensions, self.lib.float32))
+        )
+        self.initial_state = initial_state
+        self.dt = kwargs["dt"]
+
+        if obstacle_positions is None or obstacle_positions == []:
+            self.obstacle_positions = []
+            range_max = np.repeat(0.9, self.num_dimensions)
+            for _ in range(self.num_obstacles):
+                self.obstacle_positions.append(
+                    list(
+                        self.lib.to_numpy(
+                            self.lib.uniform(
+                                self.rng,
+                                (self.num_dimensions + 1,),
+                                list(-range_max) + [0.05],
+                                list(range_max) + [0.3],
+                                self.lib.float32,
+                            )
+                        )
+                    )
+                )
+        else:
+            self.obstacle_positions = (
+                obstacle_positions  # List of lists [[x_pos, y_pos, radius], ...]
+            )
+
+        self.action = np.repeat(0.0, self.num_actions)  # Action
+
+        self.config = {
+            **kwargs,
+            **dict(
+                render_mode=self.render_mode,
+                initial_state=self.initial_state,
+                target_point=self.target_point,
+                obstacle_positions=self.obstacle_positions,
+                shuffle_target_every=self.shuffle_target_every,
+                num_dimensions=self.num_dimensions,
+            ),
+        }
+
+        self.fig: plt.Figure = None
+        self.ax: plt.Axes = None
+
+    def reset(
+        self,
+        state: np.ndarray = None,
+        seed: Optional[int] = None,
+        return_info: bool = False,
+        options: Optional[dict] = None,
+    ) -> Tuple[np.ndarray, Optional[dict]]:
+        if seed is not None:
+            self._set_up_rng(seed)
+
+        self.count = 1
+
+        if state is None:
+            if self.initial_state is None:
+                positions = self.lib.uniform(self.rng, (1, self.num_dimensions), -MAX_POSITION, MAX_POSITION, self.lib.float32)
+                velocities = self.lib.uniform(self.rng, (1, self.num_dimensions), -MAX_VELOCITY, MAX_VELOCITY, self.lib.float32)
+                self.state = self.lib.to_numpy(self.lib.concat([positions, velocities], 1))
+            else:
+                self.state = self.lib.unsqueeze(self.lib.to_numpy(self.initial_state), 0)
+            self.traj_x = [float(self.state[..., 0])]
+            self.traj_y = [float(self.state[..., 1])]
+            if self.num_dimensions >= 3:
+                self.traj_z = [float(self.state[..., 2])]
+        else:
+            if self.lib.ndim(state) < 2:
+                state = self.lib.unsqueeze(
+                    self.lib.to_tensor(state, self.lib.float32), 0
+                )
+            if self.lib.shape(state)[0] == 1:
+                self.state = self.lib.tile(state, (self._batch_size, 1))
+            else:
+                self.state = state
+
+        return self._get_reset_return_val()
+
+    def get_reward(self, state, action):
+        target = self.lib.to_tensor(self.target_point, self.lib.float32)
+        position = state[..., :self.num_dimensions]
+
+        ld = self.get_distance(position, self.lib.unsqueeze(target, 0))
+
+        car_in_bounds = self._in_bounds(position)
+        car_at_target = self._at_target(position, target)
+
+        reward = (
+            self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
+            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32)
+            * (
+                -1.0
+                * (
+                    ld + self._distance_to_obstacle_cost(position)
+                )
+            )
+            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-1.0)
+        )
+
+        return reward
+
+    def is_done(self, state):
+        target = self.lib.to_tensor(self.target_point, self.lib.float32)
+        position = state[..., :self.num_dimensions]
+
+        car_in_bounds = self._in_bounds(position)
+        car_at_target = self._at_target(position, target)
+        done = ~(car_in_bounds & (~car_at_target))
+        return done
+
+    def _in_bounds(self, x: TensorType) -> TensorType:
+        return self.lib.reduce_all(self.lib.abs(x) < 1.0, -1)
+
+    def _at_target(
+        self, x: TensorType, target: TensorType,
+    ) -> TensorType:
+        return self.lib.reduce_all(self.lib.abs(x - target) < THRESHOLD_DISTANCE_2_GOAL, -1)
+
+    def _distance_to_obstacle_cost(self, x: TensorType) -> TensorType:
+        costs = None
+        for obstacle_position in self.obstacle_positions:
+            _d = self.lib.sqrt(self.lib.sum((x - obstacle_position[:-1]) ** 2, -1))
+            _c = 1.0 - (self.lib.min(1.0, _d / obstacle_position[-1])) ** 2
+            _c = self.lib.unsqueeze(_c, -1)
+            costs = _c if costs == None else self.lib.concat([costs, _c], -1)
+        return self.lib.reduce_max(costs, -1)
+
+    def get_distance(self, x1, x2):
+        # Distance between points x1 and x2
+        return self.lib.sqrt(self.lib.sum((x1 - x2) ** 2, -1))
+
+    @Compile
+    def step_dynamics(
+        self,
+        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        dt: float,
+    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
+        return self.update_state(state, action, dt)
+
+    def step(
+        self, action: Union[np.ndarray, tf.Tensor]
+    ) -> Tuple[
+        Union[np.ndarray, tf.Tensor],
+        Union[np.ndarray, float],
+        Union[np.ndarray, bool],
+        dict,
+    ]:
+        if self.count % self.shuffle_target_every == 0:
+            target_new = tf.convert_to_tensor(
+                [
+                    self.target_point[0],
+                    self.lib.uniform(self.rng, [], -MAX_POSITION, MAX_POSITION, self.lib.float32),
+                ]
+            )
+            self.target_point.assign(target_new)
+        self.count += 1
+        self.state, action = self._expand_arrays(self.state, action)
+
+        assert self._batch_size == 1
+        action = self._apply_actuator_noise(action)
+
+        self.state = self.lib.to_numpy(self.step_dynamics(self.state, action, self.dt))
+
+        done = self.is_done(self.state)
+        reward = self.get_reward(self.state, action)
+
+        self.state = self.lib.squeeze(self.state)
+
+        self.renderer.render_step()
+        return self.lib.to_numpy(self.state), float(reward), bool(done), {}
+
+    def render(self, mode="human"):
+        if self.render_mode is not None:
+            return self.renderer.get_renders()
+        else:
+            if self.num_dimensions == 2:
+                return self._render(mode)
+            elif self.num_dimensions == 3:
+                return self._render3d(mode)
+            else:
+                return self._render(mode)
+
+    def _render(self, mode="human"):
+        if self.num_dimensions == 3:
+            return self._render3d(mode=mode)
+        else:
+            return self._render2d(mode=mode)
+    
+    def _render2d(self, mode="human"):
+        assert mode in self.metadata["render_modes"]
+        if self.render_mode in {"rgb_array", "single_rgb_array"}:
+            # Turn interactive plotting off
+            plt.ioff()
+        else:
+            plt.ion()
+
+        # Storing tracked trajectory
+        self.traj_x.append(self.state[0])
+        self.traj_y.append(self.state[1])
+
+        # for stopping simulation with the esc key.
+        if self.fig is None:
+            self.fig, self.ax = plt.subplots(
+                nrows=1, ncols=1, figsize=(6, 6), dpi=300.0
+            )
+        self.ax.cla()
+        self.fig.canvas.mpl_connect(
+            "key_release_event",
+            lambda event: [exit(0) if event.key == "escape" else None],
+        )
+        self.ax.plot(self.traj_x, self.traj_y, "ob", markersize=2, label="trajectory")
+        
+        target = self.lib.to_tensor(self.target_point, self.lib.float32)
+        self.ax.plot(target[0], target[1], "xg", label="target")
+        self.plot_obstacles()
+        self.plot_trajectory_plans()
+        self.plot_point_mass()
+        self.ax.set_aspect("equal", adjustable="datalim")
+        self.ax.grid(True)
+        self.ax.set_xlim(-1.0, 1.0)
+        self.ax.set_ylim(-1.0, 1.0)
+        # self.ax.set_title("Simulation")
+        plt.pause(1e-8)
+
+        if self.render_mode in {"rgb_array", "single_rgb_array"}:
+            data = np.frombuffer(self.fig.canvas.tostring_rgb(), dtype=np.uint8)
+            data = data.reshape(
+                tuple(
+                    (self.fig.get_size_inches() * self.fig.dpi).astype(np.int32)[::-1]
+                )
+                + (3,)
+            )
+            return data
+        elif self.render_mode in {"human"}:
+            self.fig.show()
+            
+    def _render3d(self, mode="human"):
+        assert mode in self.metadata["render_modes"]
+        if self.render_mode in {"rgb_array", "single_rgb_array"}:
+            # Turn interactive plotting off
+            plt.ioff()
+        else:
+            plt.ion()
+
+        # Storing tracked trajectory
+        self.traj_x.append(self.state[0])
+        self.traj_y.append(self.state[1])
+        self.traj_z.append(self.state[2])
+
+        # for stopping simulation with the esc key.
+        if self.fig is None:
+            self.fig = plt.figure(figsize=(6, 6), dpi=300.0)
+            self.ax = plt.axes(projection='3d')
+
+        self.ax.cla()
+        self.fig.canvas.mpl_connect(
+            "key_release_event",
+            lambda event: [exit(0) if event.key == "escape" else None],
+        )
+        self.ax.plot3D(self.traj_x, self.traj_y, self.traj_z, "ob", markersize=1, label="trajectory")
+        
+        target = self.lib.to_tensor(self.target_point, self.lib.float32)
+        self.ax.plot3D(target[0], target[1], target[2], "xg", label="target")
+        self.plot_obstacles()
+        self.plot_trajectory_plans()
+        self.plot_point_mass()
+        self.ax.set_aspect("equal", adjustable="datalim")
+        self.ax.grid(True)
+        self.ax.set_xlim(-1.0, 1.0)
+        self.ax.set_ylim(-1.0, 1.0)
+        self.ax.set_zlim(-1.0, 1.0)
+        plt.pause(1e-8)
+
+        if self.render_mode in {"rgb_array", "single_rgb_array"}:
+            data = np.frombuffer(self.fig.canvas.tostring_rgb(), dtype=np.uint8)
+            data = data.reshape(
+                tuple(
+                    (self.fig.get_size_inches() * self.fig.dpi).astype(np.int32)[::-1]
+                )
+                + (3,)
+            )
+            return data
+        elif self.render_mode in {"human"}:
+            self.fig.show()
+        
+
+    def close(self):
+        # For Gym AI compatibility
+        plt.close(self.fig)
+
+    def update_state(self, state, action, DT):
+        position, velocity = state[:, :self.num_dimensions], state[:, self.num_dimensions:]
+
+        position += DT * velocity
+        velocity += DT * action
+        
+        return self.lib.concat([position, velocity], 1)
+
+    def plot_point_mass(self):
+        x = self.state[0]
+        y = self.state[1]
+        r = 0.05
+        if self.num_dimensions == 3:
+            z = self.state[2]
+            sphere = Sphere([x, y, z], r)
+            sphere.plot_3d(self.ax, alpha=0.8, color="red")
+        else:
+            self.ax.add_patch(
+                Circle(
+                    (x, y),
+                    r,
+                    fill=True,
+                    facecolor="red",
+                    edgecolor="red",
+                    zorder=5,
+                )
+            )
+
+    def plot_obstacles(self):
+        if self.num_dimensions == 3:
+            for obstacle_position in self.obstacle_positions:
+                pos_x, pos_y, pos_z, radius = obstacle_position
+                sphere = Sphere([pos_x, pos_y, pos_z], radius)
+                sphere.plot_3d(self.ax, alpha=0.5, color="dimgray")
+        else:
+            for obstacle_position in self.obstacle_positions:
+                pos_x, pos_y, radius = obstacle_position
+                self.ax.add_patch(
+                    Circle(
+                        (pos_x, pos_y),
+                        radius,
+                        fill=True,
+                        facecolor="dimgray",
+                        edgecolor="dimgray",
+                        zorder=5,
+                    )
+                )
+
+    def plot_trajectory_plans(self):
+        controller_logs = getattr(CurrentRunMemory, "controller_logs", {})
+        trajectories = controller_logs.get("rollout_trajectories_logged", None)
+        costs = controller_logs.get("J_logged")
+        if trajectories is not None:
+            for i, trajectory in enumerate(trajectories):
+                if i == np.argmin(costs):
+                    color = "r"
+                    alpha = 1.0
+                    zorder = 5
+                else:
+                    color = "g"
+                    alpha = min(5.0 / trajectories.shape[0], 1.0)
+                    zorder = 4
+                if self.num_dimensions == 3:
+                    self.ax.plot3D(
+                        trajectory[:, 0],
+                        trajectory[:, 1],
+                        trajectory[:, 2],
+                        linewidth=0.5,
+                        alpha=alpha,
+                        color=color,
+                        zorder=zorder,
+                    )
+                else:
+                    self.ax.plot(
+                        trajectory[:, 0],
+                        trajectory[:, 1],
+                        linewidth=0.5,
+                        alpha=alpha,
+                        color=color,
+                        zorder=zorder,
+                    )

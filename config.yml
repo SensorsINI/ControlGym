@@ -9,16 +9,18 @@
   environment_names:
   # - CustomEnvironments/MountainCarContinuous-v0
   # - CustomEnvironments/CartPoleSimulator-v0
-  - CustomEnvironments/DubinsCar-v0
+  # - CustomEnvironments/DubinsCar-v0
   # - CustomEnvironments/Acrobot-v0
   # - CustomEnvironments/Pendulum-v0
   # - CustomEnvironments/CartPoleContinuous-v0
-  debug: false  # false to use tf.compile
+  # - CustomEnvironments/BipedalWalkerBatched-v0
+  - CustomEnvironments/ObstacleAvoidance-v0
+  debug: true  # false to use tf.compile
   use_jit_compilation: false  # false for reproducibility
   use_gpu: false
   logging_level: DEBUG
   num_experiments: 1
-  num_iterations: 200
+  num_iterations: 50
   render_for_humans: true
   save_plots_to_file: false
   seed_entropy: 49604
@@ -116,6 +118,19 @@
     usable_track_length: 44.0e-2
     u_max: 2.62
     shuffle_target_every: 100
+  CustomEnvironments/BipedalWalkerBatched-v0:
+    actuator_noise:
+    - 0.0
+    dt: 0.02
+  CustomEnvironments/ObstacleAvoidance-v0:
+    actuator_noise:
+    - 0.0
+    dt: 0.02
+    target_point: null
+    initial_state: null
+    obstacle_positions: []
+    shuffle_target_every: 100000
+    num_dimensions: 3
 3_predictors:
   PredictorGaussianError:
     prediction_error_stdev: 0.1
@@ -150,7 +165,7 @@
     adam_beta_2: 0.999
     adam_epsilon: 1.0e-08
     gradient_steps: 2
-    mpc_rollouts: 32
+    num_rollouts: 32
     initial_action_stdev: 0.5
     gradmax_clip: 5
     predictor_intermediate_steps: 1
