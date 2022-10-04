@@ -80,7 +80,7 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
             return obs, {}
         return obs
 
-    def render(self, mode="human"):
+    def render(self):
         if self._batch_size == 1:
             return super().render()
         else:

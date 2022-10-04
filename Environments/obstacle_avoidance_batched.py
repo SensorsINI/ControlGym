@@ -34,7 +34,6 @@ from matplotlib.patches import Circle
 import math
 import gym
 from gym import spaces
-from gym.utils.renderer import Renderer
 import tensorflow as tf
 import torch
 from skspatial.objects import Sphere
@@ -91,7 +90,6 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
         self.render_mode = render_mode
-        self.renderer = Renderer(self.render_mode, self._render)
         
         action_high = np.repeat(MAX_ACCELERATION, self.num_dimensions)
         observation_high = np.concatenate([
@@ -281,28 +279,18 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
 
         self.state = self.lib.squeeze(self.state)
 
-        self.renderer.render_step()
         return self.lib.to_numpy(self.state), float(reward), bool(done), {}
 
-    def render(self, mode="human"):
-        if self.render_mode is not None:
-            return self.renderer.get_renders()
+    def render(self):
+        if self.num_dimensions == 2:
+            return self._render2d()
+        elif self.num_dimensions == 3:
+            return self._render3d()
         else:
-            if self.num_dimensions == 2:
-                return self._render(mode)
-            elif self.num_dimensions == 3:
-                return self._render3d(mode)
-            else:
-                return self._render(mode)
-
-    def _render(self, mode="human"):
-        if self.num_dimensions == 3:
-            return self._render3d(mode=mode)
-        else:
-            return self._render2d(mode=mode)
+            return self._render2d()
     
-    def _render2d(self, mode="human"):
-        assert mode in self.metadata["render_modes"]
+    def _render2d(self):
+        assert self.render_mode in self.metadata["render_modes"]
         if self.render_mode in {"rgb_array", "single_rgb_array"}:
             # Turn interactive plotting off
             plt.ioff()
@@ -310,32 +298,44 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             plt.ion()
 
         # Storing tracked trajectory
-        self.traj_x.append(self.state[0])
-        self.traj_y.append(self.state[1])
+        self.traj_x.append(float(self.state[0]))
+        self.traj_y.append(float(self.state[1]))
+        target = self.lib.to_tensor(self.target_point, self.lib.float32)
 
-        # for stopping simulation with the esc key.
         if self.fig is None:
             self.fig, self.ax = plt.subplots(
                 nrows=1, ncols=1, figsize=(6, 6), dpi=300.0
             )
-        self.ax.cla()
-        self.fig.canvas.mpl_connect(
-            "key_release_event",
-            lambda event: [exit(0) if event.key == "escape" else None],
-        )
-        self.ax.plot(self.traj_x, self.traj_y, "ob", markersize=2, label="trajectory")
-        
-        target = self.lib.to_tensor(self.target_point, self.lib.float32)
-        self.ax.plot(target[0], target[1], "xg", label="target")
-        self.plot_obstacles()
-        self.plot_trajectory_plans()
-        self.plot_point_mass()
-        self.ax.set_aspect("equal", adjustable="datalim")
-        self.ax.grid(True)
-        self.ax.set_xlim(-1.0, 1.0)
-        self.ax.set_ylim(-1.0, 1.0)
-        # self.ax.set_title("Simulation")
-        plt.pause(1e-8)
+            self.ax.cla()
+            self.ax.set_aspect("equal", adjustable="datalim")
+            self.ax.grid(True)
+            self.ax.set_xlim(-1.0, 1.0)
+            self.ax.set_ylim(-1.0, 1.0)
+            self.fig.canvas.mpl_connect( # for stopping simulation with the esc key.
+                "key_release_event",
+                lambda event: [exit(0) if event.key == "escape" else None],
+            )
+            (self.ln_traj,) = self.ax.plot(self.traj_x, self.traj_y, "ob", markersize=2, label="trajectory", zorder=0, animated=True)
+            (self.ln_target,) = self.ax.plot(*target, "xg", label="target", zorder=1, animated=True)
+            self.obstacle_patches = self.plot_obstacles()
+            self.trajectory_lines = self.plot_trajectory_plans()
+            self.point_mass = self.plot_point_mass()
+            self.bm = BlitManager(self.fig.canvas, [self.ln_traj, self.ln_target, *self.trajectory_lines, self.point_mass])
+            # make sure our window is on the screen and drawn
+            if self.render_mode in {"human"}:
+                plt.show(block=False)
+            plt.pause(1e-6)
+            
+            self.bg = self.fig.canvas.copy_from_bbox(self.fig.bbox)
+            self.ax.draw_artist(self.ln_traj)
+            self.ax.draw_artist(self.ln_target)
+            self.fig.canvas.blit(self.fig.bbox)
+        else:
+            self.ln_traj.set_data(self.traj_x, self.traj_y)
+            self.ln_target.set_data(*target)
+            self.plot_trajectory_plans(self.trajectory_lines)
+            self.point_mass.set_center(list(self.state))
+            self.bm.update()
 
         if self.render_mode in {"rgb_array", "single_rgb_array"}:
             data = np.frombuffer(self.fig.canvas.tostring_rgb(), dtype=np.uint8)
@@ -346,11 +346,9 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
                 + (3,)
             )
             return data
-        elif self.render_mode in {"human"}:
-            self.fig.show()
             
-    def _render3d(self, mode="human"):
-        assert mode in self.metadata["render_modes"]
+    def _render3d(self):
+        assert self.render_mode in self.metadata["render_modes"]
         if self.render_mode in {"rgb_array", "single_rgb_array"}:
             # Turn interactive plotting off
             plt.ioff()
@@ -358,33 +356,50 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             plt.ion()
 
         # Storing tracked trajectory
-        self.traj_x.append(self.state[0])
-        self.traj_y.append(self.state[1])
-        self.traj_z.append(self.state[2])
+        self.traj_x.append(float(self.state[0]))
+        self.traj_y.append(float(self.state[1]))
+        self.traj_z.append(float(self.state[2]))
+        target = [[float(k)] for k in self.target_point]
 
         # for stopping simulation with the esc key.
         if self.fig is None:
             self.fig = plt.figure(figsize=(6, 6), dpi=300.0)
             self.ax = plt.axes(projection='3d')
 
-        self.ax.cla()
-        self.fig.canvas.mpl_connect(
-            "key_release_event",
-            lambda event: [exit(0) if event.key == "escape" else None],
-        )
-        self.ax.plot3D(self.traj_x, self.traj_y, self.traj_z, "ob", markersize=1, label="trajectory")
-        
-        target = self.lib.to_tensor(self.target_point, self.lib.float32)
-        self.ax.plot3D(target[0], target[1], target[2], "xg", label="target")
-        self.plot_obstacles()
-        self.plot_trajectory_plans()
-        self.plot_point_mass()
-        self.ax.set_aspect("equal", adjustable="datalim")
-        self.ax.grid(True)
-        self.ax.set_xlim(-1.0, 1.0)
-        self.ax.set_ylim(-1.0, 1.0)
-        self.ax.set_zlim(-1.0, 1.0)
-        plt.pause(1e-8)
+            self.ax.cla()
+            self.ax.set_aspect("equal", adjustable="datalim")
+            self.ax.grid(True)
+            self.ax.set_xlim(-1.0, 1.0)
+            self.ax.set_ylim(-1.0, 1.0)
+            self.ax.set_zlim(-1.0, 1.0)
+            self.fig.canvas.mpl_connect( # for stopping simulation with the esc key.
+                "key_release_event",
+                lambda event: [exit(0) if event.key == "escape" else None],
+            )
+            (self.ln_traj,) = self.ax.plot3D(self.traj_x, self.traj_y, self.traj_z, "ob", markersize=2, label="trajectory", animated=True)
+            (self.ln_target,) = self.ax.plot3D(*target, "xg", label="target", animated=True)
+            self.obstacle_patches = self.plot_obstacles()
+            self.trajectory_lines = self.plot_trajectory_plans()
+            self.point_mass = self.plot_point_mass()
+            self.bm = BlitManager(self.fig.canvas, [self.ln_traj, self.ln_target, *self.trajectory_lines])
+            # make sure our window is on the screen and drawn
+            if self.render_mode in {"human"}:
+                plt.show(block=False)
+            plt.pause(1e-6)
+            
+            self.bg = self.fig.canvas.copy_from_bbox(self.fig.bbox)
+            self.ax.draw_artist(self.ln_traj)
+            self.ax.draw_artist(self.ln_target)
+            self.fig.canvas.blit(self.fig.bbox)
+        else:
+            # self.ax.view_init(elev=10., azim=self.ax.get_view().azim)
+            self.ln_traj.set_data(self.traj_x, self.traj_y)
+            self.ln_traj.set_3d_properties(self.traj_z)
+            self.ln_target.set_data(target[0], target[1])
+            self.ln_target.set_3d_properties(target[2])
+            self.plot_trajectory_plans(self.trajectory_lines)
+            self.point_mass.point = list(self.state)
+            self.bm.update()
 
         if self.render_mode in {"rgb_array", "single_rgb_array"}:
             data = np.frombuffer(self.fig.canvas.tostring_rgb(), dtype=np.uint8)
@@ -395,9 +410,6 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
                 + (3,)
             )
             return data
-        elif self.render_mode in {"human"}:
-            self.fig.show()
-        
 
     def close(self):
         # For Gym AI compatibility
@@ -417,44 +429,49 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         r = 0.05
         if self.num_dimensions == 3:
             z = self.state[2]
-            sphere = Sphere([x, y, z], r)
-            sphere.plot_3d(self.ax, alpha=0.8, color="red")
+            patch = Sphere([x, y, z], r)
+            patch.plot_3d(self.ax, alpha=0.8, color="red")
         else:
-            self.ax.add_patch(
-                Circle(
-                    (x, y),
-                    r,
-                    fill=True,
-                    facecolor="red",
-                    edgecolor="red",
-                    zorder=5,
-                )
+            patch = Circle(
+                (x, y),
+                r,
+                fill=True,
+                facecolor="red",
+                edgecolor="red",
+                zorder=5,
             )
+            self.ax.add_patch(patch)
+        return patch
 
     def plot_obstacles(self):
+        patches = []
         if self.num_dimensions == 3:
             for obstacle_position in self.obstacle_positions:
                 pos_x, pos_y, pos_z, radius = obstacle_position
                 sphere = Sphere([pos_x, pos_y, pos_z], radius)
                 sphere.plot_3d(self.ax, alpha=0.5, color="dimgray")
+                patches.append(sphere)
         else:
             for obstacle_position in self.obstacle_positions:
                 pos_x, pos_y, radius = obstacle_position
-                self.ax.add_patch(
-                    Circle(
-                        (pos_x, pos_y),
-                        radius,
-                        fill=True,
-                        facecolor="dimgray",
-                        edgecolor="dimgray",
-                        zorder=5,
-                    )
+                circle = Circle(
+                    (pos_x, pos_y),
+                    radius,
+                    fill=True,
+                    facecolor="dimgray",
+                    edgecolor="dimgray",
+                    zorder=5,
                 )
+                self.ax.add_patch(circle)
+                patches.append(circle)
+        return patches
 
-    def plot_trajectory_plans(self):
+    def plot_trajectory_plans(self, lines=None):
         controller_logs = getattr(CurrentRunMemory, "controller_logs", {})
         trajectories = controller_logs.get("rollout_trajectories_logged", None)
         costs = controller_logs.get("J_logged")
+        create_new_lines = lines == None
+        lines = [] if lines == None else lines
         if trajectories is not None:
             for i, trajectory in enumerate(trajectories):
                 if i == np.argmin(costs):
@@ -465,22 +482,104 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
                     color = "g"
                     alpha = min(5.0 / trajectories.shape[0], 1.0)
                     zorder = 4
-                if self.num_dimensions == 3:
-                    self.ax.plot3D(
-                        trajectory[:, 0],
-                        trajectory[:, 1],
-                        trajectory[:, 2],
-                        linewidth=0.5,
-                        alpha=alpha,
-                        color=color,
-                        zorder=zorder,
-                    )
+                if create_new_lines:
+                    if self.num_dimensions == 3:
+                        (ln,) = self.ax.plot3D(
+                            trajectory[:, 0],
+                            trajectory[:, 1],
+                            trajectory[:, 2],
+                            linewidth=0.5,
+                            alpha=alpha,
+                            color=color,
+                            zorder=zorder,
+                        )
+                    else:
+                        (ln,) = self.ax.plot(
+                            trajectory[:, 0],
+                            trajectory[:, 1],
+                            linewidth=0.5,
+                            alpha=alpha,
+                            color=color,
+                            zorder=zorder,
+                        )
+                    lines.append(ln)
                 else:
-                    self.ax.plot(
-                        trajectory[:, 0],
-                        trajectory[:, 1],
-                        linewidth=0.5,
-                        alpha=alpha,
-                        color=color,
-                        zorder=zorder,
-                    )
+                    if self.num_dimensions == 3:
+                        lines[i].set_data(trajectory[:, 0], trajectory[:, 1])
+                        lines[i].set_3d_properties(trajectory[:, 2])
+                    else:
+                        lines[i].set_data(trajectory[:, 0], trajectory[:, 1])
+        return lines
+
+
+class BlitManager:
+    def __init__(self, canvas, animated_artists=()):
+        """
+        Parameters
+        ----------
+        canvas : FigureCanvasAgg
+            The canvas to work with, this only works for sub-classes of the Agg
+            canvas which have the `~FigureCanvasAgg.copy_from_bbox` and
+            `~FigureCanvasAgg.restore_region` methods.
+
+        animated_artists : Iterable[Artist]
+            List of the artists to manage
+        """
+        self.canvas = canvas
+        self._bg = None
+        self._artists = []
+
+        for a in animated_artists:
+            self.add_artist(a)
+        # grab the background on every draw
+        self.cid = canvas.mpl_connect("draw_event", self.on_draw)
+
+    def on_draw(self, event):
+        """Callback to register with 'draw_event'."""
+        cv = self.canvas
+        if event is not None:
+            if event.canvas != cv:
+                raise RuntimeError
+        self._bg = cv.copy_from_bbox(cv.figure.bbox)
+        self._draw_animated()
+
+    def add_artist(self, art):
+        """
+        Add an artist to be managed.
+
+        Parameters
+        ----------
+        art : Artist
+
+            The artist to be added.  Will be set to 'animated' (just
+            to be safe).  *art* must be in the figure associated with
+            the canvas this class is managing.
+
+        """
+        if art.figure != self.canvas.figure:
+            raise RuntimeError
+        art.set_animated(True)
+        self._artists.append(art)
+
+    def _draw_animated(self):
+        """Draw all of the animated artists."""
+        fig = self.canvas.figure
+        for a in self._artists:
+            fig.draw_artist(a)
+
+    def update(self):
+        """Update the screen with animated artists."""
+        cv = self.canvas
+        fig = cv.figure
+        # paranoia in case we missed the draw event,
+        if self._bg is None:
+            self.on_draw(None)
+        else:
+            # restore the background
+            cv.restore_region(self._bg)
+            # draw all of the animated artists
+            self._draw_animated()
+            # update the GUI state
+            cv.blit(fig.bbox)
+        # let the GUI event loop process anything it has to do
+        cv.flush_events()

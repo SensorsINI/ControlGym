@@ -9,6 +9,7 @@ gpflow
 gym[classic_control,mujoco,box2d]
 imageio
 matplotlib
+moviepy
 natsort
 nni
 numba

@@ -8,7 +8,6 @@ from gym.envs.classic_control import utils
 from gym.envs.classic_control.acrobot import AcrobotEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from Utilities.utils import CurrentRunMemory
 
 
 class acrobot_batched(EnvironmentBatched, AcrobotEnv):
@@ -110,7 +109,6 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
 
         self.state = self.lib.squeeze(self.state)
 
-        self.renderer.render_step()
         return (
             self.lib.to_numpy(self.lib.squeeze(self.state)),
             float(reward),

@@ -34,7 +34,6 @@ from matplotlib.patches import Circle
 import math
 import gym
 from gym import spaces
-from gym.utils.renderer import Renderer
 import tensorflow as tf
 import torch
 
@@ -89,7 +88,6 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
         self.render_mode = render_mode
-        self.renderer = Renderer(self.render_mode, self._render)
 
         self.action_space = spaces.Box(
             np.array([MIN_SPEED, -MAX_STEER]),
@@ -321,17 +319,10 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         self.state = self.lib.squeeze(self.state)
 
-        self.renderer.render_step()
         return self.lib.to_numpy(self.state), float(reward), bool(done), {}
 
-    def render(self, mode="human"):
-        if self.render_mode is not None:
-            return self.renderer.get_renders()
-        else:
-            return self._render(mode)
-
-    def _render(self, mode="human"):
-        assert mode in self.metadata["render_modes"]
+    def render(self):
+        assert self.render_mode in self.metadata["render_modes"]
         if self.render_mode in {"rgb_array", "single_rgb_array"}:
             # Turn interactive plotting off
             plt.ioff()

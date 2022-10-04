@@ -7,7 +7,6 @@ from gym import spaces
 from gym.envs.classic_control.cartpole import CartPoleEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from Utilities.utils import CurrentRunMemory
 
 
 class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
@@ -101,7 +100,6 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
         self.state = self.lib.squeeze(self.state)
         
-        self.renderer.render_step()
         return self.lib.to_numpy(self.state), float(reward), bool(done), {}
 
     def reset(

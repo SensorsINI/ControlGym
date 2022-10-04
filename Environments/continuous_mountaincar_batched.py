@@ -6,7 +6,6 @@ import torch
 from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from Utilities.utils import CurrentRunMemory
 
 
 class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarEnv):
@@ -98,7 +97,6 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
 
         self.state = self.lib.squeeze(self.state)
 
-        self.renderer.render_step()
         return (
             self.lib.to_numpy(self.lib.squeeze(self.state)),
             float(reward),
@@ -144,7 +142,7 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
 
         return self._get_reset_return_val()
 
-    def render(self, mode="human"):
+    def render(self):
         if self._batch_size == 1:
             return super().render()
         else:

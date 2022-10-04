@@ -1,10 +1,9 @@
-from typing import Optional
 import numpy as np
-from ControllersGym import Controller
+from gym.utils.save_video import save_video
 from Visualizations.plot_horizon_costs import HorizonCostPlotter
 from Visualizations.plot_input_plans import InputPlanPlotter
 
-from Utilities.utils import get_logger, OutputPath
+from Utilities.utils import OutputPath, get_logger
 from Visualizations.plot_summary import SummaryPlotter
 
 logger = get_logger(__name__)
@@ -16,6 +15,8 @@ def generate_experiment_plots(
     timestamp: str,
     frames: "list[np.ndarray]" = None,
 ):
+    if frames is not None:
+        save_video(frames, OutputPath.get_output_path(timestamp, "", ""), fps=20)
     if (
         controller_output["s_logged"] is not None
         and controller_output["u_logged"] is not None

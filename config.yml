@@ -15,7 +15,7 @@
   # - CustomEnvironments/CartPoleContinuous-v0
   # - CustomEnvironments/BipedalWalkerBatched-v0
   - CustomEnvironments/ObstacleAvoidance-v0
-  debug: true  # false to use tf.compile
+  debug: false  # false to use tf.compile
   use_jit_compilation: false  # false for reproducibility
   use_gpu: false
   logging_level: DEBUG

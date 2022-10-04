@@ -1,30 +1,16 @@
+from typing import Optional, Tuple, Union
+
 import numpy as np
 import tensorflow as tf
 import torch
-
-from typing import Optional, Tuple, Union
-from CartPoleSimulation.CartPole import CartPole
 from CartPoleSimulation.CartPole.cartpole_model_tf import (
-    _cartpole_ode,
-    cartpole_integration_tf,
-)
-from CartPoleSimulation.CartPole.state_utilities import (
-    ANGLE_COS_IDX,
-    POSITION_IDX,
-)
-
-from Control_Toolkit.others.environment import (
-    EnvironmentBatched,
-    NumpyLibrary,
-    TensorType,
-)
-
+    _cartpole_ode, cartpole_integration_tf)
+from CartPoleSimulation.CartPole.state_utilities import (ANGLE_COS_IDX,
+                                                         POSITION_IDX)
 from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
-
+from Control_Toolkit.others.environment import (EnvironmentBatched,
+                                                NumpyLibrary, TensorType)
 from gym.spaces import Box
-from gym.utils.renderer import Renderer
-
-from Utilities.utils import CurrentRunMemory
 
 
 class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
@@ -41,7 +27,6 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
         self.render_mode = render_mode
-        self.renderer = Renderer(self.render_mode, self._render)
 
         self.shuffle_target_every = kwargs["shuffle_target_every"]
         self.config = {
@@ -192,7 +177,6 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
         reward = float(reward)
 
-        self.renderer.render_step()
         return (
             self.state,
             reward,

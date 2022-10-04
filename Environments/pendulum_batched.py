@@ -161,9 +161,3 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
             + 0.001 * (action[:, 0] ** 2)
         )
         return -costs
-
-    # def render(self, mode="human"):
-    #     if self._batch_size == 1:
-    #         return super().render(mode)
-    #     else:
-    #         raise NotImplementedError("Rendering not implemented for batched mode")

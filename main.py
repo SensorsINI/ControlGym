@@ -77,11 +77,12 @@ def run_data_generator(
         )
 
         # Create environment and call reset
-        render_mode = (
-            "human"
-            if config["1_data_generation"]["render_for_humans"]
-            else "single_rgb_array"
-        )
+        if config["1_data_generation"]["render_for_humans"]:
+            render_mode = "human"
+        elif config["1_data_generation"]["save_plots_to_file"]:
+            render_mode = "rgb_array"
+        else:
+            render_mode = None
 
         import matplotlib
 
@@ -123,7 +124,9 @@ def run_data_generator(
             controller.realized_cost_logged = np.array([-reward])
             if config["4_controllers"]["controller_logging"]:
                 controller.update_logs()
-            if config["1_data_generation"]["render_for_humans"] or config["1_data_generation"]["save_plots_to_file"]:
+            if config["1_data_generation"]["render_for_humans"]:
+                env.render()
+            elif config["1_data_generation"]["save_plots_to_file"]:
                 frames.append(env.render())
 
             time.sleep(0.001)
