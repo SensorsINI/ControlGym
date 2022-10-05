@@ -36,7 +36,6 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = self.cost_functions_wrapper(self)
 
     def step_dynamics(
         self,

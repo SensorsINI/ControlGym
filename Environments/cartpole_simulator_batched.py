@@ -36,7 +36,6 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = self.cost_functions_wrapper(self)
         self.dt = self.lib.to_tensor(kwargs["dt"], self.lib.float32)
 
         # self.CartPoleInstance = CartPole()

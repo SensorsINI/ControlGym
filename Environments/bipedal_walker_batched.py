@@ -1,12 +1,11 @@
 from typing import Optional, Tuple, Union
 
+import gym
 import numpy as np
 import tensorflow as tf
 import torch
-from gym.envs.box2d.bipedal_walker import *
-import gym
-
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
+from gym.envs.box2d.bipedal_walker import *
 
 
 class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
@@ -35,7 +34,6 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = self.cost_functions_wrapper(self)
         
         self.envs = gym.vector.make("BipedalWalker-v3", num_envs=self._batch_size)
 

@@ -48,7 +48,6 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(seed)
-        self.cost_functions = self.cost_functions_wrapper(self)
 
     def step(
         self, action: Union[np.ndarray, tf.Tensor]

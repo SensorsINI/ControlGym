@@ -29,18 +29,22 @@
   - 0.2
 2_environments:
   CustomEnvironments/CartPoleContinuous-v0:
+    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 0.02
   CustomEnvironments/MountainCarContinuous-v0:
+    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 1.0
   CustomEnvironments/Pendulum-v0:
+    cost_function: cost_function_default
     actuator_noise:
     - 0.2
     dt: 0.05
   CustomEnvironments/DubinsCar-v0:
+    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     - 0.0
@@ -98,6 +102,7 @@
     dt: 0.005
     shuffle_target_every: 30
   CustomEnvironments/HalfCheetahBatched-v0:
+    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     forward_reward_weight: 1.0
@@ -106,10 +111,12 @@
     exclude_current_positions_from_observation: true
     dt: 0.02
   CustomEnvironments/Acrobot-v0:
+    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 0.2
   CustomEnvironments/CartPoleSimulator-v0:
+    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 0.02
@@ -119,10 +126,12 @@
     u_max: 2.62
     shuffle_target_every: 100
   CustomEnvironments/BipedalWalkerBatched-v0:
+    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 0.02
   CustomEnvironments/ObstacleAvoidance-v0:
+    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 0.02
@@ -142,8 +151,8 @@
 
   # Control_Toolkit Controllers
   controller_cem_grad_bharadhwaj_tf:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
-    cem_LR: 0.05
+    NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
+    learning_rate: 0.05
     adam_beta_1: 0.9
     adam_beta_2: 0.999
     adam_epsilon: 1.0e-08
@@ -159,7 +168,7 @@
     warmup: false
     warmup_iterations: 250
   controller_gradient_tf:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
+    NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     learning_rate: 0.05
     adam_beta_1: 0.9
     adam_beta_2: 0.999
@@ -174,13 +183,13 @@
     warmup: false
     warmup_iterations: 250
   controller_random_action:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
+    NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     num_rollouts: 320
     predictor_intermediate_steps: 1
     predictor_name: predictor_ODE_tf
   controller_cem_naive_grad_tf:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
-    cem_LR: 0.05
+    NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
+    learning_rate: 0.05
     cem_R: 1
     cem_best_k: 4
     cem_ccrc_weight: 1
@@ -192,7 +201,7 @@
     predictor_intermediate_steps: 1
     predictor_name: predictor_ODE_tf
   controller_cem_tf:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
+    NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     cem_R: 1
     cem_ccrc_weight: 1
     num_rollouts: 160
@@ -205,7 +214,7 @@
     warmup: false
     warmup_iterations: 250
   controller_cem_gmm_tf:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
+    NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
     cem_R: 1
     cem_best_k: 5
     cem_ccrc_weight: 1
@@ -219,7 +228,7 @@
     NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
     SAMPLING_TYPE: interpolated
     interpolation_step: 10
-    cem_LR: 0.05
+    learning_rate: 0.05
     adam_beta_1: 0.9
     adam_beta_2: 0.999
     adam_epsilon: 1.0e-08
@@ -287,73 +296,3 @@
     num_rollouts: 400
     predictor_intermediate_steps: 1
     predictor_name: predictor_ODE_tf
-
-######################################################################################
-
-  # Reimplemented Gym Controllers
-  ControllerAdamResampler:
-    cem_LR: 0.1
-    cem_R: 1
-    cem_best_k: 5
-    cem_ccrc_weight: 1
-    cem_initial_action_variance: 0.5
-    cem_outer_it: 30
-    num_rollouts: 30
-    cem_stdev_min: 0.1
-    do_warmup: true
-    grad_alpha: 0.05
-    grad_beta_1: 0.9
-    grad_beta_2: 0.999
-    grad_epsilon: 1.0e-07
-    grad_max: 1
-    predictor_name: PredictorEuler
-    resamp_every: 1
-  ControllerCem:
-    cem_LR: 0.1
-    cem_R: 1
-    cem_best_k: 5
-    cem_ccrc_weight: 1
-    cem_initial_action_variance: 0.5
-    cem_outer_it: 5
-    num_rollouts: 200
-    cem_stdev_min: 0.1
-    predictor_name: PredictorEuler
-  ControllerCemGradient:
-    cem_LR: 0.1
-    cem_R: 1
-    cem_best_k: 5
-    cem_ccrc_weight: 1
-    cem_initial_action_variance: 0.5
-    cem_outer_it: 5
-    num_rollouts: 200
-    cem_stdev_min: 0.1
-    grad_alpha: 0.05
-    grad_max: 1
-    predictor_name: PredictorEuler
-  ControllerCemGradientBharadhwaj:
-    cem_best_k: 5
-    cem_outer_it: 20
-    num_rollouts: 30
-    grad_epsilon: 1.0e-06
-    grad_learning_rate: 0.1
-    grad_max: 1
-    grad_sgd_momentum: 0.0
-    predictor_name: PredictorEuler
-  ControllerMPPIGradient:
-    cem_LR: 0.1
-    cem_R: 1
-    cem_best_k: 5
-    cem_ccrc_weight: 1
-    cem_initial_action_variance: 0.5
-    cem_outer_it: 10
-    num_rollouts: 10
-    cem_stdev_min: 0.05
-    do_warmup: true
-    grad_alpha: 0.05
-    grad_beta_1: 0.9
-    grad_beta_2: 0.999
-    grad_epsilon: 1.0e-07
-    grad_max: 5
-    mppi_lambda: 0.1
-    predictor_name: PredictorEuler
-    resamp_every: 1

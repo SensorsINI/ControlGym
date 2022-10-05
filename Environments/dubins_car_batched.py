@@ -83,7 +83,6 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = self.cost_functions_wrapper(self)
 
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)

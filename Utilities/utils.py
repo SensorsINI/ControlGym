@@ -55,25 +55,6 @@ def get_logger(name):
 logger = get_logger(__name__)
 
 
-def get_name_of_controller_module(controller_name: str) -> str:
-    """Check if the controller name specified a controller within
-    CartPoleSimulation repo or an internal one
-
-    :param controller_name: Name of controller as in config.ymnl
-    :type controller_name: str
-    :return: name of module where to find the right controller or wrapper
-    :rtype: str
-    """
-    if find_spec(f"Control_Toolkit.Controllers.{controller_name}") is not None:
-        logger.info(f"Using a CartPoleSimulation controller: {controller_name}")
-        return "ControllerCartPoleSimulationImport"
-    elif find_spec(f"ControllersGym.{controller_name}") is not None:
-        logger.info(f"Using a ControlGym controller: {controller_name}")
-        return controller_name
-    else:
-        raise ValueError(f"Passed an unknown controller name {controller_name}")
-
-
 class OutputPath:
     RUN_NUM = 1
     collection_folder_name = ""

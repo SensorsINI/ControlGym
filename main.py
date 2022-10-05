@@ -1,8 +1,7 @@
-import importlib
+from importlib import import_module
 import os
 import sys
 import time
-from copy import deepcopy
 from datetime import datetime
 from typing import Any
 import numpy as np
@@ -13,14 +12,13 @@ from yaml import dump
 from Control_Toolkit.others.environment import TensorFlowLibrary
 
 from ControllersGym import Controller
-from Environments import ENV_REGISTRY, register_envs
+from Environments import register_envs
 from Utilities.csv_helpers import save_to_csv
 from Utilities.generate_plots import generate_experiment_plots
 from Utilities.utils import (
     OutputPath,
     SeedMemory,
     get_logger,
-    get_name_of_controller_module,
 )
 
 # Keep allowing absolute imports within CartPoleSimulation subgit
@@ -65,18 +63,23 @@ def run_data_generator(
         # Generate new seeds for environment and controller
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.set_seeds(seeds)
-        config["2_environments"][environment_name].update({"seed": int(seeds[0])})
-        config["4_controllers"][controller_name].update({"seed": int(seeds[2])})
+        
+        controller_config = config["4_controllers"][controller_name]
+        environment_config = config["2_environments"][environment_name]
+        environment_config.update({"seed": int(seeds[0])})
+        controller_config.update({"seed": int(seeds[2])})
 
         # Flatten global controller config values
-        config["4_controllers"][controller_name].update(
+        controller_config.update(
             {
                 k: config["4_controllers"][k]
                 for k in ["controller_logging", "mpc_horizon"]
             }
         )
 
-        # Create environment and call reset
+        ##### ----------------------------------------------- #####
+        ##### ----------------- ENVIRONMENT ----------------- #####
+        # Instantiate environment and call reset
         if config["1_data_generation"]["render_for_humans"]:
             render_mode = "human"
         elif config["1_data_generation"]["save_plots_to_file"]:
@@ -93,28 +96,48 @@ def run_data_generator(
 
         env = gym.make(
             environment_name,
-            **config["2_environments"][environment_name],
+            **environment_config,
             computation_lib=TensorFlowLibrary,
             render_mode=render_mode,
         )
         obs = env.reset(seed=int(seeds[1]))
-
-        # Instantiate controller
-        controller_module_name = get_name_of_controller_module(controller_name)
-        controller_module = importlib.import_module(
-            f"ControllersGym.{controller_module_name}"
+        assert len(env.action_space.shape) == 1, f"Action space needs to be a flat vector, is Box with shape {env.action_space.shape}"
+        
+        ##### --------------------------------------------- #####
+        ##### ----------------- PREDICTOR ----------------- #####
+        assert hasattr(env, "step_dynamics"), "Environment needs to have a stateless step_dynamics function"
+        predictor_name = controller_config["predictor_name"]
+        predictor_module = import_module(f"SI_Toolkit.Predictors.{predictor_name}")
+        predictor = getattr(predictor_module, predictor_name)(
+            horizon=controller_config["mpc_horizon"],
+            dt=environment_config["dt"],
+            intermediate_steps=controller_config["predictor_intermediate_steps"],
+            disable_individual_compilation=True,
+            batch_size=controller_config["num_rollouts"],
+            net_name=controller_config["NET_NAME"],
+            step_fun=env.step_dynamics,
         )
-        controller: Controller = getattr(controller_module, controller_module_name)(
-            **{
-                **{
-                    "environment": env.unwrapped,
-                    "controller_name": controller_name,
-                },
-                **config["4_controllers"][controller_name],
-                **config["2_environments"][environment_name],
-            },
+        
+        ##### ------------------------------------------------- #####
+        ##### ----------------- COST FUNCTION ----------------- #####
+        cost_function_name = environment_config["cost_function"]
+        cost_function_module = import_module(f"Control_Toolkit.Cost_Functions.{cost_function_name}")
+        cost_function = getattr(cost_function_module, cost_function_name)(env)
+
+        ##### ---------------------------------------------- #####
+        ##### ----------------- CONTROLLER ----------------- #####
+        controller_module = import_module(f"Control_Toolkit.Controllers.{controller_name}")
+        controller: Controller = getattr(controller_module, controller_name)(
+            predictor=predictor,
+            cost_function=cost_function,
+            dt=environment_config["dt"],
+            action_space=env.action_space,
+            observation_space=env.observation_space,
+            **controller_config,
         )
 
+        ##### ----------------------------------------------------- #####
+        ##### ----------------- MAIN CONTROL LOOP ----------------- #####
         frames = []
         start_time = time.time()
         num_iterations = config["1_data_generation"]["num_iterations"]
@@ -129,7 +152,7 @@ def run_data_generator(
             elif config["1_data_generation"]["save_plots_to_file"]:
                 frames.append(env.render())
 
-            time.sleep(0.001)
+            time.sleep(1e-6)
 
             # If the episode is up, start a new experiment
             if done:

@@ -39,7 +39,6 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = self.cost_functions_wrapper(self)
 
     def step_dynamics(
         self,
