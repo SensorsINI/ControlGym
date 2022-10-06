@@ -269,15 +269,14 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         assert self._batch_size == 1
         action = self._apply_actuator_noise(action)
 
-        self.state = self.lib.to_numpy(self.step_dynamics(self.state, action, self.dt))
+        self.state = self.step_dynamics(self.state, action, self.dt)
+        self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
 
         terminated = self.is_done(self.state)
         truncated = False
         reward = self.get_reward(self.state, action)
 
-        self.state = self.lib.squeeze(self.state)
-
-        return self.lib.to_numpy(self.state), float(reward), terminated, truncated, {}
+        return self.state, float(reward), terminated, truncated, {}
 
     def render(self):
         if self.num_dimensions == 2:
@@ -358,6 +357,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         self.traj_y.append(float(self.state[1]))
         self.traj_z.append(float(self.state[2]))
         target = [[float(k)] for k in self.target_point]
+        position = [[float(k)] for k in self.state[:3]]
 
         # for stopping simulation with the esc key.
         if self.fig is None:
@@ -374,12 +374,12 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
                 "key_release_event",
                 lambda event: [exit(0) if event.key == "escape" else None],
             )
-            (self.ln_traj,) = self.ax.plot3D(self.traj_x, self.traj_y, self.traj_z, "ob", markersize=2, label="trajectory", animated=True)
+            (self.ln_traj,) = self.ax.plot3D(self.traj_x, self.traj_y, self.traj_z, "ob", markersize=0.5, label="trajectory", animated=True)
             (self.ln_target,) = self.ax.plot3D(*target, "xg", label="target", animated=True)
-            self.obstacle_patches = self.plot_obstacles()
-            self.trajectory_lines = self.plot_trajectory_plans()
             self.point_mass = self.plot_point_mass()
-            self.bm = BlitManager(self.fig.canvas, [self.ln_traj, self.ln_target, *self.trajectory_lines])
+            self.trajectory_lines = self.plot_trajectory_plans()
+            self.obstacle_patches = self.plot_obstacles()
+            self.bm = BlitManager(self.fig.canvas, [self.ln_traj, self.ln_target, self.point_mass, *self.trajectory_lines])
             # make sure our window is on the screen and drawn
             if self.render_mode in {"human"}:
                 plt.show(block=False)
@@ -388,6 +388,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             self.bg = self.fig.canvas.copy_from_bbox(self.fig.bbox)
             self.ax.draw_artist(self.ln_traj)
             self.ax.draw_artist(self.ln_target)
+            self.ax.draw_artist(self.point_mass)
             self.fig.canvas.blit(self.fig.bbox)
         else:
             # self.ax.view_init(elev=10., azim=self.ax.get_view().azim)
@@ -395,8 +396,9 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             self.ln_traj.set_3d_properties(self.traj_z)
             self.ln_target.set_data(target[0], target[1])
             self.ln_target.set_3d_properties(target[2])
+            self.point_mass.set_data(position[0], position[1])
+            self.point_mass.set_3d_properties(position[2])
             self.plot_trajectory_plans(self.trajectory_lines)
-            self.point_mass.point = list(self.state)
             self.bm.update()
 
         if self.render_mode in {"rgb_array", "single_rgb_array"}:
@@ -427,8 +429,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         r = 0.05
         if self.num_dimensions == 3:
             z = self.state[2]
-            patch = Sphere([x, y, z], r)
-            patch.plot_3d(self.ax, alpha=0.8, color="red")
+            (patch,) = self.ax.plot3D([x], [y], [z], "or", markersize=4, label="point_mass", animated=True)
         else:
             patch = Circle(
                 (x, y),
@@ -447,7 +448,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             for obstacle_position in self.obstacle_positions:
                 pos_x, pos_y, pos_z, radius = obstacle_position
                 sphere = Sphere([pos_x, pos_y, pos_z], radius)
-                sphere.plot_3d(self.ax, alpha=0.5, color="dimgray")
+                sphere.plot_3d(self.ax, n_angles=30, alpha=0.5, color="dimgray")
                 patches.append(sphere)
         else:
             for obstacle_position in self.obstacle_positions:
