@@ -5,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
 from gym.envs.mujoco.half_cheetah_v3 import HalfCheetahEnv
+from Environments import TensorType
 from tf_agents.environments import BatchedPyEnvironment, suite_gym
 
 
@@ -50,10 +51,11 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
         self._set_up_rng(seed)
 
     def step(
-        self, action: Union[np.ndarray, tf.Tensor]
+        self, action: TensorType
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor],
+        TensorType,
         Union[np.ndarray, float],
+        Union[np.ndarray, bool],
         Union[np.ndarray, bool],
         dict,
     ]:
@@ -61,23 +63,19 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
+        state = options.get("state", None) if isinstance(options, dict) else None
         
         step_type, reward, discount, obs  = self._envs.reset()
         
         if state is not None:
             self._envs.set_state(state)
 
-
-        if return_info:
-            return obs, {}
-        return obs
+        return obs, {}
 
     def render(self):
         if self._batch_size == 1:

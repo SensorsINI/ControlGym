@@ -7,6 +7,7 @@ from gym import spaces
 from gym.envs.classic_control.pendulum import PendulumEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
+from Environments import TensorType
 from Utilities.utils import CurrentRunMemory
 
 
@@ -80,10 +81,11 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         return state
 
     def step(
-        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
+        self, action: TensorType
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor, torch.Tensor],
+        TensorType,
         Union[np.ndarray, float],
+        Union[np.ndarray, bool],
         Union[np.ndarray, bool],
         dict,
     ]:
@@ -95,28 +97,28 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
         self.state = self.step_dynamics(self.state, action, self.dt)
 
-        done = self.is_done(self.state)
+        terminated = self.is_done(self.state)
+        truncated = False
         reward = self.get_reward(self.state, action)
 
         self.state = self.lib.squeeze(self.state)
 
-        self.renderer.render_step()
         return (
             self.lib.to_numpy(self.lib.squeeze(self.state)),
             float(reward),
-            done,
+            terminated,
+            truncated,
             {},
         )
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
+        state = options.get("state", None) if isinstance(options, dict) else None
 
         if state is None:
             if self._batch_size == 1:

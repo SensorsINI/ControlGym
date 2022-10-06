@@ -6,6 +6,7 @@ import torch
 from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
+from Environments import TensorType
 
 
 class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarEnv):
@@ -77,10 +78,11 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         return state
 
     def step(
-        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
+        self, action: TensorType
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor, torch.Tensor],
+        TensorType,
         Union[np.ndarray, float],
+        Union[np.ndarray, bool],
         Union[np.ndarray, bool],
         dict,
     ]:
@@ -91,7 +93,8 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         state_updated: tf.Tensor = self.step_dynamics(self.state, action, self.dt)
         self.state = self.lib.to_numpy(state_updated)
 
-        done = self.is_done(self.state)
+        terminated = self.is_done(self.state)
+        truncated = False
         reward = self.get_reward(self.state, action)
 
         self.state = self.lib.squeeze(self.state)
@@ -99,19 +102,19 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         return (
             self.lib.to_numpy(self.lib.squeeze(self.state)),
             float(reward),
-            bool(done),
+            terminated,
+            truncated,
             {},
         )
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
+        state = options.get("state", None) if isinstance(options, dict) else None
 
         if state is None:
             if self._batch_size == 1:

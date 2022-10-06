@@ -26,12 +26,10 @@ class PredictorEuler(Predictor):
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
-        return self._env.reset(state, seed, return_info, options)
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
+        return self._env.reset(seed, options)
 
     def train(self, dataset: Union[np.ndarray, tf.Tensor, torch.Tensor]) -> None:
         logger.info("No training required for Euler predictor.")

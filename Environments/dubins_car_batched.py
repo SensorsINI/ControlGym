@@ -148,14 +148,12 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
-
+        state = options.get("state", None) if isinstance(options, dict) else None
         self.count = 1
 
         if state is None:
@@ -288,10 +286,11 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         return self.update_state(state, action, dt)
 
     def step(
-        self, action: Union[np.ndarray, tf.Tensor]
+        self, action: TensorType
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor],
+        TensorType,
         Union[np.ndarray, float],
+        Union[np.ndarray, bool],
         Union[np.ndarray, bool],
         dict,
     ]:
@@ -312,12 +311,13 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         self.state = self.lib.to_numpy(self.step_dynamics(self.state, action, self.dt))
 
-        done = self.is_done(self.state)
+        terminated = self.is_done(self.state)
+        truncated = False
         reward = self.get_reward(self.state, action)
 
         self.state = self.lib.squeeze(self.state)
 
-        return self.lib.to_numpy(self.state), float(reward), bool(done), {}
+        return self.lib.to_numpy(self.state), float(reward), terminated, truncated, {}
 
     def render(self):
         assert self.render_mode in self.metadata["render_modes"]

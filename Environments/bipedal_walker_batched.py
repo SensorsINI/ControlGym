@@ -4,7 +4,7 @@ import gym
 import numpy as np
 import tensorflow as tf
 import torch
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary, TensorType
 from gym.envs.box2d.bipedal_walker import *
 
 
@@ -48,10 +48,11 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
         return observations
 
     def step(
-        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
+        self, action: TensorType
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor, torch.Tensor],
+        TensorType,
         Union[np.ndarray, float],
+        Union[np.ndarray, bool],
         Union[np.ndarray, bool],
         dict,
     ]:
@@ -63,30 +64,28 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
         
         self.state = self.step_dynamics(self.state, action, self.dt)
 
-        done = self.is_done(self.state)
+        terminated = self.is_done(self.state)
+        truncated = False
         reward = self.get_reward(self.state, action)
 
         self.state = self.lib.squeeze(self.state)
 
-        if self._batch_size == 1:
-            return (
-                self.lib.to_numpy(self.lib.squeeze(self.state)),
-                float(reward),
-                bool(done),
-                {},
-            )
-
-        return self.state, reward, done, {}
+        return (
+            self.lib.to_numpy(self.lib.squeeze(self.state)),
+            float(reward),
+            terminated,
+            truncated,
+            {},
+        )
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
+        state = options.get("state", None) if isinstance(options, dict) else None
 
         if state is None:
             if self._batch_size == 1:

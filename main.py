@@ -97,7 +97,7 @@ def run_data_generator(
             computation_lib=TensorFlowLibrary,
             render_mode=render_mode,
         )
-        obs = env.reset(seed=int(seeds[1]))
+        obs, obs_info = env.reset(seed=int(seeds[1]))
         assert len(env.action_space.shape) == 1, f"Action space needs to be a flat vector, is Box with shape {env.action_space.shape}"
         
         ##### --------------------------------------------- #####
@@ -140,7 +140,7 @@ def run_data_generator(
         num_iterations = config["1_data_generation"]["num_iterations"]
         for step in range(num_iterations):
             action = controller.step(obs)
-            new_obs, reward, done, info = env.step(action)
+            new_obs, reward, terminated, truncated, info = env.step(action)
             controller.current_log["realized_cost_logged"] = np.array([-reward])
             if config["4_controllers"]["controller_logging"]:
                 controller.update_logs()
@@ -152,7 +152,7 @@ def run_data_generator(
 
             time.sleep(1e-6)
 
-            if done:
+            if terminated or truncated:
                 # If the episode is up, start a new experiment
                 break
 

@@ -92,14 +92,12 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
-
+        state = options.get("state", None) if isinstance(options, dict) else None
         self.count = 0
 
         if state is None:
@@ -141,7 +139,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         if self._batch_size == 1:
             self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
 
-        return tuple((self.state, {})) if return_info else self.state
+        return self.state, {}
 
     def step_dynamics(
         self,
@@ -152,7 +150,15 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         state_updated = self.step_physics(state, action)
         return state_updated
 
-    def step(self, action: tf.Tensor):
+    def step(
+        self, action: TensorType
+    ) -> Tuple[
+        TensorType,
+        Union[np.ndarray, float],
+        Union[np.ndarray, bool],
+        Union[np.ndarray, bool],
+        dict,
+    ]:
         self.state, action = self._expand_arrays(self.state, action)
 
         # Perturb action if not in planning mode
@@ -171,7 +177,8 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self.count += 1
 
         reward = self.get_reward(self.state, action)
-        done = self.is_done(self.state)
+        terminated = self.is_done(self.state)
+        truncated = False
 
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
         reward = float(reward)
@@ -179,7 +186,8 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         return (
             self.state,
             reward,
-            done,
+            terminated,
+            truncated,
             {"target": self.lib.to_numpy(self.target_position)},
         )
 

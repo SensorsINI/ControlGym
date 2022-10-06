@@ -7,7 +7,11 @@ from gym import spaces
 from gym.envs.classic_control import utils
 from gym.envs.classic_control.acrobot import AcrobotEnv
 
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
+from Control_Toolkit.others.environment import (
+    EnvironmentBatched,
+    NumpyLibrary,
+    TensorType,
+)
 
 
 class acrobot_batched(EnvironmentBatched, AcrobotEnv):
@@ -71,10 +75,11 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         return state
 
     def step(
-        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
+        self, action: TensorType
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor, torch.Tensor],
+        TensorType,
         Union[np.ndarray, float],
+        Union[np.ndarray, bool],
         Union[np.ndarray, bool],
         dict,
     ]:
@@ -103,7 +108,8 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         th2_vel_new = self.lib.clip(th2_vel_new, -self.MAX_VEL_2, self.MAX_VEL_2)
         self.state = self.lib.stack([th1_new, th2_new, th1_vel_new, th2_vel_new], 1)
 
-        done = self.is_done(self.state)
+        terminated = self.is_done(self.state)
+        truncated = False
         reward = self.get_reward(self.state, action)
 
         self.state = self.lib.squeeze(self.state)
@@ -111,19 +117,19 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         return (
             self.lib.to_numpy(self.lib.squeeze(self.state)),
             float(reward),
-            done,
+            terminated,
+            truncated,
             {},
         )
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
+        state = options.get("state", None) if isinstance(options, dict) else None
 
         if state is None:
             low, high = utils.maybe_parse_reset_bounds(options, -0.1, 0.1)
