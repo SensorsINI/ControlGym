@@ -27,19 +27,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Optional, Union, Tuple
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Circle
 import math
+from typing import Optional, Tuple, Union
+
 import gym
-from gym import spaces
+import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
 import torch
-
-from Control_Toolkit.others.environment import TensorType
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from Utilities.utils import CurrentRunMemory
+from Control_Toolkit.others.environment import (EnvironmentBatched,
+                                                NumpyLibrary, TensorType)
+from gym import spaces
+from matplotlib.patches import Circle
 from SI_Toolkit.Functions.TF.Compile import Compile
 
 # Training constants
@@ -508,9 +507,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             )
 
     def plot_trajectory_plans(self):
-        controller_logs = getattr(CurrentRunMemory, "controller_logs", {})
-        trajectories = controller_logs.get("rollout_trajectories_logged", None)
-        costs = controller_logs.get("J_logged")
+        trajectories = self._logs.get("rollout_trajectories_logged", None)[-1]
+        costs = self._logs.get("J_logged")[-1]
         if trajectories is not None:
             for i, trajectory in enumerate(trajectories):
                 if i == np.argmin(costs):

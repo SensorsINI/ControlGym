@@ -1,12 +1,15 @@
 import csv
 import os
+
 import pandas as pd
-from ControllersGym import Controller
+from Control_Toolkit.Controllers import template_controller
+
 from Utilities.utils import CurrentRunMemory, get_logger
+
 log = get_logger(__name__)
 
 
-def save_to_csv(config, controller: Controller, environment_name: str, path: str):
+def save_to_csv(config, controller: template_controller, environment_name: str, path: str):
     os.makedirs(path, exist_ok=True)
     i = 0
     while os.path.isfile(os.path.join(path, f"Experiment-{i}.csv")):

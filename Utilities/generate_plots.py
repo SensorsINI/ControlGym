@@ -17,6 +17,7 @@ def generate_experiment_plots(
 ):
     if frames is not None:
         save_video(frames, OutputPath.get_output_path(timestamp, "", ""), fps=20)
+    
     if (
         controller_output["s_logged"] is not None
         and controller_output["u_logged"] is not None

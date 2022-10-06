@@ -40,7 +40,6 @@ from skspatial.objects import Sphere
 
 from Control_Toolkit.others.environment import TensorType
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from Utilities.utils import CurrentRunMemory
 from SI_Toolkit.Functions.TF.Compile import Compile
 
 # Training constants
@@ -466,9 +465,8 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         return patches
 
     def plot_trajectory_plans(self, lines=None):
-        controller_logs = getattr(CurrentRunMemory, "controller_logs", {})
-        trajectories = controller_logs.get("rollout_trajectories_logged", None)
-        costs = controller_logs.get("J_logged")
+        trajectories = self._logs.get("rollout_trajectories_logged", None)[-1]
+        costs = self._logs.get("J_logged")[-1]
         create_new_lines = lines == None
         lines = [] if lines == None else lines
         if trajectories is not None:

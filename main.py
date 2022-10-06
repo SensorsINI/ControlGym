@@ -1,25 +1,22 @@
-from importlib import import_module
 import os
 import sys
 import time
 from datetime import datetime
+from importlib import import_module
 from typing import Any
-import numpy as np
 
 import gym
+import numpy as np
 from numpy.random import SeedSequence
 from yaml import dump
-from Control_Toolkit.others.environment import TensorFlowLibrary
 
-from ControllersGym import Controller
+from Control_Toolkit.Controllers import template_controller
+from Control_Toolkit.others.environment import (EnvironmentBatched,
+                                                TensorFlowLibrary)
 from Environments import register_envs
 from Utilities.csv_helpers import save_to_csv
 from Utilities.generate_plots import generate_experiment_plots
-from Utilities.utils import (
-    OutputPath,
-    SeedMemory,
-    get_logger,
-)
+from Utilities.utils import OutputPath, SeedMemory, get_logger
 
 # Keep allowing absolute imports within CartPoleSimulation subgit
 sys.path.append(os.path.join(os.path.abspath("."), "CartPoleSimulation"))
@@ -79,7 +76,7 @@ def run_data_generator(
 
         ##### ----------------------------------------------- #####
         ##### ----------------- ENVIRONMENT ----------------- #####
-        # Instantiate environment and call reset
+        ##### --- Instantiate environment and call reset ---- #####
         if config["1_data_generation"]["render_for_humans"]:
             render_mode = "human"
         elif config["1_data_generation"]["save_plots_to_file"]:
@@ -94,7 +91,7 @@ def run_data_generator(
         else:
             matplotlib.use("Agg")
 
-        env = gym.make(
+        env: EnvironmentBatched = gym.make(
             environment_name,
             **environment_config,
             computation_lib=TensorFlowLibrary,
@@ -127,7 +124,7 @@ def run_data_generator(
         ##### ---------------------------------------------- #####
         ##### ----------------- CONTROLLER ----------------- #####
         controller_module = import_module(f"Control_Toolkit.Controllers.{controller_name}")
-        controller: Controller = getattr(controller_module, controller_name)(
+        controller: template_controller = getattr(controller_module, controller_name)(
             predictor=predictor,
             cost_function=cost_function,
             dt=environment_config["dt"],
@@ -144,9 +141,10 @@ def run_data_generator(
         for step in range(num_iterations):
             action = controller.step(obs)
             new_obs, reward, done, info = env.step(action)
-            controller.realized_cost_logged = np.array([-reward])
+            controller.current_log["realized_cost_logged"] = np.array([-reward])
             if config["4_controllers"]["controller_logging"]:
                 controller.update_logs()
+                env.set_logs(controller.logs)
             if config["1_data_generation"]["render_for_humans"]:
                 env.render()
             elif config["1_data_generation"]["save_plots_to_file"]:
@@ -154,8 +152,8 @@ def run_data_generator(
 
             time.sleep(1e-6)
 
-            # If the episode is up, start a new experiment
             if done:
+                # If the episode is up, start a new experiment
                 break
 
             logger.debug(
@@ -163,6 +161,7 @@ def run_data_generator(
             )
             obs = new_obs
         
+        # Print compute time statistics
         end_time = time.time()
         control_freq = num_iterations / (end_time - start_time)
         logger.debug(f"Achieved average control frequency of {round(control_freq, 2)}Hz ({round(1.0e3/control_freq, 2)}ms per iteration)")
@@ -170,7 +169,8 @@ def run_data_generator(
         # Close the env
         env.close()
 
-        # Generate plots
+        ##### ----------------------------------------------------- #####
+        ##### ----------------- LOGGING AND PLOTS ----------------- #####
         OutputPath.RUN_NUM = i + 1
         controller_output = controller.get_outputs()
 
@@ -200,7 +200,7 @@ def run_data_generator(
                     "wb",
                 ) as f:
                     np.save(f, a)
-            # Save 
+            # Save config
             with open(
                 OutputPath.get_output_path(timestamp_str, "config", ".yml"), "w"
             ) as f:
