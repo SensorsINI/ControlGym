@@ -362,7 +362,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.ax.set_xlim(-MAX_X, MAX_X)
         self.ax.set_ylim(-MAX_Y, MAX_Y)
         # self.ax.set_title("Simulation")
-        plt.pause(0.0001)
+        plt.pause(1e-6)
 
         if self.render_mode in {"rgb_array", "single_rgb_array"}:
             data = np.frombuffer(self.fig.canvas.tostring_rgb(), dtype=np.uint8)
