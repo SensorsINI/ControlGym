@@ -256,12 +256,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         dict,
     ]:
         if self.count % self.shuffle_target_every == 0:
-            target_new = tf.convert_to_tensor(
-                [
-                    self.target_point[0],
-                    self.lib.uniform(self.rng, [], -MAX_POSITION, MAX_POSITION, self.lib.float32),
-                ]
-            )
+            target_new = self.lib.uniform(self.rng, [self.num_dimensions,], -MAX_POSITION, MAX_POSITION, self.lib.float32)
             self.target_point.assign(target_new)
         self.count += 1
         self.state, action = self._expand_arrays(self.state, action)
