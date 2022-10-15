@@ -5,22 +5,24 @@
   # - controller_cem_grad_bharadhwaj_tf
   # - controller_gradient_tf
   # - controller_random_action
-  - controller_rpgd_tf
+  # - controller_rpgd_tf
+  - controller_rpgd_me_tf
+  # - controller_rpgd_ml_tf
   environment_names:
   # - CustomEnvironments/MountainCarContinuous-v0
-  # - CustomEnvironments/CartPoleSimulator-v0
+  - CustomEnvironments/CartPoleSimulator-v0
   # - CustomEnvironments/DubinsCar-v0
   # - CustomEnvironments/Acrobot-v0
   # - CustomEnvironments/Pendulum-v0
   # - CustomEnvironments/CartPoleContinuous-v0
   # - CustomEnvironments/BipedalWalkerBatched-v0
-  - CustomEnvironments/ObstacleAvoidance-v0
+  # - CustomEnvironments/ObstacleAvoidance-v0
   debug: false  # false to use tf.compile
   use_jit_compilation: false  # false for reproducibility
   use_gpu: false
   logging_level: DEBUG
   num_experiments: 1
-  num_iterations: 50
+  num_iterations: 500
   render_for_humans: true
   save_plots_to_file: false
   seed_entropy: 49604
@@ -138,7 +140,7 @@
     target_point: null
     initial_state: null
     obstacle_positions: []
-    shuffle_target_every: 100000
+    shuffle_target_every: 20
     num_dimensions: 3
 3_predictors:
   PredictorGaussianError:
@@ -243,6 +245,69 @@
     sample_stdev: 0.5
     warmup: false
     warmup_iterations: 250
+  controller_rpgd_me_tf:
+    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
+    SAMPLING_TYPE: null
+    SAMPLING_DISTRIBUTION: uniform  # "normal" or "uniform"
+    interpolation_step: 10
+    learning_rate: 0.01
+    adam_beta_1: 0.9
+    adam_beta_2: 0.999
+    adam_epsilon: 1.0e-08
+    maximum_entropy_alpha: 0.0
+    gradmax_clip: 10
+    rtol: 1.0e-3
+    num_rollouts: 32
+    opt_keep_k: 0
+    outer_its: 25
+    predictor_intermediate_steps: 1
+    predictor_name: predictor_ODE_tf
+    resamp_per: 1
+    sample_stdev: 0.5
+    warmup: false
+    warmup_iterations: 250
+  controller_rpgd_ml_tf:
+    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
+    SAMPLING_DISTRIBUTION: uniform  # "normal" or "uniform"
+    SAMPLING_TYPE: null
+    interpolation_step: 10
+    learning_rate: 0.01
+    adam_beta_1: 0.9
+    adam_beta_2: 0.999
+    adam_epsilon: 1.0e-08
+    maximum_entropy_alpha: 0.1
+    gradmax_clip: 10
+    rtol: 1.0e-3
+    num_rollouts: 32
+    opt_keep_k: 8
+    outer_its: 5
+    predictor_intermediate_steps: 1
+    predictor_name: predictor_ODE_tf
+    resamp_per: 1
+    sample_stdev: 0.5
+    warmup: false
+    warmup_iterations: 250
+  controller_rpgd_particle:
+    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
+    SAMPLING_DISTRIBUTION: uniform  # "normal" or "uniform"
+    SAMPLING_TYPE: null
+    interpolation_step: 10
+    learning_rate: 0.01
+    adam_beta_1: 0.9
+    adam_beta_2: 0.999
+    adam_epsilon: 1.0e-08
+    maximum_entropy_alpha: 0.1
+    gradmax_clip: 10
+    rtol: 1.0e-3
+    num_rollouts: 32
+    opt_keep_k: 8
+    outer_its: 5
+    predictor_intermediate_steps: 1
+    predictor_name: predictor_ODE_tf
+    resamp_per: 1
+    sample_stdev: 0.5
+    warmup: false
+    warmup_iterations: 250
   controller_mppi_optimize_tf:
     GAMMA: 1.0
     LBD: 100.0
@@ -270,7 +335,7 @@
     NU: 1000.0
     R: 1.0
     SAMPLING_TYPE: None
-    SQRTRHOINV: 0.05
+    SQRTRHOINV: 0.3
     WASH_OUT_LEN: 100
     cc_weight: 0.0
     control_noise: 0.0

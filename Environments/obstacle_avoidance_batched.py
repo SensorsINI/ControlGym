@@ -40,7 +40,7 @@ from skspatial.objects import Sphere
 
 from Control_Toolkit.others.environment import TensorType
 from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from SI_Toolkit.Functions.TF.Compile import Compile
+from SI_Toolkit.Functions.TF.Compile import CompileTF
 
 # Training constants
 MAX_ACCELERATION = 5.0
@@ -199,10 +199,10 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             * (
                 -1.0
                 * (
-                    ld + self._distance_to_obstacle_cost(position)
+                    ld + 4 * self._distance_to_obstacle_cost(position)
                 )
             )
-            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-1.0)
+            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-10.0)
         )
 
         return reward
@@ -237,7 +237,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         # Distance between points x1 and x2
         return self.lib.sqrt(self.lib.sum((x1 - x2) ** 2, -1))
 
-    @Compile
+    @CompileTF
     def step_dynamics(
         self,
         state: Union[np.ndarray, tf.Tensor, torch.Tensor],

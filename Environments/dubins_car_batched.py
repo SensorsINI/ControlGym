@@ -39,7 +39,7 @@ from Control_Toolkit.others.environment import (EnvironmentBatched,
                                                 NumpyLibrary, TensorType)
 from gym import spaces
 from matplotlib.patches import Circle
-from SI_Toolkit.Functions.TF.Compile import Compile
+from SI_Toolkit.Functions.TF.Compile import CompileTF
 
 # Training constants
 MAX_STEER = np.pi / 3
@@ -276,7 +276,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         # Heading between points x1,x2 with +X axis
         return self.lib.atan2((x2[..., 1] - x1[..., 1]), (x2[..., 0] - x1[..., 0]))
 
-    @Compile
+    @CompileTF
     def step_dynamics(
         self,
         state: Union[np.ndarray, tf.Tensor, torch.Tensor],

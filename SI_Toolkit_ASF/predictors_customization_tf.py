@@ -1,5 +1,5 @@
 import tensorflow as tf
-from SI_Toolkit.Functions.TF.Compile import Compile
+from SI_Toolkit.Functions.TF.Compile import CompileTF
 
 from SI_Toolkit_ASF.predictors_customization import (STATE_INDICES,
                                                      next_state_predictor_ODE)
@@ -35,7 +35,7 @@ class predictor_output_augmentation_tf:
     def get_features_augmentation(self):
         return self.features_augmentation
 
-    @Compile
+    @CompileTF
     def augment(self, net_output):
 
         output = net_output
