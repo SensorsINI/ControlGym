@@ -5,8 +5,8 @@
   # - controller_cem_grad_bharadhwaj_tf
   # - controller_gradient_tf
   # - controller_random_action
-  # - controller_rpgd_tf
-  - controller_rpgd_me_tf
+  - controller_rpgd_tf
+  # - controller_rpgd_me_tf
   # - controller_rpgd_ml_tf
   environment_names:
   # - CustomEnvironments/MountainCarContinuous-v0
