@@ -6,9 +6,8 @@ import torch
 from gym import spaces
 from gym.envs.classic_control.pendulum import PendulumEnv
 
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from Environments import TensorType
-from Utilities.utils import CurrentRunMemory
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 
 
 class pendulum_batched(EnvironmentBatched, PendulumEnv):

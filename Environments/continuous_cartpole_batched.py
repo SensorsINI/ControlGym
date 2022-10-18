@@ -6,7 +6,8 @@ import torch
 from gym import spaces
 from gym.envs.classic_control.cartpole import CartPoleEnv
 
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary, TensorType
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 
 
 class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):

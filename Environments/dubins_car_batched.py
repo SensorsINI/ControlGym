@@ -35,8 +35,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import torch
-from Control_Toolkit.others.environment import (EnvironmentBatched,
-                                                NumpyLibrary, TensorType)
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 from gym import spaces
 from matplotlib.patches import Circle
 from SI_Toolkit.Functions.TF.Compile import CompileTF

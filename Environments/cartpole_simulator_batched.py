@@ -8,8 +8,8 @@ from CartPoleSimulation.CartPole.cartpole_model_tf import (
 from CartPoleSimulation.CartPole.state_utilities import (ANGLE_COS_IDX,
                                                          POSITION_IDX)
 from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
-from Control_Toolkit.others.environment import (EnvironmentBatched,
-                                                NumpyLibrary, TensorType)
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 from gym.spaces import Box
 
 

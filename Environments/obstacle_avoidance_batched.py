@@ -36,10 +36,10 @@ import gym
 from gym import spaces
 import tensorflow as tf
 import torch
+from Control_Toolkit.others.environment import EnvironmentBatched
 from skspatial.objects import Sphere
 
-from Control_Toolkit.others.environment import TensorType
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 from SI_Toolkit.Functions.TF.Compile import CompileTF
 
 # Training constants

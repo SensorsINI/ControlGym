@@ -11,8 +11,8 @@ from numpy.random import SeedSequence
 from yaml import dump
 
 from Control_Toolkit.Controllers import template_controller
-from Control_Toolkit.others.environment import (EnvironmentBatched,
-                                                TensorFlowLibrary)
+from SI_Toolkit.computation_library import TensorFlowLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched
 from Environments import register_envs
 from Utilities.csv_helpers import save_to_csv
 from Utilities.generate_plots import generate_experiment_plots

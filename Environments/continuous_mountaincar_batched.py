@@ -5,8 +5,8 @@ import tensorflow as tf
 import torch
 from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from Environments import TensorType
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 
 
 class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarEnv):

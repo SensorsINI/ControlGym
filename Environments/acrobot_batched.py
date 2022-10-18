@@ -7,11 +7,8 @@ from gym import spaces
 from gym.envs.classic_control import utils
 from gym.envs.classic_control.acrobot import AcrobotEnv
 
-from Control_Toolkit.others.environment import (
-    EnvironmentBatched,
-    NumpyLibrary,
-    TensorType,
-)
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 
 
 class acrobot_batched(EnvironmentBatched, AcrobotEnv):

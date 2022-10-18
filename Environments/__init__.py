@@ -29,7 +29,3 @@ def register_envs():
             entry_point=entry_point,
             max_episode_steps=None,
         )
-
-
-TensorType = Union[np.ndarray, tf.Tensor, torch.Tensor]
-RandomGeneratorType = Union[Generator, tf.random.Generator, torch.Generator]

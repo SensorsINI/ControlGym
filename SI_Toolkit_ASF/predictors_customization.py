@@ -3,7 +3,8 @@ from typing import Callable
 
 import numpy as np
 from Environments import ENV_REGISTRY, register_envs
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary, TensorType
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 
 from Utilities.utils import CurrentRunMemory, SeedMemory
 

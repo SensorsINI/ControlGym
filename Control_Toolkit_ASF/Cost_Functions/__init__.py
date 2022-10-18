@@ -1,4 +1,5 @@
-from Control_Toolkit.others.environment import EnvironmentBatched, TensorType
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import TensorType
 
 
 class cost_function_base:
