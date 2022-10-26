@@ -17,14 +17,17 @@ control_penalty = float(config["continuous_mountaincar_batched"]["default"]["con
 
 class default(cost_function_base):
     def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType) -> TensorType:
-        costs = self.lib.unsqueeze(self.lib.zeros_like(x), -1)
-        for obstacle_position in self.controller.obstacle_positions:
-            x_obs, y_obs, radius = obstacle_position
-            _d = self.lib.sqrt((x - x_obs) ** 2 + (y - y_obs) ** 2)
-            _c = 1.0 - (self.lib.min(1.0, _d / radius)) ** 2
-            _c = self.lib.unsqueeze(_c, -1)
-            costs = self.lib.concat([costs, _c], -1)
-        return self.lib.reduce_max(costs[..., 1:], -1)
+        # x/y each have shape batch_size x mpc_horizon
+        x_obs, y_obs, radius = self.lib.unstack(self.controller.obstacle_positions[:, :, self.lib.newaxis, self.lib.newaxis], 3, 1)
+        num_obstacles = self.lib.shape(x_obs)[0]
+        # Repeat x and y to match the shape of the obstacle map
+        x_repeated = self.lib.repeat(self.lib.unsqueeze(x, 0), num_obstacles, 0)
+        y_repeated = self.lib.repeat(self.lib.unsqueeze(y, 0), num_obstacles, 0)
+        d = self.lib.sqrt(
+            (x_repeated - x_obs) ** 2 + (y_repeated - y_obs) ** 2
+        )
+        c = 1.0 - (self.lib.min(1.0, d / radius)) ** 2
+        return self.lib.reduce_max(c, 0)
         
     def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         x, y, yaw_car, steering_rate = self.lib.unstack(states, 4, -1)

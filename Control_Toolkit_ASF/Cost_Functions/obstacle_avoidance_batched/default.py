@@ -21,13 +21,20 @@ control_penalty = float(
 
 class default(cost_function_base):
     def _distance_to_obstacle_cost(self, x: TensorType) -> TensorType:
-        costs = None
-        for obstacle_position in self.controller.obstacle_positions:
-            _d = self.lib.sqrt(self.lib.sum((x - obstacle_position[:-1]) ** 2, -1))
-            _c = 1.0 - (self.lib.min(1.0, _d / obstacle_position[-1])) ** 2
-            _c = self.lib.unsqueeze(_c, -1)
-            costs = _c if costs == None else self.lib.concat([costs, _c], -1)
-        return self.lib.reduce_max(costs, -1)
+        # x has shape batch_size x mpc_horizon x num_dimensions
+        x_obs = self.controller.obstacle_positions[:, :-1]  # [num_obstacles, num_dimensions]
+        x_obs = x_obs[:, self.lib.newaxis, self.lib.newaxis, :]
+        radius = self.controller.obstacle_positions[:, -1:]  # [num_obstacles, 1]
+        radius = radius[:, self.lib.newaxis, :]
+        
+        num_obstacles = self.lib.shape(x_obs)[0]
+        # Repeat x and y to match the shape of the obstacle map
+        x_repeated = self.lib.repeat(self.lib.unsqueeze(x, 0), num_obstacles, 0)
+        d = self.lib.sqrt(self.lib.sum(
+            (x_repeated - x_obs) ** 2, 3
+        ))
+        c = 1.0 - (self.lib.min(1.0, d / radius)) ** 2
+        return self.lib.reduce_max(c, 0)
 
     def get_distance(self, x1, x2):
         # Distance between points x1 and x2
