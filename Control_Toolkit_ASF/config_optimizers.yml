@@ -118,12 +118,12 @@ rpgd-me-tf:
   adam_beta_1: 0.9
   adam_beta_2: 0.999
   adam_epsilon: 1.0e-08
-  maximum_entropy_alpha: 0.0
+  maximum_entropy_alpha: 0.1
   gradmax_clip: 10
   rtol: 1.0e-3
   num_rollouts: 32
   opt_keep_k: 0
-  outer_its: 25
+  outer_its: 3
   resamp_per: 1
   sample_stdev: 0.5
   warmup: false
@@ -131,7 +131,7 @@ rpgd-me-tf:
 rpgd-ml-tf:
   seed: null                            # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
-  SAMPLING_DISTRIBUTION: uniform  # "normal" or "uniform"
+  SAMPLING_DISTRIBUTION: uniform        # "normal" or "uniform"
   SAMPLING_TYPE: null
   interpolation_step: 10
   learning_rate: 0.01
@@ -143,7 +143,7 @@ rpgd-ml-tf:
   rtol: 1.0e-3
   num_rollouts: 32
   opt_keep_k: 8
-  outer_its: 5
+  outer_its: 3
   resamp_per: 1
   sample_stdev: 0.5
   warmup: false
@@ -196,7 +196,6 @@ mppi-tf:
   SQRTRHOINV: 0.03                      # Sampling variance
   GAMMA: 1.00                           # Future cost discount
   SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
-  predictor_specification: null         # To be overwritten by controller
 random-action-tf:
   seed: null                          # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
   mpc_horizon: 35                      # steps
