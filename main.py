@@ -8,15 +8,15 @@ from typing import Any
 import gym
 import numpy as np
 from numpy.random import SeedSequence
-from yaml import dump
+from yaml import FullLoader, dump, load
 
 from Control_Toolkit.Controllers import template_controller
-from SI_Toolkit.computation_library import TensorFlowLibrary
 from Control_Toolkit.others.environment import EnvironmentBatched
-from Environments import register_envs
+from Environments import ENV_REGISTRY, register_envs
+from SI_Toolkit.computation_library import TensorFlowLibrary
 from Utilities.csv_helpers import save_to_csv
 from Utilities.generate_plots import generate_experiment_plots
-from Utilities.utils import OutputPath, SeedMemory, get_logger
+from Utilities.utils import CurrentRunMemory, OutputPath, SeedMemory, get_logger
 
 # Keep allowing absolute imports within CartPoleSimulation subgit
 sys.path.append(os.path.join(os.path.abspath("."), "CartPoleSimulation"))
@@ -25,6 +25,11 @@ logger = get_logger(__name__)
 
 # Gym API: Register custom environments
 register_envs()
+
+
+config_controllers = load(open(os.path.join("Control_Toolkit_ASF", "config_controllers.yml"), "r"), Loader=FullLoader)
+config_cost_function = load(open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"), Loader=FullLoader)
+config_optimizers = load(open(os.path.join("Control_Toolkit_ASF", "config_optimizers.yml"), "r"), Loader=FullLoader)
 
 
 def run_data_generator(
@@ -54,6 +59,7 @@ def run_data_generator(
     config["1_data_generation"].update(
         {"controller_name": controller_name, "environment_name": environment_name}
     )
+    controller_short_name = controller_name.replace("controller_", "").replace("_", "-")
 
     # Loop through independent experiments
     for i in range(num_experiments):
@@ -61,18 +67,11 @@ def run_data_generator(
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.set_seeds(seeds)
         
-        controller_config = config["4_controllers"][controller_name]
-        environment_config = config["2_environments"][environment_name]
-        environment_config.update({"seed": int(seeds[0])})
-        controller_config.update({"seed": int(seeds[2])})
-
-        # Flatten global controller config values
-        controller_config.update(
-            {
-                k: config["4_controllers"][k]
-                for k in ["controller_logging", "mpc_horizon"]
-            }
-        )
+        config_controller = dict(config_controllers[controller_short_name])
+        config_optimizer = dict(config_optimizers[config_controller["optimizer"]])
+        config_optimizer.update({"seed": int(seeds[1])})
+        config_environment = dict(config["2_environments"][environment_name])
+        config_environment.update({"seed": int(seeds[0])})
 
         ##### ----------------------------------------------- #####
         ##### ----------------- ENVIRONMENT ----------------- #####
@@ -86,52 +85,30 @@ def run_data_generator(
 
         import matplotlib
 
-        if render_mode == "human":
-            matplotlib.use("Qt5Agg")
-        else:
-            matplotlib.use("Agg")
+        matplotlib.use("Agg")
 
         env: EnvironmentBatched = gym.make(
             environment_name,
-            **environment_config,
+            **config_environment,
             computation_lib=TensorFlowLibrary,
             render_mode=render_mode,
         )
-        obs, obs_info = env.reset(seed=int(seeds[1]))
+        CurrentRunMemory.current_environment = env
+        obs, obs_info = env.reset(seed=config_environment["seed"])
         assert len(env.action_space.shape) == 1, f"Action space needs to be a flat vector, is Box with shape {env.action_space.shape}"
         
-        ##### --------------------------------------------- #####
-        ##### ----------------- PREDICTOR ----------------- #####
-        assert hasattr(env, "step_dynamics"), "Environment needs to have a stateless step_dynamics function"
-        predictor_name = controller_config["predictor_name"]
-        predictor_module = import_module(f"SI_Toolkit.Predictors.{predictor_name}")
-        predictor = getattr(predictor_module, predictor_name)(
-            horizon=controller_config["mpc_horizon"],
-            dt=environment_config["dt"],
-            intermediate_steps=controller_config["predictor_intermediate_steps"],
-            disable_individual_compilation=True,
-            batch_size=controller_config["num_rollouts"],
-            net_name=controller_config["NET_NAME"],
-            step_fun=env.step_dynamics,
-        )
-        
-        ##### ------------------------------------------------- #####
-        ##### ----------------- COST FUNCTION ----------------- #####
-        cost_function_name = environment_config["cost_function"]
-        cost_function_module = import_module(f"Control_Toolkit.Cost_Functions.{cost_function_name}")
-        cost_function = getattr(cost_function_module, cost_function_name)(env)
-
         ##### ---------------------------------------------- #####
         ##### ----------------- CONTROLLER ----------------- #####
         controller_module = import_module(f"Control_Toolkit.Controllers.{controller_name}")
         controller: template_controller = getattr(controller_module, controller_name)(
-            predictor=predictor,
-            cost_function=cost_function,
-            dt=environment_config["dt"],
-            action_space=env.action_space,
-            observation_space=env.observation_space,
-            **controller_config,
+            dt=env.dt,
+            environment_name=ENV_REGISTRY[environment_name].split(":")[-1],
+            num_states=env.observation_space.shape[0],
+            num_control_inputs=env.action_space.shape[0],
+            control_limits=(env.action_space.low, env.action_space.high),
+            initial_environment_attributes=env.environment_attributes,
         )
+        controller.configure(optimizer_name=config_controller["optimizer"], predictor_specification=config_controller["predictor_specification"])
 
         ##### ----------------------------------------------------- #####
         ##### ----------------- MAIN CONTROL LOOP ----------------- #####
@@ -139,11 +116,10 @@ def run_data_generator(
         start_time = time.time()
         num_iterations = config["1_data_generation"]["num_iterations"]
         for step in range(num_iterations):
-            action = controller.step(obs)
+            action = controller.step(obs, updated_attributes=env.environment_attributes)
             new_obs, reward, terminated, truncated, info = env.step(action)
-            controller.current_log["realized_cost_logged"] = np.array([-reward])
-            if config["4_controllers"]["controller_logging"]:
-                controller.update_logs()
+            if config_controller.get("controller_logging", False):
+                controller.logs["realized_cost_logged"].append(np.array([-reward]).copy())
                 env.set_logs(controller.logs)
             if config["1_data_generation"]["render_for_humans"]:
                 env.render()
@@ -184,7 +160,7 @@ def run_data_generator(
                 csv = os.path.join(record_path, "Test")
             os.makedirs(csv, exist_ok=True)
             save_to_csv(config, controller, environment_name, csv)
-        elif config["4_controllers"]["controller_logging"]:
+        elif config_controller.get("controller_logging", False):
             if config["1_data_generation"]["save_plots_to_file"]:
                 # Generate and save plots in default location
                 generate_experiment_plots(
@@ -196,12 +172,12 @@ def run_data_generator(
             # Save .npy files 
             for n, a in controller_output.items():
                 with open(
-                    OutputPath.get_output_path(timestamp_str, str(n), ".npy"),
+                    OutputPath.get_output_path(timestamp_str, environment_name, controller_name, config_controller["predictor_specification"], str(n), ".npy"),
                     "wb",
                 ) as f:
                     np.save(f, a)
             # Save config
             with open(
-                OutputPath.get_output_path(timestamp_str, "config", ".yml"), "w"
+                OutputPath.get_output_path(timestamp_str, environment_name, controller_name, config_controller["predictor_specification"], "config", ".yml"), "w"
             ) as f:
                 dump(config, f)

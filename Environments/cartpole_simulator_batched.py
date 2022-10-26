@@ -189,7 +189,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         assert self._batch_size == 1
         action = self._apply_actuator_noise(action)
 
-        self.state = self.lib.to_numpy(self.step_dynamics(self.lib, self.state, action, self.dt))
+        self.state = self.lib.to_numpy(self.step_dynamics(self.state, action, self.dt))
 
         # Update the total time of the simulation
         # self.CartPoleInstance.step_time()

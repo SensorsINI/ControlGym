@@ -9,6 +9,7 @@ import tensorflow as tf
 import torch
 
 from yaml import FullLoader, load
+from Control_Toolkit.others.environment import EnvironmentBatched
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 
@@ -60,10 +61,7 @@ class OutputPath:
     collection_folder_name = ""
 
     @classmethod
-    def get_output_path(cls, timestamp: str, filename: str, suffix: str) -> str:
-        controller_name = CurrentRunMemory.current_controller_name
-        env_name = CurrentRunMemory.current_environment_name
-        predictor_name = config["4_controllers"][controller_name]["predictor_name"]
+    def get_output_path(cls, timestamp: str, env_name: str, controller_name: str, predictor_name: str, filename: str, suffix: str) -> str:
         folder = os.path.join(
             "Output",
             cls.collection_folder_name,
@@ -99,6 +97,7 @@ class SeedMemory:
 class CurrentRunMemory:
     current_controller_name: str
     current_environment_name: str
+    current_environment: EnvironmentBatched
 
 
 ### Below is copied from CartPole repo
