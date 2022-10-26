@@ -14,7 +14,7 @@ environment_module = (
     .split(":")[0]
     .split(".")[-1]
 )
-Environment = getattr(
+Environment: "type[EnvironmentBatched]" = getattr(
     import_module(f"Environments.{environment_module}"), environment_module
 )
 
@@ -29,10 +29,10 @@ register_envs()
 
 
 class next_state_predictor_ODE:
-    def __init__(self, dt: float, intermediate_steps: int, batch_size: int, step_fun: Callable[[TensorType, TensorType, float], TensorType], **kwargs):
+    def __init__(self, dt: float, intermediate_steps: int, batch_size: int, **kwargs):
         self.s = None
 
-        self.step_fun = step_fun
+        self.step_fun = CurrentRunMemory.current_environment.step_dynamics
 
         self.intermediate_steps = intermediate_steps
         self.t_step = dt / float(self.intermediate_steps)
