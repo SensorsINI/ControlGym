@@ -9,7 +9,7 @@ from CartPoleSimulation.CartPole.state_utilities import (ANGLE_COS_IDX,
                                                          POSITION_IDX)
 from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
 from Control_Toolkit.others.environment import EnvironmentBatched
-from SI_Toolkit.computation_library import NumpyLibrary, TensorType
+from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
 from gym.spaces import Box
 
 
@@ -54,6 +54,9 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self.u_max = kwargs["u_max"]
 
         self.target_position = tf.Variable(0.0, dtype=tf.float32)
+        self.environment_attributes = {
+            "target_position": self.target_position,
+        }
 
         self.x_threshold = (
             0.9 * track_half_length
@@ -143,12 +146,33 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
     def step_dynamics(
         self,
-        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
-        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        state: TensorType,
+        action: TensorType,
         dt: float,
-    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
-        state_updated = self.step_physics(state, action)
-        return state_updated
+    ) -> TensorType:
+        # Convert dimensionless motor power to a physical force acting on the Cart
+        u = self.u_max * action[:, 0]
+
+        angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(
+            state, 6, 1
+        )
+
+        # Compute next state
+        angleDD, positionDD = _cartpole_ode(angle_cos, angle_sin, angleD, positionD, u)
+
+        angle, angleD, position, positionD = cartpole_integration_tf(
+            angle, angleD, angleDD, position, positionD, positionDD, dt
+        )
+        angle_cos = self.lib.cos(angle)
+        angle_sin = self.lib.sin(angle)
+
+        angle = self.lib.atan2(angle_sin, angle_cos)
+
+        next_state = self.lib.stack(
+            [angle, angleD, angle_cos, angle_sin, position, positionD], 1
+        )
+
+        return next_state
 
     def step(
         self, action: TensorType
@@ -165,7 +189,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         assert self._batch_size == 1
         action = self._apply_actuator_noise(action)
 
-        self.state = self.lib.to_numpy(self.step_dynamics(self.state, action, self.dt))
+        self.state = self.lib.to_numpy(self.step_dynamics(self.lib, self.state, action, self.dt))
 
         # Update the total time of the simulation
         # self.CartPoleInstance.step_time()
@@ -176,8 +200,8 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             self.target_position.assign(new_target)
         self.count += 1
 
-        reward = self.get_reward(self.state, action)
-        terminated = self.is_done(self.state)
+        reward = 0.0
+        terminated = self.is_done(self.lib, self.state)
         truncated = False
 
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
@@ -191,40 +215,6 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             {"target": self.lib.to_numpy(self.target_position)},
         )
 
-    def step_physics(self, state: TensorType, action: TensorType):
-        # Convert dimensionless motor power to a physical force acting on the Cart
-        u = self.u_max * action[:, 0]
-
-        angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(
-            state, 6, 1
-        )
-
-        # Compute next state
-        angleDD, positionDD = _cartpole_ode(angle_cos, angle_sin, angleD, positionD, u)
-
-        angle, angleD, position, positionD = cartpole_integration_tf(
-            angle, angleD, angleDD, position, positionD, positionDD, self.dt
-        )
-        angle_cos = self.lib.cos(angle)
-        angle_sin = self.lib.sin(angle)
-
-        angle = self.lib.atan2(angle_sin, angle_cos)
-
-        next_state = self.lib.stack(
-            [angle, angleD, angle_cos, angle_sin, position, positionD], 1
-        )
-
-        return next_state
-
-    def get_reward(self, state, action):
-        target_position = self.lib.to_tensor(
-            self.target_position, self.lib.float32
-        )
-        reward = (
-            state[..., ANGLE_COS_IDX]
-            - (state[..., POSITION_IDX] - target_position) ** 2
-        )
-        return reward
-
-    def is_done(self, state):
+    @staticmethod
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType):
         return False

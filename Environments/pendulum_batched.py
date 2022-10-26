@@ -7,7 +7,7 @@ from gym import spaces
 from gym.envs.classic_control.pendulum import PendulumEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched
-from SI_Toolkit.computation_library import NumpyLibrary, TensorType
+from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
 
 
 class pendulum_batched(EnvironmentBatched, PendulumEnv):
@@ -39,16 +39,12 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
 
-    def _angle_normalize(self, x):
-        _pi = self.lib.to_tensor(np.pi, self.lib.float32)
-        return ((x + _pi) % (2 * _pi)) - _pi
-
     def step_dynamics(
         self,
-        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
-        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        state: TensorType,
+        action: TensorType,
         dt: float,
-    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
+    ) -> TensorType:
         th, thdot, sinth, costh = self.lib.unstack(state, 4, 1)  # th := theta
 
         g = self.g
@@ -96,9 +92,9 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
         self.state = self.step_dynamics(self.state, action, self.dt)
 
-        terminated = self.is_done(self.state)
+        terminated = self.is_done(self.lib, self.state)
         truncated = False
-        reward = self.get_reward(self.state, action)
+        reward = 0.0
 
         self.state = self.lib.squeeze(self.state)
 
@@ -150,14 +146,6 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
         self.last_u = None
         return self._get_reset_return_val()
 
-    def is_done(self, state):
+    @staticmethod
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType):
         return False
-
-    def get_reward(self, state, action):
-        th, thdot, sinth, costh = self.lib.unstack(state, 4, -1)
-        costs = (
-            self._angle_normalize(th) ** 2
-            + 0.1 * thdot**2
-            + 0.001 * (action[:, 0] ** 2)
-        )
-        return -costs

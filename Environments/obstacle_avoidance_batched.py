@@ -39,7 +39,7 @@ import torch
 from Control_Toolkit.others.environment import EnvironmentBatched
 from skspatial.objects import Sphere
 
-from SI_Toolkit.computation_library import NumpyLibrary, TensorType
+from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
 from SI_Toolkit.Functions.TF.Compile import CompileTF
 
 # Training constants
@@ -147,6 +147,10 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
                 num_dimensions=self.num_dimensions,
             ),
         }
+        self.environment_attributes = {
+            "target_point": self.target_point,
+            "obstacle_positions": self.obstacle_positions,
+        }
 
         self.fig: plt.Figure = None
         self.ax: plt.Axes = None
@@ -183,67 +187,39 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
                 self.state = state
 
         return self._get_reset_return_val()
+    
+    @staticmethod
+    def _in_bounds(lib: "type[ComputationLibrary]", x: TensorType) -> TensorType:
+        return lib.reduce_all(lib.abs(x) < 1.0, -1)
 
-    def get_reward(self, state, action):
-        target = self.lib.to_tensor(self.target_point, self.lib.float32)
-        position = state[..., :self.num_dimensions]
-
-        ld = self.get_distance(position, self.lib.unsqueeze(target, 0))
-
-        car_in_bounds = self._in_bounds(position)
-        car_at_target = self._at_target(position, target)
-
-        reward = (
-            self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
-            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32)
-            * (
-                -1.0
-                * (
-                    ld + 4 * self._distance_to_obstacle_cost(position)
-                )
-            )
-            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-10.0)
+    @staticmethod
+    def _at_target(
+        lib: "type[ComputationLibrary]",
+        x: TensorType,
+        target: TensorType,
+    ) -> TensorType:
+        return lib.reduce_all(
+            lib.abs(x - target) < THRESHOLD_DISTANCE_2_GOAL, -1
         )
+    
+    @staticmethod
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType, target_point: TensorType):
+        target = lib.to_tensor(target_point, lib.float32)
+        num_dimensions = int(lib.shape(state)[-1] / 2)
+        position = state[..., :num_dimensions]
 
-        return reward
-
-    def is_done(self, state):
-        target = self.lib.to_tensor(self.target_point, self.lib.float32)
-        position = state[..., :self.num_dimensions]
-
-        car_in_bounds = self._in_bounds(position)
-        car_at_target = self._at_target(position, target)
+        car_in_bounds = obstacle_avoidance_batched._in_bounds(lib, position)
+        car_at_target = obstacle_avoidance_batched._at_target(lib, position, target)
         done = ~(car_in_bounds & (~car_at_target))
         return done
-
-    def _in_bounds(self, x: TensorType) -> TensorType:
-        return self.lib.reduce_all(self.lib.abs(x) < 1.0, -1)
-
-    def _at_target(
-        self, x: TensorType, target: TensorType,
-    ) -> TensorType:
-        return self.lib.reduce_all(self.lib.abs(x - target) < THRESHOLD_DISTANCE_2_GOAL, -1)
-
-    def _distance_to_obstacle_cost(self, x: TensorType) -> TensorType:
-        costs = None
-        for obstacle_position in self.obstacle_positions:
-            _d = self.lib.sqrt(self.lib.sum((x - obstacle_position[:-1]) ** 2, -1))
-            _c = 1.0 - (self.lib.min(1.0, _d / obstacle_position[-1])) ** 2
-            _c = self.lib.unsqueeze(_c, -1)
-            costs = _c if costs == None else self.lib.concat([costs, _c], -1)
-        return self.lib.reduce_max(costs, -1)
-
-    def get_distance(self, x1, x2):
-        # Distance between points x1 and x2
-        return self.lib.sqrt(self.lib.sum((x1 - x2) ** 2, -1))
 
     @CompileTF
     def step_dynamics(
         self,
-        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
-        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        state: TensorType,
+        action: TensorType,
         dt: float,
-    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
+    ) -> TensorType:
         return self.update_state(state, action, dt)
 
     def step(
@@ -267,9 +243,9 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         self.state = self.step_dynamics(self.state, action, self.dt)
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
 
-        terminated = self.is_done(self.state)
+        terminated = self.is_done(self.lib, self.state, self.target_point)
         truncated = False
-        reward = self.get_reward(self.state, action)
+        reward = 0.0
 
         return self.state, float(reward), terminated, truncated, {}
 

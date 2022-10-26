@@ -36,7 +36,7 @@ import numpy as np
 import tensorflow as tf
 import torch
 from Control_Toolkit.others.environment import EnvironmentBatched
-from SI_Toolkit.computation_library import NumpyLibrary, TensorType
+from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
 from gym import spaces
 from matplotlib.patches import Circle
 from SI_Toolkit.Functions.TF.Compile import CompileTF
@@ -142,6 +142,10 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 shuffle_target_every=self.shuffle_target_every,
             ),
         }
+        self.environment_attributes = {
+            "target_point": self.target_point,
+            "obstacle_positions": self.obstacle_positions,
+        }
 
         self.fig: plt.Figure = None
         self.ax: plt.Axes = None
@@ -162,6 +166,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 y = self.lib.uniform(self.rng, (1, 1), -1.0, 1.0, self.lib.float32)
                 theta = self.lib.unsqueeze(
                     self.get_heading(
+                        self.lib,
                         self.lib.concat([x, y], 1),
                         self.lib.unsqueeze(
                             self.lib.to_tensor(
@@ -203,87 +208,61 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 self.state = state
 
         return self._get_reset_return_val()
+    
+    @staticmethod
+    def _car_in_bounds(lib: "type[ComputationLibrary]", x: TensorType, y: TensorType) -> TensorType:
+        return (lib.abs(x) < 1.0) & (lib.abs(y) < 1.0)
 
-    def get_reward(self, state, action):
-        x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, -1)
-        target = self.lib.to_tensor(self.target_point, self.lib.float32)
-        x_target, y_target, yaw_target = self.lib.unstack(target, 3, 0)
-
-        head_to_target = self.get_heading(state, self.lib.unsqueeze(target, 0))
-        alpha = head_to_target - yaw_car
-        ld = self.get_distance(state, self.lib.unsqueeze(target, 0))
-        crossTrackError = self.lib.sin(alpha) * ld
-
-        car_in_bounds = self._car_in_bounds(x, y)
-        car_at_target = self._car_at_target(x, y, x_target, y_target)
-
-        reward = (
-            self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
-            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32)
-            * (
-                -1.0
-                * (
-                    # 3 * crossTrackError**2
-                    0.1 * (x - x_target) ** 2
-                    + 0.1 * (y - y_target) ** 2
-                    # + 3 * (head_to_target - yaw_car)**2 / MAX_STEER
-                    + 5 * self._distance_to_obstacle_cost(x, y)
-                )
-                / 8.0
-            )
-            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-1.0)
+    @staticmethod
+    def _car_at_target(
+        lib: "type[ComputationLibrary]", x: TensorType, y: TensorType, x_target: float, y_target: float
+    ) -> TensorType:
+        return (lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL) & (
+            lib.abs(y - y_target) < THRESHOLD_DISTANCE_2_GOAL
         )
+    
+    @staticmethod
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType, target_point: TensorType) -> bool:
+        x, y, yaw_car, steering_rate = lib.unstack(state, 4, -1)
+        target = lib.to_tensor(target_point, lib.float32)
+        x_target, y_target, yaw_target = lib.unstack(target, 3, 0)
 
-        return reward
-
-    def is_done(self, state):
-        x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, -1)
-        target = self.lib.to_tensor(self.target_point, self.lib.float32)
-        x_target, y_target, yaw_target = self.lib.unstack(target, 3, 0)
-
-        car_in_bounds = self._car_in_bounds(x, y)
-        car_at_target = self._car_at_target(x, y, x_target, y_target)
+        car_in_bounds = dubins_car_batched._car_in_bounds(lib, x, y)
+        car_at_target = dubins_car_batched._car_at_target(lib, x, y, x_target, y_target)
         done = ~(car_in_bounds & (~car_at_target))
         return done
 
-    def _car_in_bounds(self, x: TensorType, y: TensorType) -> TensorType:
-        return (self.lib.abs(x) < 1.0) & (self.lib.abs(y) < 1.0)
-
-    def _car_at_target(
-        self, x: TensorType, y: TensorType, x_target: float, y_target: float
-    ) -> TensorType:
-        return (self.lib.abs(x - x_target) < THRESHOLD_DISTANCE_2_GOAL) & (
-            self.lib.abs(y - y_target) < THRESHOLD_DISTANCE_2_GOAL
-        )
-
-    def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType) -> TensorType:
-        costs = self.lib.unsqueeze(tf.zeros_like(x), -1)
-        for obstacle_position in self.obstacle_positions:
-            x_obs, y_obs, radius = obstacle_position
-            _d = self.lib.sqrt((x - x_obs) ** 2 + (y - y_obs) ** 2)
-            _c = 1.0 - (self.lib.min(1.0, _d / radius)) ** 2
-            _c = self.lib.unsqueeze(_c, -1)
-            costs = self.lib.concat([costs, _c], -1)
-        return self.lib.reduce_max(costs[..., 1:], -1)
-
-    def get_distance(self, x1, x2):
+    @staticmethod
+    def get_distance(lib: "type[ComputationLibrary]", x1, x2):
         # Distance between points x1 and x2
-        return self.lib.sqrt(
+        return lib.sqrt(
             (x1[..., 0] - x2[..., 0]) ** 2 + (x1[..., 1] - x2[..., 1]) ** 2
         )
 
-    def get_heading(self, x1, x2):
+    @staticmethod
+    def get_heading(lib, x1, x2):
         # Heading between points x1,x2 with +X axis
-        return self.lib.atan2((x2[..., 1] - x1[..., 1]), (x2[..., 0] - x1[..., 0]))
+        return lib.atan2((x2[..., 1] - x1[..., 1]), (x2[..., 0] - x1[..., 0]))
 
     @CompileTF
     def step_dynamics(
         self,
-        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
-        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        state: TensorType,
+        action: TensorType,
         dt: float,
-    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
-        return self.update_state(state, action, dt)
+    ) -> TensorType:
+        x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, 1)
+        throttle, steer = self.lib.unstack(action, 2, 1)
+        # Update the pose as per Dubin's equations
+
+        steer = self.lib.clip(steer, -MAX_STEER, MAX_STEER)
+        throttle = self.lib.clip(throttle, MIN_SPEED, MAX_SPEED)
+
+        x = x + throttle * self.lib.cos(yaw_car) * dt
+        y = y + throttle * self.lib.sin(yaw_car) * dt
+        steering_rate += steer
+        yaw_car = yaw_car + throttle / WB * self.lib.tan(steer) * dt
+        return self.lib.stack([x, y, yaw_car, steering_rate], 1)
 
     def step(
         self, action: TensorType
@@ -311,9 +290,9 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         self.state = self.lib.to_numpy(self.step_dynamics(self.state, action, self.dt))
 
-        terminated = self.is_done(self.state)
+        terminated = self.is_done(self.lib, self.state, self.target_point)
         truncated = False
-        reward = self.get_reward(self.state, action)
+        reward = 0.0
 
         self.state = self.lib.squeeze(self.state)
 
@@ -379,20 +358,6 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
     def close(self):
         # For Gym AI compatibility
         plt.close(self.fig)
-
-    def update_state(self, state, action, DT):
-        x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, 1)
-        throttle, steer = self.lib.unstack(action, 2, 1)
-        # Update the pose as per Dubin's equations
-
-        steer = self.lib.clip(steer, -MAX_STEER, MAX_STEER)
-        throttle = self.lib.clip(throttle, MIN_SPEED, MAX_SPEED)
-
-        x = x + throttle * self.lib.cos(yaw_car) * DT
-        y = y + throttle * self.lib.sin(yaw_car) * DT
-        steering_rate += steer
-        yaw_car = yaw_car + throttle / WB * self.lib.tan(steer) * DT
-        return self.lib.stack([x, y, yaw_car, steering_rate], 1)
 
     def plot_car(self, cabcolor="-r", truckcolor="-k"):  # pragma: no cover
         # print("Plotting Car")

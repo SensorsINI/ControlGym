@@ -8,7 +8,7 @@ from gym.envs.classic_control import utils
 from gym.envs.classic_control.acrobot import AcrobotEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched
-from SI_Toolkit.computation_library import NumpyLibrary, TensorType
+from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
 
 
 class acrobot_batched(EnvironmentBatched, AcrobotEnv):
@@ -44,15 +44,15 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
 
     def step_dynamics(
         self,
-        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
-        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        state: TensorType,
+        action: TensorType,
         dt: float,
-    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
+    ) -> TensorType:
         torque = action
         s_augmented = self.lib.concat([state, torque], 1)
 
         th1_new, th2_new, th1_vel_new, th2_vel_new = self.lib.unstack(
-            self.rk4(self._dsdt, s_augmented, [0, self.dt]), 4, 1
+            self.rk4(self._dsdt, s_augmented, [0, dt]), 4, 1
         )
 
         # Wrap angles
@@ -105,9 +105,9 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         th2_vel_new = self.lib.clip(th2_vel_new, -self.MAX_VEL_2, self.MAX_VEL_2)
         self.state = self.lib.stack([th1_new, th2_new, th1_vel_new, th2_vel_new], 1)
 
-        terminated = self.is_done(self.state)
+        terminated = self.is_done(self.lib, self.state)
         truncated = False
-        reward = self.get_reward(self.state, action)
+        reward = 0.0
 
         self.state = self.lib.squeeze(self.state)
 
@@ -148,14 +148,9 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
 
         return self._get_reset_return_val()
 
-    def is_done(self, state):
+    @staticmethod
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType):
         return False
-
-    def get_reward(self, state, action):
-        th1, th2, th1_vel, th2_vel = self.lib.unstack(state, 4, -1)
-        return (
-            -self.lib.cos(th1) - self.lib.cos(th2 + th1) - 1.0e-2 * (th1_vel + th2_vel)
-        )
 
     def _convert_to_state(self, state):
         if self.lib.shape(state)[-1] == self.num_states:

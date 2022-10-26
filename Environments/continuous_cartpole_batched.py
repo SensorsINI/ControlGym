@@ -7,7 +7,7 @@ from gym import spaces
 from gym.envs.classic_control.cartpole import CartPoleEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched
-from SI_Toolkit.computation_library import NumpyLibrary, TensorType
+from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
 
 
 class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
@@ -40,10 +40,10 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
     def step_dynamics(
         self,
-        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
-        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        state: TensorType,
+        action: TensorType,
         dt: float,
-    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
+    ) -> TensorType:
         x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, 1)
         force = self.lib.clip(
             action[:, 0],
@@ -62,15 +62,15 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
 
         if self.kinematics_integrator == "euler":
-            x = x + self.dt * x_dot
-            x_dot = x_dot + self.dt * xacc
-            theta = theta + self.dt * theta_dot
-            theta_dot = theta_dot + self.dt * thetaacc
+            x = x + dt * x_dot
+            x_dot = x_dot + dt * xacc
+            theta = theta + dt * theta_dot
+            theta_dot = theta_dot + dt * thetaacc
         else:  # semi-implicit euler
-            x_dot = x_dot + self.dt * xacc
-            x = x + self.dt * x_dot
-            theta_dot = theta_dot + self.dt * thetaacc
-            theta = theta + self.dt * theta_dot
+            x_dot = x_dot + dt * xacc
+            x = x + dt * x_dot
+            theta_dot = theta_dot + dt * thetaacc
+            theta = theta + dt * theta_dot
 
         state = self.lib.stack([x, x_dot, theta, theta_dot], 1)
 
@@ -96,9 +96,9 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
         self.state = self.step_dynamics(self.state, action, self.dt)
 
-        terminated = self.is_done(self.state)
+        terminated = self.is_done(self.lib, self.state)
         truncated = False
-        reward = self.get_reward(self.state, action)
+        reward = 0.0
 
         self.state = self.lib.squeeze(self.state)
         
@@ -136,16 +136,12 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
         return self._get_reset_return_val()
 
-    def is_done(self, state):
-        x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, -1)
+    @staticmethod
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType):
+        x, x_dot, theta, theta_dot = lib.unstack(state, 4, -1)
         return (
-            (x < -self.x_threshold)
-            | (x > self.x_threshold)
-            | (theta < -self.theta_threshold_radians)
-            | (theta > self.theta_threshold_radians)
+            (x < -CartPoleEnv.x_threshold)
+            | (x > CartPoleEnv.x_threshold)
+            | (theta < -CartPoleEnv.theta_threshold_radians)
+            | (theta > CartPoleEnv.theta_threshold_radians)
         )
-
-    def get_reward(self, state, action):
-        x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, -1)
-        reward = -(100 * (theta**2) + theta_dot**2 + (x**2) + x_dot**2)
-        return reward

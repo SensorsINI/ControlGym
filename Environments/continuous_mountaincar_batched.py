@@ -6,7 +6,7 @@ import torch
 from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched
-from SI_Toolkit.computation_library import NumpyLibrary, TensorType
+from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
 
 
 class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarEnv):
@@ -40,13 +40,18 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
+        
+        self.environment_attributes = {
+            "goal_position": self.goal_position,
+            "goal_velocity": self.goal_velocity,
+        }
 
     def step_dynamics(
         self,
-        state: Union[np.ndarray, tf.Tensor, torch.Tensor],
-        action: Union[np.ndarray, tf.Tensor, torch.Tensor],
+        state: TensorType,
+        action: TensorType,
         dt: float,
-    ) -> Union[np.ndarray, tf.Tensor, torch.Tensor]:
+    ) -> TensorType:
         position, velocity = self.lib.unstack(state, 2, 1)
         force = self.lib.clip(
             action[:, 0],
@@ -93,9 +98,9 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         state_updated: tf.Tensor = self.step_dynamics(self.state, action, self.dt)
         self.state = self.lib.to_numpy(state_updated)
 
-        terminated = self.is_done(self.state)
+        terminated = self.is_done(self.lib, self.state, self.goal_position, self.goal_velocity)
         truncated = False
-        reward = self.get_reward(self.state, action)
+        reward = 0.0
 
         self.state = self.lib.squeeze(self.state)
 
@@ -149,15 +154,9 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
             return super().render()
         else:
             raise NotImplementedError("Rendering not implemented for batched mode")
+        
+    @staticmethod
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType, goal_position: float, goal_velocity: float):
+        position, velocity = lib.unstack(state, 2, -1)
+        return (position >= goal_position) & (velocity >= goal_velocity)
 
-    def is_done(self, state):
-        position, velocity = self.lib.unstack(state, 2, -1)
-        return (position >= self.goal_position) & (velocity >= self.goal_velocity)
-
-    def get_reward(self, state, action):
-        position, velocity = self.lib.unstack(state, 2, -1)
-        reward = self.lib.sin(3 * position)
-        # This part is not differentiable:
-        reward += 100.0 * self.lib.cast(self.is_done(state), self.lib.float32)
-        reward -= (action[:, 0] ** 2) * 0.1
-        return reward
