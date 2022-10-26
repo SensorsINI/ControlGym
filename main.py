@@ -34,6 +34,7 @@ config_optimizers = load(open(os.path.join("Control_Toolkit_ASF", "config_optimi
 
 def run_data_generator(
     controller_name: str,
+    optimizer_name: str,
     environment_name: str,
     num_experiments: int,
     config: "dict[str, Any]",
@@ -57,9 +58,10 @@ def run_data_generator(
 
     # Set current controller/env names in config which is saved later
     config["1_data_generation"].update(
-        {"controller_name": controller_name, "environment_name": environment_name}
+        {"controller_name": controller_name, "optimizer_name": optimizer_name, "environment_name": environment_name}
     )
     controller_short_name = controller_name.replace("controller_", "").replace("_", "-")
+    optimizer_short_name = optimizer_name.replace("optimizer_", "").replace("_", "-")
 
     # Loop through independent experiments
     for i in range(num_experiments):
@@ -68,7 +70,7 @@ def run_data_generator(
         SeedMemory.set_seeds(seeds)
         
         config_controller = dict(config_controllers[controller_short_name])
-        config_optimizer = dict(config_optimizers[config_controller["optimizer"]])
+        config_optimizer = dict(config_optimizers[optimizer_short_name])
         config_optimizer.update({"seed": int(seeds[1])})
         config_environment = dict(config["2_environments"][environment_name])
         config_environment.update({"seed": int(seeds[0])})
@@ -108,7 +110,7 @@ def run_data_generator(
             control_limits=(env.action_space.low, env.action_space.high),
             initial_environment_attributes=env.environment_attributes,
         )
-        controller.configure(optimizer_name=config_controller["optimizer"], predictor_specification=config_controller["predictor_specification"])
+        controller.configure(optimizer_name=optimizer_short_name, predictor_specification=config_controller["predictor_specification"])
 
         ##### ----------------------------------------------------- #####
         ##### ----------------- MAIN CONTROL LOOP ----------------- #####

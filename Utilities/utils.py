@@ -96,6 +96,7 @@ class SeedMemory:
 
 class CurrentRunMemory:
     current_controller_name: str
+    current_optimizer_name: str
     current_environment_name: str
     current_environment: EnvironmentBatched
 
