@@ -13,6 +13,9 @@ from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, Ten
 class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
     num_actions = 1
     num_states = 4
+    
+    theta_threshold_radians = 12 * 2 * np.pi / 360
+    x_threshold = 2.4
 
     def __init__(
         self,
@@ -140,8 +143,8 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
     def is_done(lib: "type[ComputationLibrary]", state: TensorType):
         x, x_dot, theta, theta_dot = lib.unstack(state, 4, -1)
         return (
-            (x < -CartPoleEnv.x_threshold)
-            | (x > CartPoleEnv.x_threshold)
-            | (theta < -CartPoleEnv.theta_threshold_radians)
-            | (theta > CartPoleEnv.theta_threshold_radians)
+            (x < -continuous_cartpole_batched.x_threshold)
+            | (x > continuous_cartpole_batched.x_threshold)
+            | (theta < -continuous_cartpole_batched.theta_threshold_radians)
+            | (theta > continuous_cartpole_batched.theta_threshold_radians)
         )

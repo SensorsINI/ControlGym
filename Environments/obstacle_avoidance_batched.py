@@ -27,20 +27,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Optional, Union, Tuple
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Circle
 import math
+from typing import Optional, Tuple, Union
+
 import gym
-from gym import spaces
+import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
-import torch
 from Control_Toolkit.others.environment import EnvironmentBatched
+from gym import spaces
+from matplotlib import use
+from matplotlib.patches import Circle
+from SI_Toolkit.computation_library import (ComputationLibrary, NumpyLibrary,
+                                            TensorType)
+from SI_Toolkit.Functions.TF.Compile import CompileTF
 from skspatial.objects import Sphere
 
-from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
-from SI_Toolkit.Functions.TF.Compile import CompileTF
+use("QtAgg")
+
 
 # Training constants
 MAX_ACCELERATION = 5.0
@@ -243,7 +247,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         self.state = self.step_dynamics(self.state, action, self.dt)
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
 
-        terminated = self.is_done(self.lib, self.state, self.target_point)
+        terminated = self.is_done(NumpyLibrary, self.state, self.target_point)
         truncated = False
         reward = 0.0
 
@@ -322,6 +326,8 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             plt.ioff()
         else:
             plt.ion()
+        
+        
 
         # Storing tracked trajectory
         self.traj_x.append(float(self.state[0]))

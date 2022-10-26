@@ -36,10 +36,15 @@ import numpy as np
 import tensorflow as tf
 import torch
 from Control_Toolkit.others.environment import EnvironmentBatched
-from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
 from gym import spaces
+from matplotlib import use
 from matplotlib.patches import Circle
+from SI_Toolkit.computation_library import (ComputationLibrary, NumpyLibrary,
+                                            TensorType)
 from SI_Toolkit.Functions.TF.Compile import CompileTF
+
+use("QtAgg")
+
 
 # Training constants
 MAX_STEER = np.pi / 3
