@@ -4,9 +4,11 @@
   optimizer_names:
   # - optimizer_cem_tf
   # - optimizer_mppi_tf
+  # - optimizer_mppi_var_tf
+  # - optimizer_mppi_optimize_tf
   # - optimizer_cem_grad_bharadhwaj_tf
   # - optimizer_gradient_tf
-  # - optimizer_random_action
+  # - optimizer_random_action_tf
   - optimizer_rpgd_tf
   # - optimizer_rpgd_me_tf
   # - optimizer_rpgd_ml_tf
@@ -33,23 +35,19 @@
   - 0.2
 2_environments:
   CustomEnvironments/CartPoleContinuous-v0:
-    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 0.02
   CustomEnvironments/MountainCarContinuous-v0:
     goal_velocity: 0.0
-    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 1.0
   CustomEnvironments/Pendulum-v0:
-    cost_function: cost_function_default
     actuator_noise:
     - 0.2
     dt: 0.05
   CustomEnvironments/DubinsCar-v0:
-    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     - 0.0
@@ -107,7 +105,6 @@
     dt: 0.005
     shuffle_target_every: 30
   CustomEnvironments/HalfCheetahBatched-v0:
-    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     forward_reward_weight: 1.0
@@ -116,12 +113,10 @@
     exclude_current_positions_from_observation: true
     dt: 0.02
   CustomEnvironments/Acrobot-v0:
-    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 0.2
   CustomEnvironments/CartPoleSimulator-v0:
-    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 0.02
@@ -131,12 +126,10 @@
     u_max: 2.62
     shuffle_target_every: 100
   CustomEnvironments/BipedalWalkerBatched-v0:
-    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 0.02
   CustomEnvironments/ObstacleAvoidance-v0:
-    cost_function: cost_function_default
     actuator_noise:
     - 0.0
     dt: 0.02
