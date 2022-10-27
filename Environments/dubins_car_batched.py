@@ -43,7 +43,10 @@ from SI_Toolkit.computation_library import (ComputationLibrary, NumpyLibrary,
                                             TensorType)
 from SI_Toolkit.Functions.TF.Compile import CompileTF
 
+from Control_Toolkit.others.globals_and_utils import get_logger
+
 use("QtAgg")
+logger = get_logger(__name__)
 
 
 # Training constants
@@ -477,23 +480,27 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             )
 
     def plot_trajectory_plans(self):
-        trajectories = self._logs.get("rollout_trajectories_logged", None)[-1]
-        costs = self._logs.get("J_logged")[-1]
-        if trajectories is not None:
-            for i, trajectory in enumerate(trajectories):
-                if i == np.argmin(costs):
-                    color = "r"
-                    alpha = 1.0
-                    zorder = 5
-                else:
-                    color = "g"
-                    alpha = min(5.0 / trajectories.shape[0], 1.0)
-                    zorder = 4
-                self.ax.plot(
-                    trajectory[:, 0] * MAX_X,
-                    trajectory[:, 1] * MAX_Y,
-                    linewidth=0.5,
-                    alpha=alpha,
-                    color=color,
-                    zorder=zorder,
-                )
+        trajectories = self._logs.get("rollout_trajectories_logged", None)
+        costs = self._logs.get("J_logged")
+        
+        if len(trajectories) and len(costs):
+            trajectories = trajectories[-1]
+            costs = costs[-1]
+            if trajectories is not None:
+                for i, trajectory in enumerate(trajectories):
+                    if i == np.argmin(costs):
+                        color = "r"
+                        alpha = 1.0
+                        zorder = 5
+                    else:
+                        color = "g"
+                        alpha = min(5.0 / trajectories.shape[0], 1.0)
+                        zorder = 4
+                    self.ax.plot(
+                        trajectory[:, 0] * MAX_X,
+                        trajectory[:, 1] * MAX_Y,
+                        linewidth=0.5,
+                        alpha=alpha,
+                        color=color,
+                        zorder=zorder,
+                    )

@@ -43,8 +43,10 @@ from SI_Toolkit.computation_library import (ComputationLibrary, NumpyLibrary,
 from SI_Toolkit.Functions.TF.Compile import CompileTF
 from skspatial.objects import Sphere
 
-use("QtAgg")
+from Control_Toolkit.others.globals_and_utils import get_logger
 
+use("QtAgg")
+logger = get_logger(__name__)
 
 # Training constants
 MAX_ACCELERATION = 5.0
@@ -443,47 +445,51 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         return patches
 
     def plot_trajectory_plans(self, lines=None):
-        trajectories = self._logs.get("rollout_trajectories_logged", None)[-1]
-        costs = self._logs.get("J_logged")[-1]
+        trajectories = self._logs.get("rollout_trajectories_logged", None)
+        costs = self._logs.get("J_logged")
         create_new_lines = lines == None
         lines = [] if lines == None else lines
-        if trajectories is not None:
-            for i, trajectory in enumerate(trajectories):
-                if i == np.argmin(costs):
-                    color = "r"
-                    alpha = 1.0
-                    zorder = 5
-                else:
-                    color = "g"
-                    alpha = min(5.0 / trajectories.shape[0], 1.0)
-                    zorder = 4
-                if create_new_lines:
-                    if self.num_dimensions == 3:
-                        (ln,) = self.ax.plot3D(
-                            trajectory[:, 0],
-                            trajectory[:, 1],
-                            trajectory[:, 2],
-                            linewidth=0.5,
-                            alpha=alpha,
-                            color=color,
-                            zorder=zorder,
-                        )
+        
+        if len(trajectories) and len(costs):
+            trajectories = trajectories[-1]
+            costs = costs[-1]
+            if trajectories is not None:
+                for i, trajectory in enumerate(trajectories):
+                    if i == np.argmin(costs):
+                        color = "r"
+                        alpha = 1.0
+                        zorder = 5
                     else:
-                        (ln,) = self.ax.plot(
-                            trajectory[:, 0],
-                            trajectory[:, 1],
-                            linewidth=0.5,
-                            alpha=alpha,
-                            color=color,
-                            zorder=zorder,
-                        )
-                    lines.append(ln)
-                else:
-                    if self.num_dimensions == 3:
-                        lines[i].set_data(trajectory[:, 0], trajectory[:, 1])
-                        lines[i].set_3d_properties(trajectory[:, 2])
+                        color = "g"
+                        alpha = min(5.0 / trajectories.shape[0], 1.0)
+                        zorder = 4
+                    if create_new_lines:
+                        if self.num_dimensions == 3:
+                            (ln,) = self.ax.plot3D(
+                                trajectory[:, 0],
+                                trajectory[:, 1],
+                                trajectory[:, 2],
+                                linewidth=0.5,
+                                alpha=alpha,
+                                color=color,
+                                zorder=zorder,
+                            )
+                        else:
+                            (ln,) = self.ax.plot(
+                                trajectory[:, 0],
+                                trajectory[:, 1],
+                                linewidth=0.5,
+                                alpha=alpha,
+                                color=color,
+                                zorder=zorder,
+                            )
+                        lines.append(ln)
                     else:
-                        lines[i].set_data(trajectory[:, 0], trajectory[:, 1])
+                        if self.num_dimensions == 3:
+                            lines[i].set_data(trajectory[:, 0], trajectory[:, 1])
+                            lines[i].set_3d_properties(trajectory[:, 2])
+                        else:
+                            lines[i].set_data(trajectory[:, 0], trajectory[:, 1])
         return lines
 
 
