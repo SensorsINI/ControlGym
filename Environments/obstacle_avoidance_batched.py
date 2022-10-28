@@ -69,7 +69,7 @@ WB = 0.25  # [m]
 class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
     num_states = None
     num_actions = None
-    metadata = {"render_modes": ["console", "single_rgb_array", "rgb_array", "human"]}
+    metadata = {"render_modes": ["console", "single_rgb_array", "rgb_array", "human"], "video.frames_per_second": 30, "render_fps": 30}
 
     def __init__(
         self,

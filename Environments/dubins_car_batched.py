@@ -73,7 +73,7 @@ show_animation = True
 class dubins_car_batched(EnvironmentBatched, gym.Env):
     num_states = 4  # [x, y, yaw, steering_rate]
     num_actions = 2
-    metadata = {"render_modes": ["console", "single_rgb_array", "rgb_array", "human"]}
+    metadata = {"render_modes": ["console", "single_rgb_array", "rgb_array", "human"], "video.frames_per_second": 30, "render_fps": 30}
 
     def __init__(
         self,
