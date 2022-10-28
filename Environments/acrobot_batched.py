@@ -67,7 +67,6 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         th1_vel_new = self.lib.clip(th1_vel_new, -self.MAX_VEL_1, self.MAX_VEL_1)
         th2_vel_new = self.lib.clip(th2_vel_new, -self.MAX_VEL_2, self.MAX_VEL_2)
         state = self.lib.stack([th1_new, th2_new, th1_vel_new, th2_vel_new], 1)
-        state = self.lib.squeeze(state)
 
         return state
 
