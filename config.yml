@@ -1,25 +1,33 @@
 1_data_generation:
   controller_names:
-  - controller_cem_tf
-  - controller_mppi_tf
-  - controller_cem_grad_bharadhwaj_tf
-  - controller_gradient_tf
-  - controller_random_action
-  - controller_rpgd_tf
+  - controller_mpc
+  optimizer_names:
+  # - optimizer_cem_tf
+  # - optimizer_mppi_tf
+  # - optimizer_mppi_var_tf
+  # - optimizer_mppi_optimize_tf
+  # - optimizer_cem_grad_bharadhwaj_tf
+  # - optimizer_gradient_tf
+  # - optimizer_random_action_tf
+  - optimizer_rpgd_tf
+  # - optimizer_rpgd_me_tf
+  # - optimizer_rpgd_ml_tf
   environment_names:
   - CustomEnvironments/MountainCarContinuous-v0
-  - CustomEnvironments/CartPoleSimulator-v0
-  - CustomEnvironments/DubinsCar-v0
-  - CustomEnvironments/Acrobot-v0
-  - CustomEnvironments/Pendulum-v0
-  - CustomEnvironments/CartPoleContinuous-v0
+  # - CustomEnvironments/CartPoleSimulator-v0
+  # - CustomEnvironments/DubinsCar-v0
+  # - CustomEnvironments/Acrobot-v0
+  # - CustomEnvironments/Pendulum-v0
+  # - CustomEnvironments/CartPoleContinuous-v0
+  # - CustomEnvironments/BipedalWalkerBatched-v0
+  # - CustomEnvironments/ObstacleAvoidance-v0
   debug: false  # false to use tf.compile
   use_jit_compilation: false  # false for reproducibility
   use_gpu: false
   logging_level: DEBUG
-  num_experiments: 50
-  num_iterations: 200
-  render_for_humans: false
+  num_experiments: 1
+  num_iterations: 500
+  render_for_humans: true
   save_plots_to_file: false
   seed_entropy: 49604
   split:
@@ -31,6 +39,7 @@
     - 0.0
     dt: 0.02
   CustomEnvironments/MountainCarContinuous-v0:
+    goal_velocity: 0.0
     actuator_noise:
     - 0.0
     dt: 1.0
@@ -94,7 +103,7 @@
     # - [+0.6, -0.1, 0.1]
     # - [+0.6, +0.0, 0.1]
     dt: 0.005
-    shuffle_target_every: 1000000
+    shuffle_target_every: 30
   CustomEnvironments/HalfCheetahBatched-v0:
     actuator_noise:
     - 0.0
@@ -115,230 +124,17 @@
     cart_length: 4.4e-2
     usable_track_length: 44.0e-2
     u_max: 2.62
-    shuffle_target_every: 1000000
-3_predictors:
-  PredictorGaussianError:
-    prediction_error_stdev: 0.1
-4_controllers:
-  controller_logging: true
-  mpc_horizon: 50  # steps
-
-######################################################################################
-
-  # Control_Toolkit Controllers
-  controller_cem_grad_bharadhwaj_tf:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
-    cem_LR: 0.05
-    adam_beta_1: 0.9
-    adam_beta_2: 0.999
-    adam_epsilon: 1.0e-08
-    cem_R: 1
-    num_rollouts: 32
-    cem_best_k: 8
-    cem_outer_it: 2
-    cem_initial_action_stdev: 2
-    cem_stdev_min: 1.e-6
-    gradmax_clip: 5
-    predictor_intermediate_steps: 1
-    predictor_name: predictor_ODE_tf
-    warmup: false
-    warmup_iterations: 250
-  controller_gradient_tf:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
-    learning_rate: 0.05
-    adam_beta_1: 0.9
-    adam_beta_2: 0.999
-    adam_epsilon: 1.0e-08
-    gradient_steps: 2
-    mpc_rollouts: 32
-    initial_action_stdev: 0.5
-    gradmax_clip: 5
-    predictor_intermediate_steps: 1
-    predictor_name: predictor_ODE_tf
-    rtol: 1.0e-3
-    warmup: false
-    warmup_iterations: 250
-  controller_random_action:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
-    num_rollouts: 320
-    predictor_intermediate_steps: 1
-    predictor_name: predictor_ODE_tf
-  controller_cem_naive_grad_tf:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
-    cem_LR: 0.05
-    cem_R: 1
-    cem_best_k: 4
-    cem_ccrc_weight: 1
-    cem_outer_it: 5
-    num_rollouts: 40
-    cem_initial_action_stdev: 0.5
-    cem_stdev_min: 0.2
-    gradmax_clip: 5
-    predictor_intermediate_steps: 1
-    predictor_name: predictor_ODE_tf
-  controller_cem_tf:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
-    cem_R: 1
-    cem_ccrc_weight: 1
-    num_rollouts: 160
-    cem_best_k: 40
-    cem_outer_it: 2
-    cem_initial_action_stdev: 0.5
-    cem_stdev_min: 0.01
-    predictor_intermediate_steps: 1
-    predictor_name: predictor_ODE_tf
-    warmup: false
-    warmup_iterations: 250
-  controller_cem_gmm_tf:
-    CEM_NET_NAME: GRU-3IN-32H1-32H2-2OUT-0
-    cem_R: 1
-    cem_best_k: 5
-    cem_ccrc_weight: 1
-    cem_outer_it: 20
-    num_rollouts: 10
-    cem_initial_action_stdev: 0.5
-    cem_stdev_min: 0.01
-    predictor_intermediate_steps: 1
-    predictor_name: predictor_ODE_tf
-  controller_rpgd_tf:
-    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
-    SAMPLING_TYPE: interpolated
-    interpolation_step: 10
-    cem_LR: 0.05
-    adam_beta_1: 0.9
-    adam_beta_2: 0.999
-    adam_epsilon: 1.0e-08
-    gradmax_clip: 5
-    rtol: 1.0e-3
-    num_rollouts: 32
-    opt_keep_k: 8
-    outer_its: 2
-    predictor_intermediate_steps: 1
-    predictor_name: predictor_ODE_tf
-    resamp_per: 10
-    sample_stdev: 0.5
-    warmup: false
-    warmup_iterations: 250
-  controller_mppi_optimize_tf:
-    GAMMA: 1.0
-    LBD: 100.0
-    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
-    NU: 1000.0
-    R: 1.0
-    SAMPLING_TYPE: interpolated
-    SQRTRHOINV: 0.02
-    adam_beta_1: 0.4
-    adam_beta_2: 0.8
-    adam_epsilon: 1.0e-07
-    cc_weight: 1.0
-    gradmax_clip: 1000
-    mppi_LR: 0.02
-    num_rollouts: 400
-    optim_steps: 10
-    predictor_intermediate_steps: 1
-    predictor_name: predictor_ODE_tf
-  controller_mppi_tf:
-    GAMMA: 1.0
-    GP_NAME: SGP_30
-    LBD: 1.0e-1
-    LOGGING: false
-    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
-    NU: 1000.0
-    R: 1.0
-    SAMPLING_TYPE: None
-    SQRTRHOINV: 0.05
-    WASH_OUT_LEN: 100
-    cc_weight: 0.0
-    control_noise: 0.0
-    cost_noise: 0.0
-    num_rollouts: 320
-    predictor_intermediate_steps: 1
-    predictor_name: predictor_ODE_tf
-    update_every: 1
-  controller_mppi_var_tf:
-    GAMMA: 1.0
-    LBD_mc: 10.0
-    LR: 0.01
-    NET_NAME: GRU-6IN-32H1-32H2-5OUT-0
-    NU_mc: 20.0
-    R: 1.0
-    SAMPLING_TYPE: interpolated
-    SQRTRHOINV_mc: 0.002
-    STDEV_max: 10
-    STDEV_min: 0.1
-    cc_weight: 1.0
-    interpolation_step: 10
-    max_grad_norm: 100000
-    num_rollouts: 400
-    predictor_intermediate_steps: 1
-    predictor_name: predictor_ODE_tf
-
-######################################################################################
-
-  # Reimplemented Gym Controllers
-  ControllerAdamResampler:
-    cem_LR: 0.1
-    cem_R: 1
-    cem_best_k: 5
-    cem_ccrc_weight: 1
-    cem_initial_action_variance: 0.5
-    cem_outer_it: 30
-    num_rollouts: 30
-    cem_stdev_min: 0.1
-    do_warmup: true
-    grad_alpha: 0.05
-    grad_beta_1: 0.9
-    grad_beta_2: 0.999
-    grad_epsilon: 1.0e-07
-    grad_max: 1
-    predictor_name: PredictorEuler
-    resamp_every: 1
-  ControllerCem:
-    cem_LR: 0.1
-    cem_R: 1
-    cem_best_k: 5
-    cem_ccrc_weight: 1
-    cem_initial_action_variance: 0.5
-    cem_outer_it: 5
-    num_rollouts: 200
-    cem_stdev_min: 0.1
-    predictor_name: PredictorEuler
-  ControllerCemGradient:
-    cem_LR: 0.1
-    cem_R: 1
-    cem_best_k: 5
-    cem_ccrc_weight: 1
-    cem_initial_action_variance: 0.5
-    cem_outer_it: 5
-    num_rollouts: 200
-    cem_stdev_min: 0.1
-    grad_alpha: 0.05
-    grad_max: 1
-    predictor_name: PredictorEuler
-  ControllerCemGradientBharadhwaj:
-    cem_best_k: 5
-    cem_outer_it: 20
-    num_rollouts: 30
-    grad_epsilon: 1.0e-06
-    grad_learning_rate: 0.1
-    grad_max: 1
-    grad_sgd_momentum: 0.0
-    predictor_name: PredictorEuler
-  ControllerMPPIGradient:
-    cem_LR: 0.1
-    cem_R: 1
-    cem_best_k: 5
-    cem_ccrc_weight: 1
-    cem_initial_action_variance: 0.5
-    cem_outer_it: 10
-    num_rollouts: 10
-    cem_stdev_min: 0.05
-    do_warmup: true
-    grad_alpha: 0.05
-    grad_beta_1: 0.9
-    grad_beta_2: 0.999
-    grad_epsilon: 1.0e-07
-    grad_max: 5
-    mppi_lambda: 0.1
-    predictor_name: PredictorEuler
-    resamp_every: 1
+    shuffle_target_every: 100
+  CustomEnvironments/BipedalWalkerBatched-v0:
+    actuator_noise:
+    - 0.0
+    dt: 0.02
+  CustomEnvironments/ObstacleAvoidance-v0:
+    actuator_noise:
+    - 0.0
+    dt: 0.02
+    target_point: null
+    initial_state: null
+    obstacle_positions: []
+    shuffle_target_every: 20
+    num_dimensions: 3

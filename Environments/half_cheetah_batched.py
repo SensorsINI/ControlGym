@@ -3,7 +3,8 @@ from typing import Optional, Tuple, Union
 import mujoco
 import numpy as np
 import tensorflow as tf
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 from gym.envs.mujoco.half_cheetah_v3 import HalfCheetahEnv
 from tf_agents.environments import BatchedPyEnvironment, suite_gym
 
@@ -23,7 +24,6 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode="human",
-        parent_env: EnvironmentBatched = None,
         **kwargs,
     ) -> None:
         self._envs = BatchedPyEnvironment(
@@ -49,13 +49,13 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(seed)
-        self.cost_functions = self.cost_functions_wrapper(self)
 
     def step(
-        self, action: Union[np.ndarray, tf.Tensor]
+        self, action: TensorType
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor],
+        TensorType,
         Union[np.ndarray, float],
+        Union[np.ndarray, bool],
         Union[np.ndarray, bool],
         dict,
     ]:
@@ -63,25 +63,21 @@ class half_cheetah_batched(EnvironmentBatched, HalfCheetahEnv):
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
+        state = options.get("state", None) if isinstance(options, dict) else None
         
         step_type, reward, discount, obs  = self._envs.reset()
         
         if state is not None:
             self._envs.set_state(state)
 
+        return obs, {}
 
-        if return_info:
-            return obs, {}
-        return obs
-
-    def render(self, mode="human"):
+    def render(self):
         if self._batch_size == 1:
             return super().render()
         else:

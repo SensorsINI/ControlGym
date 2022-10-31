@@ -9,6 +9,7 @@ import tensorflow as tf
 import torch
 
 from yaml import FullLoader, load
+from Control_Toolkit.others.environment import EnvironmentBatched
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
 
@@ -55,34 +56,12 @@ def get_logger(name):
 logger = get_logger(__name__)
 
 
-def get_name_of_controller_module(controller_name: str) -> str:
-    """Check if the controller name specified a controller within
-    CartPoleSimulation repo or an internal one
-
-    :param controller_name: Name of controller as in config.ymnl
-    :type controller_name: str
-    :return: name of module where to find the right controller or wrapper
-    :rtype: str
-    """
-    if find_spec(f"Control_Toolkit.Controllers.{controller_name}") is not None:
-        logger.info(f"Using a CartPoleSimulation controller: {controller_name}")
-        return "ControllerCartPoleSimulationImport"
-    elif find_spec(f"ControllersGym.{controller_name}") is not None:
-        logger.info(f"Using a ControlGym controller: {controller_name}")
-        return controller_name
-    else:
-        raise ValueError(f"Passed an unknown controller name {controller_name}")
-
-
 class OutputPath:
     RUN_NUM = 1
     collection_folder_name = ""
 
     @classmethod
-    def get_output_path(cls, timestamp: str, filename: str, suffix: str) -> str:
-        controller_name = CurrentRunMemory.current_controller_name
-        env_name = CurrentRunMemory.current_environment_name
-        predictor_name = config["4_controllers"][controller_name]["predictor_name"]
+    def get_output_path(cls, timestamp: str, env_name: str, controller_name: str, predictor_name: str, filename: str, suffix: str) -> str:
         folder = os.path.join(
             "Output",
             cls.collection_folder_name,
@@ -117,7 +96,9 @@ class SeedMemory:
 
 class CurrentRunMemory:
     current_controller_name: str
+    current_optimizer_name: str
     current_environment_name: str
+    current_environment: EnvironmentBatched
 
 
 ### Below is copied from CartPole repo

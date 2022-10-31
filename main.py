@@ -1,26 +1,22 @@
-import importlib
 import os
 import sys
 import time
-from copy import deepcopy
 from datetime import datetime
+from importlib import import_module
 from typing import Any
-import numpy as np
 
 import gym
+import numpy as np
 from numpy.random import SeedSequence
-from yaml import dump
+from yaml import FullLoader, dump, load
 
-from ControllersGym import Controller
+from Control_Toolkit.Controllers import template_controller
+from Control_Toolkit.others.environment import EnvironmentBatched
 from Environments import ENV_REGISTRY, register_envs
+from SI_Toolkit.computation_library import TensorFlowLibrary
 from Utilities.csv_helpers import save_to_csv
 from Utilities.generate_plots import generate_experiment_plots
-from Utilities.utils import (
-    OutputPath,
-    SeedMemory,
-    get_logger,
-    get_name_of_controller_module,
-)
+from Utilities.utils import CurrentRunMemory, OutputPath, SeedMemory, get_logger
 
 # Keep allowing absolute imports within CartPoleSimulation subgit
 sys.path.append(os.path.join(os.path.abspath("."), "CartPoleSimulation"))
@@ -31,8 +27,14 @@ logger = get_logger(__name__)
 register_envs()
 
 
+config_controllers = load(open(os.path.join("Control_Toolkit_ASF", "config_controllers.yml"), "r"), Loader=FullLoader)
+config_cost_function = load(open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"), Loader=FullLoader)
+config_optimizers = load(open(os.path.join("Control_Toolkit_ASF", "config_optimizers.yml"), "r"), Loader=FullLoader)
+
+
 def run_data_generator(
     controller_name: str,
+    optimizer_name: str,
     environment_name: str,
     num_experiments: int,
     config: "dict[str, Any]",
@@ -56,78 +58,80 @@ def run_data_generator(
 
     # Set current controller/env names in config which is saved later
     config["1_data_generation"].update(
-        {"controller_name": controller_name, "environment_name": environment_name}
+        {"controller_name": controller_name, "optimizer_name": optimizer_name, "environment_name": environment_name}
     )
+    controller_short_name = controller_name.replace("controller_", "").replace("_", "-")
+    optimizer_short_name = optimizer_name.replace("optimizer_", "").replace("_", "-")
 
     # Loop through independent experiments
     for i in range(num_experiments):
         # Generate new seeds for environment and controller
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.set_seeds(seeds)
-        config["2_environments"][environment_name].update({"seed": int(seeds[0])})
-        config["4_controllers"][controller_name].update({"seed": int(seeds[2])})
+        
+        config_controller = dict(config_controllers[controller_short_name])
+        config_optimizer = dict(config_optimizers[optimizer_short_name])
+        config_optimizer.update({"seed": int(seeds[1])})
+        config_environment = dict(config["2_environments"][environment_name])
+        config_environment.update({"seed": int(seeds[0])})
 
-        # Flatten global controller config values
-        config["4_controllers"][controller_name].update(
-            {
-                k: config["4_controllers"][k]
-                for k in ["controller_logging", "mpc_horizon"]
-            }
-        )
-
-        # Create environment and call reset
-        render_mode = (
-            "human"
-            if config["1_data_generation"]["render_for_humans"]
-            else "single_rgb_array"
-        )
+        ##### ----------------------------------------------- #####
+        ##### ----------------- ENVIRONMENT ----------------- #####
+        ##### --- Instantiate environment and call reset ---- #####
+        if config["1_data_generation"]["render_for_humans"]:
+            render_mode = "human"
+        elif config["1_data_generation"]["save_plots_to_file"]:
+            render_mode = "rgb_array"
+        else:
+            render_mode = None
 
         import matplotlib
 
-        if render_mode == "human":
-            matplotlib.use("Qt5Agg")
-        else:
-            matplotlib.use("Agg")
+        matplotlib.use("Agg")
 
-        env = gym.make(
+        env: EnvironmentBatched = gym.make(
             environment_name,
-            **config["2_environments"][environment_name],
+            **config_environment,
+            computation_lib=TensorFlowLibrary,
             render_mode=render_mode,
         )
-        obs = env.reset(seed=int(seeds[1]))
-
-        # Instantiate controller
-        controller_module_name = get_name_of_controller_module(controller_name)
-        controller_module = importlib.import_module(
-            f"ControllersGym.{controller_module_name}"
+        CurrentRunMemory.current_environment = env
+        obs, obs_info = env.reset(seed=config_environment["seed"])
+        assert len(env.action_space.shape) == 1, f"Action space needs to be a flat vector, is Box with shape {env.action_space.shape}"
+        
+        ##### ---------------------------------------------- #####
+        ##### ----------------- CONTROLLER ----------------- #####
+        controller_module = import_module(f"Control_Toolkit.Controllers.{controller_name}")
+        controller: template_controller = getattr(controller_module, controller_name)(
+            dt=env.dt,
+            environment_name=ENV_REGISTRY[environment_name].split(":")[-1],
+            num_states=env.observation_space.shape[0],
+            num_control_inputs=env.action_space.shape[0],
+            control_limits=(env.action_space.low, env.action_space.high),
+            initial_environment_attributes=env.environment_attributes,
         )
-        controller: Controller = getattr(controller_module, controller_module_name)(
-            **{
-                **{
-                    "environment": env.unwrapped,
-                    "controller_name": controller_name,
-                },
-                **config["4_controllers"][controller_name],
-                **config["2_environments"][environment_name],
-            },
-        )
+        controller.configure(optimizer_name=optimizer_short_name, predictor_specification=config_controller["predictor_specification"])
 
+        ##### ----------------------------------------------------- #####
+        ##### ----------------- MAIN CONTROL LOOP ----------------- #####
         frames = []
         start_time = time.time()
         num_iterations = config["1_data_generation"]["num_iterations"]
         for step in range(num_iterations):
-            action = controller.step(obs)
-            new_obs, reward, done, info = env.step(action)
-            controller.realized_cost_logged = np.array([-reward])
-            if config["4_controllers"]["controller_logging"]:
-                controller.update_logs()
-            if config["1_data_generation"]["render_for_humans"] or config["1_data_generation"]["save_plots_to_file"]:
+            action = controller.step(obs, updated_attributes=env.environment_attributes)
+            new_obs, reward, terminated, truncated, info = env.step(action)
+            if config_controller.get("controller_logging", False):
+                controller.logs["realized_cost_logged"].append(np.array([-reward]).copy())
+                env.set_logs(controller.logs)
+            if config["1_data_generation"]["render_for_humans"]:
+                env.render()
+            elif config["1_data_generation"]["save_plots_to_file"]:
                 frames.append(env.render())
 
-            time.sleep(0.001)
+            time.sleep(1e-6)
 
-            # If the episode is up, start a new experiment
-            if done:
+            if terminated or truncated:
+                # If the episode is up, start a new experiment
                 break
 
             logger.debug(
@@ -135,6 +139,7 @@ def run_data_generator(
             )
             obs = new_obs
         
+        # Print compute time statistics
         end_time = time.time()
         control_freq = num_iterations / (end_time - start_time)
         logger.debug(f"Achieved average control frequency of {round(control_freq, 2)}Hz ({round(1.0e3/control_freq, 2)}ms per iteration)")
@@ -142,7 +147,8 @@ def run_data_generator(
         # Close the env
         env.close()
 
-        # Generate plots
+        ##### ----------------------------------------------------- #####
+        ##### ----------------- LOGGING AND PLOTS ----------------- #####
         OutputPath.RUN_NUM = i + 1
         controller_output = controller.get_outputs()
 
@@ -156,7 +162,7 @@ def run_data_generator(
                 csv = os.path.join(record_path, "Test")
             os.makedirs(csv, exist_ok=True)
             save_to_csv(config, controller, environment_name, csv)
-        elif config["4_controllers"]["controller_logging"]:
+        elif config_controller.get("controller_logging", False):
             if config["1_data_generation"]["save_plots_to_file"]:
                 # Generate and save plots in default location
                 generate_experiment_plots(
@@ -168,12 +174,12 @@ def run_data_generator(
             # Save .npy files 
             for n, a in controller_output.items():
                 with open(
-                    OutputPath.get_output_path(timestamp_str, str(n), ".npy"),
+                    OutputPath.get_output_path(timestamp_str, environment_name, controller_name, config_controller["predictor_specification"], str(n), ".npy"),
                     "wb",
                 ) as f:
                     np.save(f, a)
-            # Save 
+            # Save config
             with open(
-                OutputPath.get_output_path(timestamp_str, "config", ".yml"), "w"
+                OutputPath.get_output_path(timestamp_str, environment_name, controller_name, config_controller["predictor_specification"], "config", ".yml"), "w"
             ) as f:
                 dump(config, f)

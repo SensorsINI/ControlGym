@@ -1,0 +1,6 @@
+mpc:
+  optimizer: rpgd-tf
+  predictor_specification: ODE_TF
+  cost_function_specification: default
+  computation_library: tensorflow
+  controller_logging: true

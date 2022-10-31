@@ -1,13 +1,7 @@
-from importlib import import_module
 import tensorflow as tf
+from SI_Toolkit.Functions.TF.Compile import CompileTF
 
-from Utilities.utils import CurrentRunMemory, SeedMemory
-
-from SI_Toolkit.Functions.TF.Compile import Compile
-from Environments import ENV_REGISTRY
-from Control_Toolkit.others.environment import EnvironmentBatched, TensorFlowLibrary
-
-from SI_Toolkit_ASF.predictors_customization import STATE_INDICES
+from SI_Toolkit_ASF.predictors_customization import (STATE_INDICES, STATE_VARIABLES, next_state_predictor_ODE)
 
 STATE_INDICES_TF = tf.lookup.StaticHashTable(  # TF style dictionary
     initializer=tf.lookup.KeyValueTensorInitializer(
@@ -19,26 +13,7 @@ STATE_INDICES_TF = tf.lookup.StaticHashTable(  # TF style dictionary
 )
 
 
-class next_state_predictor_ODE_tf:
-    def __init__(self, dt: float, intermediate_steps: int, batch_size: int, planning_environment: EnvironmentBatched, **kwargs):
-        self.s = None
-
-        self.env = planning_environment
-
-        self.intermediate_steps = tf.convert_to_tensor(
-            intermediate_steps, dtype=tf.int32
-        )
-        self.t_step = tf.convert_to_tensor(
-            dt / float(self.intermediate_steps), dtype=tf.float32
-        )
-        self.env.dt = self.t_step
-
-    def step(self, s, Q, params):
-        self.env.state = s
-        for _ in tf.range(self.intermediate_steps):
-            next_state = self.env.step_tf(s, Q)
-            s = next_state
-        return next_state
+next_state_predictor_ODE_tf = next_state_predictor_ODE
 
 
 class predictor_output_augmentation_tf:
@@ -59,7 +34,7 @@ class predictor_output_augmentation_tf:
     def get_features_augmentation(self):
         return self.features_augmentation
 
-    @Compile
+    @CompileTF
     def augment(self, net_output):
 
         output = net_output

@@ -1,8 +1,10 @@
 from importlib import import_module
+from typing import Callable
 
 import numpy as np
 from Environments import ENV_REGISTRY, register_envs
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 
 from Utilities.utils import CurrentRunMemory, SeedMemory
 
@@ -12,7 +14,7 @@ environment_module = (
     .split(":")[0]
     .split(".")[-1]
 )
-Environment = getattr(
+Environment: "type[EnvironmentBatched]" = getattr(
     import_module(f"Environments.{environment_module}"), environment_module
 )
 
@@ -27,19 +29,18 @@ register_envs()
 
 
 class next_state_predictor_ODE:
-    def __init__(self, dt: float, intermediate_steps: int, batch_size: int, planning_environment: EnvironmentBatched, **kwargs):
+    def __init__(self, dt: float, intermediate_steps: int, batch_size: int, **kwargs):
         self.s = None
 
-        self.env = planning_environment
+        self.step_fun = CurrentRunMemory.current_environment.step_dynamics
 
         self.intermediate_steps = intermediate_steps
-        self.t_step = np.float32(dt / float(self.intermediate_steps))
-        self.env.dt = self.t_step
+        self.t_step = dt / float(self.intermediate_steps)
 
     def step(self, s, Q, params):
-        self.env.reset(s.copy())
         for _ in range(self.intermediate_steps):
-            next_state, _, _, _ = self.env.step(Q)
+            next_state = self.step_fun(s, Q, self.t_step)
+            s = next_state
         return next_state
 
 

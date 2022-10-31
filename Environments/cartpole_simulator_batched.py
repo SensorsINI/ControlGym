@@ -1,22 +1,17 @@
+from typing import Optional, Tuple, Union
+
 import numpy as np
 import tensorflow as tf
-
-from typing import Optional, Tuple, Union
-from CartPoleSimulation.CartPole import CartPole
-from CartPoleSimulation.CartPole.cartpole_model_tf import _cartpole_ode, cartpole_integration_tf
-from CartPoleSimulation.CartPole.state_utilities import (
-    ANGLE_COS_IDX,
-    POSITION_IDX,
-)
-
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary, TensorType
-
+import torch
+from CartPoleSimulation.CartPole.cartpole_model_tf import (
+    _cartpole_ode, cartpole_integration_tf)
+from CartPoleSimulation.CartPole.state_utilities import (ANGLE_COS_IDX,
+                                                         POSITION_IDX)
 from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
-
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
 from gym.spaces import Box
-from gym.utils.renderer import Renderer
 
-from Utilities.utils import CurrentRunMemory
 
 class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
     num_actions = 1
@@ -27,13 +22,11 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode="human",
-        parent_env: EnvironmentBatched = None,
         **kwargs,
     ):
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
         self.render_mode = render_mode
-        self.renderer = Renderer(self.render_mode, self._render)
 
         self.shuffle_target_every = kwargs["shuffle_target_every"]
         self.config = {
@@ -43,7 +36,6 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = self.cost_functions_wrapper(self)
         self.dt = self.lib.to_tensor(kwargs["dt"], self.lib.float32)
 
         # self.CartPoleInstance = CartPole()
@@ -61,8 +53,10 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         track_half_length = np.array(usable_track_length - cart_length / 2.0)
         self.u_max = kwargs["u_max"]
 
-        self.parent_env: cartpole_simulator_batched = self if parent_env is None else parent_env
-        self.target_position = tf.Variable(0., dtype=tf.float32)
+        self.target_position = tf.Variable(0.0, dtype=tf.float32)
+        self.environment_attributes = {
+            "target_position": self.target_position,
+        }
 
         self.x_threshold = (
             0.9 * track_half_length
@@ -101,16 +95,14 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, Optional[dict]]:
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
-        
+        state = options.get("state", None) if isinstance(options, dict) else None
         self.count = 0
-        
+
         if state is None:
             low = np.array([-self.lib.pi / 4, 1.0e-1, 1.0e-1, 1.0e-1])
             high = np.array([self.lib.pi / 4, 1.0e-1, 1.0e-1, 1.0e-1])
@@ -121,6 +113,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
                 4,
                 1,
             )
+            angle = self.lib.to_numpy(angle)
             mask = angle >= 0
             angle[mask] -= np.pi
             angle[~mask] += np.pi
@@ -149,62 +142,27 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         if self._batch_size == 1:
             self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
 
-        return tuple((self.state, {})) if return_info else self.state
+        return self.state, {}
 
-    def step_tf(self, state: tf.Tensor, action: tf.Tensor):
-        state, action = self._expand_arrays(state, action)
-
-        # Perturb action if not in planning mode
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
-
-        state_updated = self.step_physics(state, action)
-
-        return state_updated
-
-    def step(self, action: tf.Tensor):
-        self.state, action = self._expand_arrays(self.state, action)
-
-        # Perturb action if not in planning mode
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
-
-        self.state = self.step_physics(self.state, action)
-
-        # Update the total time of the simulation
-        # self.CartPoleInstance.step_time()
-        if self.count % self.shuffle_target_every == 0:
-            new_target = self.lib.uniform(
-                self.rng, [], -self.x_threshold, self.x_threshold, self.lib.float32
-            )
-            self.target_position.assign(new_target)
-        self.count += 1
-
-        reward = self.get_reward(self.state, action)
-        done = self.is_done(self.state)
-
-        if self._batch_size == 1:
-            self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
-            reward = float(reward)
-
-        self.renderer.render_step()
-        return (
-            self.state,
-            reward,
-            done,
-            {"target": self.lib.to_numpy(self.parent_env.target_position)},
-        )
-
-    def step_physics(self, state: TensorType, action: TensorType):
+    def step_dynamics(
+        self,
+        state: TensorType,
+        action: TensorType,
+        dt: float,
+    ) -> TensorType:
         # Convert dimensionless motor power to a physical force acting on the Cart
         u = self.u_max * action[:, 0]
 
-        angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(state, 6, 1)
+        angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(
+            state, 6, 1
+        )
 
         # Compute next state
         angleDD, positionDD = _cartpole_ode(angle_cos, angle_sin, angleD, positionD, u)
 
-        angle, angleD, position, positionD = cartpole_integration_tf(angle, angleD, angleDD, position, positionD, positionDD, self.dt)
+        angle, angleD, position, positionD = cartpole_integration_tf(
+            angle, angleD, angleDD, position, positionD, positionDD, dt
+        )
         angle_cos = self.lib.cos(angle)
         angle_sin = self.lib.sin(angle)
 
@@ -216,13 +174,47 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
         return next_state
 
-    def get_reward(self, state, action):
-        target_position = self.lib.to_tensor(self.parent_env.target_position, self.lib.float32)
-        reward = (
-            state[..., ANGLE_COS_IDX]
-            - (state[..., POSITION_IDX] - target_position)**2
-        )
-        return reward
+    def step(
+        self, action: TensorType
+    ) -> Tuple[
+        TensorType,
+        Union[np.ndarray, float],
+        Union[np.ndarray, bool],
+        Union[np.ndarray, bool],
+        dict,
+    ]:
+        self.state, action = self._expand_arrays(self.state, action)
 
-    def is_done(self, state):
+        # Perturb action if not in planning mode
+        assert self._batch_size == 1
+        action = self._apply_actuator_noise(action)
+
+        self.state = self.lib.to_numpy(self.step_dynamics(self.state, action, self.dt))
+
+        # Update the total time of the simulation
+        # self.CartPoleInstance.step_time()
+        if self.count % self.shuffle_target_every == 0:
+            new_target = self.lib.uniform(
+                self.rng, [], -self.x_threshold, self.x_threshold, self.lib.float32
+            )
+            self.target_position.assign(new_target)
+        self.count += 1
+
+        reward = 0.0
+        terminated = self.is_done(self.lib, self.state)
+        truncated = False
+
+        self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
+        reward = float(reward)
+
+        return (
+            self.state,
+            reward,
+            terminated,
+            truncated,
+            {"target": self.lib.to_numpy(self.target_position)},
+        )
+
+    @staticmethod
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType):
         return False

@@ -6,20 +6,22 @@ import torch
 from gym import spaces
 from gym.envs.classic_control.cartpole import CartPoleEnv
 
-from Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary
-from Utilities.utils import CurrentRunMemory
+from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
 
 
 class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
     num_actions = 1
     num_states = 4
+    
+    theta_threshold_radians = 12 * 2 * np.pi / 360
+    x_threshold = 2.4
 
     def __init__(
         self,
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode="human",
-        parent_env: EnvironmentBatched = None,
         **kwargs,
     ):
         super().__init__(render_mode=render_mode)
@@ -38,14 +40,13 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.cost_functions = self.cost_functions_wrapper(self)
-    
-    def step_tf(self, state: tf.Tensor, action: tf.Tensor):
-        state, action = self._expand_arrays(state, action)
 
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
-
+    def step_dynamics(
+        self,
+        state: TensorType,
+        action: TensorType,
+        dt: float,
+    ) -> TensorType:
         x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, 1)
         force = self.lib.clip(
             action[:, 0],
@@ -64,93 +65,56 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
 
         if self.kinematics_integrator == "euler":
-            x = x + self.dt * x_dot
-            x_dot = x_dot + self.dt * xacc
-            theta = theta + self.dt * theta_dot
-            theta_dot = theta_dot + self.dt * thetaacc
+            x = x + dt * x_dot
+            x_dot = x_dot + dt * xacc
+            theta = theta + dt * theta_dot
+            theta_dot = theta_dot + dt * thetaacc
         else:  # semi-implicit euler
-            x_dot = x_dot + self.dt * xacc
-            x = x + self.dt * x_dot
-            theta_dot = theta_dot + self.dt * thetaacc
-            theta = theta + self.dt * theta_dot
+            x_dot = x_dot + dt * xacc
+            x = x + dt * x_dot
+            theta_dot = theta_dot + dt * thetaacc
+            theta = theta + dt * theta_dot
 
         state = self.lib.stack([x, x_dot, theta, theta_dot], 1)
-        state = self.lib.squeeze(state)
 
         return state
 
     def step(
-        self, action: Union[np.ndarray, tf.Tensor, torch.Tensor]
+        self, action: TensorType
     ) -> Tuple[
-        Union[np.ndarray, tf.Tensor, torch.Tensor],
+        TensorType,
         Union[np.ndarray, float],
+        Union[np.ndarray, bool],
         Union[np.ndarray, bool],
         dict,
     ]:
         self.state, action = self._expand_arrays(self.state, action)
 
         # Perturb action if not in planning mode
-        if self._batch_size == 1:
-            action = self._apply_actuator_noise(action)
+        assert self._batch_size == 1
+        action = self._apply_actuator_noise(action)
 
         err_msg = f"{action!r} ({type(action)}) invalid"
-        # assert np.all(
-        #     [self.action_space.contains(a) for a in self.lib.to_numpy(action)]
-        # ), err_msg
         assert self.state is not None, "Call reset before using step method."
 
-        x, x_dot, theta, theta_dot = self.lib.unstack(self.state, 4, 1)
-        force = self.lib.clip(
-            action[:, 0],
-            self.lib.to_tensor(self.action_space.low, self.lib.float32),
-            self.lib.to_tensor(self.action_space.high, self.lib.float32),
-        )
-        costheta = self.lib.cos(theta)
-        sintheta = self.lib.sin(theta)
+        self.state = self.step_dynamics(self.state, action, self.dt)
 
-        # For the interested reader:
-        # https://coneural.org/florian/papers/05_cart_pole.pdf
-        temp = (
-            force + self.polemass_length * theta_dot**2 * sintheta
-        ) / self.total_mass
-        thetaacc = (self.gravity * sintheta - costheta * temp) / (
-            self.length * (4.0 / 3.0 - self.masspole * costheta**2 / self.total_mass)
-        )
-        xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
-
-        if self.kinematics_integrator == "euler":
-            x = x + self.dt * x_dot
-            x_dot = x_dot + self.dt * xacc
-            theta = theta + self.dt * theta_dot
-            theta_dot = theta_dot + self.dt * thetaacc
-        else:  # semi-implicit euler
-            x_dot = x_dot + self.dt * xacc
-            x = x + self.dt * x_dot
-            theta_dot = theta_dot + self.dt * thetaacc
-            theta = theta + self.dt * theta_dot
-
-        self.state = self.lib.stack([x, x_dot, theta, theta_dot], 1)
-
-        done = self.is_done(self.state)
-        reward = self.get_reward(self.state, action)
+        terminated = self.is_done(self.lib, self.state)
+        truncated = False
+        reward = 0.0
 
         self.state = self.lib.squeeze(self.state)
-
-        if self._batch_size == 1:
-            self.renderer.render_step()
-            return self.lib.to_numpy(self.state), float(reward), bool(done), {}
-
-        return self.state, reward, done, {}
+        
+        return self.lib.to_numpy(self.state), float(reward), terminated, truncated, {}
 
     def reset(
         self,
-        state: np.ndarray = None,
-        seed: Optional[int] = None,
-        return_info: bool = False,
-        options: Optional[dict] = None,
-    ) -> Tuple[Union[np.ndarray, tf.Tensor, torch.Tensor], Optional[dict]]:
+        seed: "Optional[int]" = None,
+        options: "Optional[dict]" = None,
+    ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
+        state = options.get("state", None) if isinstance(options, dict) else None
 
         if state is None:
             if self._batch_size == 1:
@@ -175,16 +139,12 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
         return self._get_reset_return_val()
 
-    def is_done(self, state):
-        x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, -1)
+    @staticmethod
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType):
+        x, x_dot, theta, theta_dot = lib.unstack(state, 4, -1)
         return (
-            (x < -self.x_threshold)
-            | (x > self.x_threshold)
-            | (theta < -self.theta_threshold_radians)
-            | (theta > self.theta_threshold_radians)
+            (x < -continuous_cartpole_batched.x_threshold)
+            | (x > continuous_cartpole_batched.x_threshold)
+            | (theta < -continuous_cartpole_batched.theta_threshold_radians)
+            | (theta > continuous_cartpole_batched.theta_threshold_radians)
         )
-
-    def get_reward(self, state, action):
-        x, x_dot, theta, theta_dot = self.lib.unstack(state, 4, -1)
-        reward = -(100*(theta**2) + theta_dot**2 + (x**2) + x_dot**2)
-        return reward
