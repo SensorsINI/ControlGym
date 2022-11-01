@@ -17,10 +17,9 @@ numpy<1.23
 pandas
 pip
 pygame
-PyQt6
 pyyaml
 PyYAML
-scienceplots==1.0.8
+scienceplots
 scipy
 setuptools
 scikit-learn

@@ -26,8 +26,9 @@ Main features:
 * [Brockman et al. 2016, OpenAI Gym](https://arxiv.org/abs/1606.01540)
 
 
-### Required Installs
+### Installation
 
 * `pip install -r requirements.txt`
-* ffmpeg
-* latex
+* If you want GUI / rendering:
+  * `pip install PyQt5` or `PyQt6`
+  * `ffmpeg` and `latex`. Look up how to do that for your OS.

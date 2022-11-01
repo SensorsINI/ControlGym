@@ -7,10 +7,12 @@ from typing import Any
 
 import gym
 import numpy as np
+import tensorflow as tf
 from numpy.random import SeedSequence
 from yaml import FullLoader, dump, load
 
 from Control_Toolkit.Controllers import template_controller
+from Control_Toolkit.Cost_Functions.cost_function_wrapper import CostFunctionWrapper
 from Control_Toolkit.others.environment import EnvironmentBatched
 from Environments import ENV_REGISTRY, register_envs
 from SI_Toolkit.computation_library import TensorFlowLibrary
@@ -120,6 +122,15 @@ def run_data_generator(
         for step in range(num_iterations):
             action = controller.step(obs, updated_attributes=env.environment_attributes)
             new_obs, reward, terminated, truncated, info = env.step(action)
+            c_fun: CostFunctionWrapper = getattr(controller, "cost_function", None)
+            if c_fun is not None:
+                assert isinstance(c_fun, CostFunctionWrapper)
+                # Compute reward from the cost function that the controller optimized
+                reward = float(c_fun.get_stage_cost(
+                    tf.convert_to_tensor(new_obs[np.newaxis, np.newaxis, ...]),  # Add batch / MPC horizon dimensions
+                    tf.convert_to_tensor(action[np.newaxis, np.newaxis, ...]),
+                    None
+                ))
             if config_controller.get("controller_logging", False):
                 controller.logs["realized_cost_logged"].append(np.array([-reward]).copy())
                 env.set_logs(controller.logs)
