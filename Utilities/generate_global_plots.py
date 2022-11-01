@@ -1,3 +1,55 @@
+"""
+Script to generate plots which compare the effect of a hyperparameter sweep.
+Folder structure
+```
+./Output/
+  L <<datetime>>_sweep_<<sweep_variable>>/
+    L controller_name=<<controller_1>>/
+      L <<datetime>>_<<controller_name>>_<<environment_name>>_<<predictor_name>>/
+        L <<configs and logfiles for a number of trials, e.g. 100 trials>>
+    L controller_name=<<controller_2>>/
+      L ...
+    L ...
+```
+
+You need to provide the `<<datetime>>_sweep_<<sweep_variable>>/` entry to this script and it
+will search for all suitable trials to compare within the subfolders.
+
+"""
+### ------------- 1. Specify the paths to the experiment ------------- ###
+### Option 1: Specify paths manually, e.g.
+# experiments_to_plot = [
+#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=0/20220905-151037_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=1/20220905-153936_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     ...
+# ]
+
+### Option 2: Specify a top-level folder
+EXPERIMENT_FOLDER = "20221101-171103_sweep_controller_name"
+ENVIRONMENT_NAME = "ObstacleAvoidance"
+### ------------- Do not modify the following two lines ------------- ###
+experiments_to_plot = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*", recursive="True")
+experiments_to_plot = natsorted(experiments_to_plot)
+### ------------- ------------- ------------- ------------- ------------- ###
+
+
+sweep_value = EXPERIMENT_FOLDER.split("sweep_")[1].split("_controller")[0]
+
+### ------------- 2. Specify what the sweeped value is (labeled on x-axis) ------------- ###
+sweep_values = {
+    "description": "Controller Name",
+    "xlabel": r"K\textsubscript{re}",
+    "sweep_values": list(map(
+        lambda x: x.split("=")[1].split("/")[0].split("\\")[0],
+        [re.search(f"{sweep_value}=.*(/|\\\)", path).group() for path in experiments_to_plot]
+    )),
+}
+sweep_values["boxcolors"] = ["white" for _ in range(len(sweep_values["sweep_values"]))]
+# sweep_values["boxcolors"][-2:] = ["gray", "gray"]
+sweep_values["ylabel"] = "Average Control Cost"
+# sweep_values["ylabel"] = "Cost of Best Plan" if sweep_value == "resamp_per" else "Average Control Cost"
+
+
 import os
 import re
 from datetime import datetime
@@ -14,37 +66,6 @@ from Utilities.utils import get_logger
 
 logger = get_logger(__name__)
 
-# Select a number of experiments
-
-## Option 1: Specify paths manually
-# EXPERIMENTS_TO_PLOT = [
-#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=0/20220905-151037_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
-#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=1/20220905-153936_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
-#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=2/20220905-162358_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
-#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=3/20220905-172320_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
-#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=4/20220905-183528_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf"
-# ]
-
-## Option 2: Specify a top-level folder
-EXPERIMENT_FOLDER = "20220913-001701_sweep_resamp_per_controller_rpgd_tf"
-ENVIRONMENT_NAME = "CartPoleSimulator"
-EXPERIMENTS_TO_PLOT = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*", recursive="True")
-EXPERIMENTS_TO_PLOT = natsorted(EXPERIMENTS_TO_PLOT)
-
-# Specify what the sweeped value is (labeled on x-axis)
-sweep_value = EXPERIMENT_FOLDER.split("sweep_")[1].split("_controller")[0]
-sweep_values = {
-    "description": "Resampling Interval",
-    "xlabel": r"K\textsubscript{re}",
-    "sweep_values": list(map(
-        lambda x: x.split("=")[1].split("/")[0].split("\\")[0],
-        [re.search(f"{sweep_value}=.*(/|\\\)", path).group() for path in EXPERIMENTS_TO_PLOT]
-    )),
-}
-sweep_values["boxcolors"] = ["white" for _ in range(len(sweep_values["sweep_values"]))]
-# sweep_values["boxcolors"][-2:] = ["gray", "gray"]
-sweep_values["ylabel"] = "Average Control Cost"
-# sweep_values["ylabel"] = "Cost of Best Plan" if sweep_value == "resamp_per" else "Average Control Cost"
 
 # Compare configs associated with the different experiments
 
@@ -57,7 +78,7 @@ def generate_global_plots() -> None:
     all_ages_data: "dict[str, list[float]]" = {}
 
     # Prepare average cost data
-    for exp in EXPERIMENTS_TO_PLOT:
+    for exp in experiments_to_plot:
         path_to_experiment = exp
         exp = exp.replace(".", "_")
         all_total_cost_data[exp], all_trajectory_cost_data[exp] = [], []
@@ -111,7 +132,7 @@ def generate_global_plots() -> None:
             except:
                 logger.info("No trajectory age file found. Skipping plot generation.")
             else:
-                trajectory_age = list(np.squeeze(trajectory_ages[:, 0]))
+                trajectory_age = list(trajectory_ages[:, 0])
                 all_ages_data[exp].extend(trajectory_age)
 
 

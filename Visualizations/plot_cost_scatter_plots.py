@@ -72,11 +72,11 @@ class CostScatterPlotPlotter(Plotter):
         # )
 
         if save_to_image:
-            self.fig.savefig(
-                os.path.join("Output", f"{self._timestamp}_cost_scatter_plot.eps"),
-                bbox_inches="tight",
-                format="eps",
-            )
+            # self.fig.savefig(
+            #     os.path.join("Output", f"{self._timestamp}_cost_scatter_plot.eps"),
+            #     bbox_inches="tight",
+            #     format="eps",  # Save to EPS
+            # )
             self.fig.savefig(
                 os.path.join("Output", f"{self._timestamp}_cost_scatter_plot.png"),
                 bbox_inches="tight",
