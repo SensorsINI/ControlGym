@@ -197,7 +197,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 self.state = self.lib.concat([x, y, yaw, rate], 1)
             else:
                 self.state = self.lib.unsqueeze(
-                    self.lib.to_numpy(self.initial_state), 0
+                    np.array(self.initial_state, dtype="float32"), 0
                 )
                 x, y, theta, yaw = self.lib.unstack(self.state, 4, 1)
             self.traj_x = [float(x * MAX_X)]

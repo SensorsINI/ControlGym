@@ -56,6 +56,13 @@ class default(cost_function_base):
                 )
             )
             + self.lib.cast(~car_in_bounds, self.lib.float32) * (-1.0)
+            + self.lib.concat(
+            (
+                self.lib.zeros((self.controller.optimizer.num_rollouts, 1)),
+                              self.lib.cast(car_at_target[:, 1:2], self.lib.float32) * 100.0,
+                               self.lib.zeros((self.controller.optimizer.num_rollouts, self.controller.optimizer.mpc_horizon-2))
+            ),
+            axis=1)
         )
         return -reward
 
