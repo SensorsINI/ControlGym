@@ -36,7 +36,6 @@ import numpy as np
 import tensorflow as tf
 from Control_Toolkit.others.environment import EnvironmentBatched
 from gym import spaces
-from matplotlib import use
 from matplotlib.patches import Circle
 from SI_Toolkit.computation_library import (ComputationLibrary, NumpyLibrary,
                                             TensorType)
@@ -45,7 +44,6 @@ from skspatial.objects import Sphere
 
 from Control_Toolkit.others.globals_and_utils import get_logger
 
-use("QtAgg")
 logger = get_logger(__name__)
 
 # Training constants
