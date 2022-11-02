@@ -38,7 +38,6 @@ def run_data_generator(
     controller_name: str,
     optimizer_name: str,
     environment_name: str,
-    num_experiments: int,
     config: "dict[str, Any]",
     run_for_ML_Pipeline=False,
     record_path=None,
@@ -50,6 +49,7 @@ def run_data_generator(
         seed_entropy = int(timestamp.timestamp())
         logger.info("No seed entropy specified. Setting to posix timestamp.")
 
+    num_experiments = config["1_data_generation"]["num_experiments"]
     seed_sequences = SeedSequence(entropy=seed_entropy).spawn(num_experiments)
     timestamp_str = timestamp.strftime("%Y%m%d-%H%M%S")
 

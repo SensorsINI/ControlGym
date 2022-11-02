@@ -16,6 +16,9 @@ You need to provide the `<<datetime>>_sweep_<<sweep_variable>>/` entry to this s
 will search for all suitable trials to compare within the subfolders.
 
 """
+import re
+from glob import glob
+from natsort import natsorted
 ### ------------- 1. Specify the paths to the experiment ------------- ###
 ### Option 1: Specify paths manually, e.g.
 # experiments_to_plot = [
@@ -25,8 +28,8 @@ will search for all suitable trials to compare within the subfolders.
 # ]
 
 ### Option 2: Specify a top-level folder
-EXPERIMENT_FOLDER = "20221101-171103_sweep_controller_name"
-ENVIRONMENT_NAME = "ObstacleAvoidance"
+EXPERIMENT_FOLDER = "20221101-214720_sweep_controller_name"
+ENVIRONMENT_NAME = "CartPoleSimulator"
 ### ------------- Do not modify the following two lines ------------- ###
 experiments_to_plot = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*", recursive="True")
 experiments_to_plot = natsorted(experiments_to_plot)
@@ -51,13 +54,9 @@ sweep_values["ylabel"] = "Average Control Cost"
 
 
 import os
-import re
 from datetime import datetime
-from glob import glob
-from pprint import pformat
 
 import numpy as np
-from natsort import natsorted
 from Visualizations.plot_cost_scatter_plots import CostScatterPlotPlotter
 from Visualizations.trajectory_age_plotter import TrajectoryAgePlotter
 from yaml import FullLoader, load
