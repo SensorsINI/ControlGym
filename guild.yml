@@ -1,0 +1,91 @@
+- model: controller_mpc
+  description: MPC Control Experiment
+  operations:
+    run_control:
+      description: Run a control experiment
+      main: main
+      flags-dest: config:config.yml
+      flags-import: off
+      output-scalars: '(\key): (\value)'
+      sourcecode:
+        - '**.py'
+        - '**.yml'
+        - exclude: Output
+      flags:
+        controller_name:
+            choices:
+              - value: controller_mpc
+            required: yes
+        optimizer_name:
+          choices:
+            - value: optimizer_cem_tf
+            - value: optimizer_mppi_tf
+            - value: optimizer_mppi_var_tf
+            - value: optimizer_mppi_optimize_tf
+            - value: optimizer_cem_grad_bharadhwaj_tf
+            - value: optimizer_gradient_tf
+            - value: optimizer_random_action_tf
+            - value: optimizer_rpgd_tf
+            - value: optimizer_rpgd_me_tf
+            - value: optimizer_rpgd_ml_tf
+          required: yes
+        environment_name:
+          choices:
+            - value: MountainCarContinuous-v0
+            - value: CartPoleSimulator-v0
+            - value: DubinsCar-v0
+            - value: Acrobot-v0
+            - value: Pendulum-v0
+            - value: CartPoleContinuous-v0
+            - value: BipedalWalkerBatched-v0
+            - value: ObstacleAvoidance-v0
+          required: yes
+      requires:  # Reference here the resources defined below
+        - config
+        - Control_Toolkit
+        - Control_Toolkit_ASF
+        - SI_Toolkit
+        - SI_Toolkit_ASF
+  resources:  # Define all configuration files here
+    config:
+      - config: config.yml
+        target-type: copy
+    Control_Toolkit:
+      - file: Control_Toolkit
+        target-type: copy
+    Control_Toolkit_ASF:
+      - file: Control_Toolkit_ASF
+        target-type: copy
+    SI_Toolkit:
+      - file: SI_Toolkit
+        target-type: copy
+    SI_Toolkit_ASF:
+      - file: SI_Toolkit_ASF
+        target-type: copy
+
+    # config_controllers:
+    #   - config: Control_Toolkit_ASF/config_controllers.yml
+    #     target-path: Control_Toolkit_ASF/
+    #     target-type: copy
+    # config_cost_function:
+    #   - config: Control_Toolkit_ASF/config_cost_function.yml
+    #     target-path: Control_Toolkit_ASF/
+    #     target-type: copy
+    # config_optimizers:
+    #   - config: Control_Toolkit_ASF/config_optimizers.yml
+    #     target-path: Control_Toolkit_ASF/
+    #     target-type: copy
+    # config_predictors:
+    #   - config: SI_Toolkit_ASF/config_predictors.yml
+    #     target-path: SI_Toolkit_ASF/
+    #     target-type: copy
+    # optimizers:
+    #   - Control_Toolkit/Optimizers
+    #     target-path: Control_Toolkit
+    # controllers:
+    #   - Control_Toolkit/Controllers
+    #     target-path: Control_Toolkit
+    # cost_functions:
+    #   - Control_Toolkit_ASF/Cost_Functions
+    #     target-path: Control_Toolkit_ASF
+    
