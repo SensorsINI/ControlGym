@@ -5,6 +5,7 @@ from datetime import datetime
 from importlib import import_module
 from typing import Any
 
+from glob import glob
 import gym
 import numpy as np
 import tensorflow as tf
@@ -20,18 +21,18 @@ from Utilities.csv_helpers import save_to_csv
 from Utilities.generate_plots import generate_experiment_plots
 from Utilities.utils import CurrentRunMemory, OutputPath, SeedMemory, get_logger
 
+
 # Keep allowing absolute imports within CartPoleSimulation subgit
 sys.path.append(os.path.join(os.path.abspath("."), "CartPoleSimulation"))
-
+register_envs()  # Gym API: Register custom environments
 logger = get_logger(__name__)
 
-# Gym API: Register custom environments
-register_envs()
 
-
+# Load from configs
 config_controllers = load(open(os.path.join("Control_Toolkit_ASF", "config_controllers.yml"), "r"), Loader=FullLoader)
 config_cost_function = load(open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"), Loader=FullLoader)
 config_optimizers = load(open(os.path.join("Control_Toolkit_ASF", "config_optimizers.yml"), "r"), Loader=FullLoader)
+config: dict = load(open("config.yml", "r"), Loader=FullLoader)
 
 
 def run_data_generator(
@@ -185,12 +186,28 @@ def run_data_generator(
             # Save .npy files 
             for n, a in controller_output.items():
                 with open(
-                    OutputPath.get_output_path(timestamp_str, environment_name, controller_name, config_controller["predictor_specification"], str(n), ".npy"),
+                    OutputPath.get_output_path(timestamp_str, environment_name, controller_name, config_controller["predictor_specification"], f"{str(n)}.npy"),
                     "wb",
                 ) as f:
                     np.save(f, a)
-            # Save config
-            with open(
-                OutputPath.get_output_path(timestamp_str, environment_name, controller_name, config_controller["predictor_specification"], "config", ".yml"), "w"
-            ) as f:
-                dump(config, f)
+            # Save configs
+            config_files = glob("config*.yml", recursive=True) + glob("Control_Toolkit_ASF/*config*.yml", recursive=True) + glob("SI_Toolkit_ASF/*config*.yml", recursive=True)
+            for config_file in config_files:
+                config_name = config_file.split(os.sep)[-1]
+                with open(
+                    OutputPath.get_output_path(timestamp_str, environment_name, controller_name, config_controller["predictor_specification"], config_name), "w"
+                ) as f:
+                    dump(config, f)
+
+
+if __name__ == "__main__":
+    CurrentRunMemory.current_controller_name = config["controller_name"]
+    CurrentRunMemory.current_optimizer_name = config["optimizer_name"]
+    CurrentRunMemory.current_environment_name = config["environment_name"]
+    run_data_generator(
+        controller_name=CurrentRunMemory.current_controller_name,
+        optimizer_name=CurrentRunMemory.current_optimizer_name,
+        environment_name=CurrentRunMemory.current_environment_name,
+        config=config,
+        run_for_ML_Pipeline=False,
+    )

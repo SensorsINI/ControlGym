@@ -32,3 +32,4 @@ torch
 torchvision
 tqdm
 typing-extensions
+guildai

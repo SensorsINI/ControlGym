@@ -10,15 +10,15 @@ from Utilities.utils import get_logger
 log = get_logger(__name__)
 
 ENV_REGISTRY = {
-    "CustomEnvironments/CartPoleContinuous-v0": "Environments.continuous_cartpole_batched:continuous_cartpole_batched",
-    "CustomEnvironments/MountainCarContinuous-v0": "Environments.continuous_mountaincar_batched:continuous_mountaincar_batched",
-    "CustomEnvironments/Pendulum-v0": "Environments.pendulum_batched:pendulum_batched",
-    "CustomEnvironments/Acrobot-v0": "Environments.acrobot_batched:acrobot_batched",
-    "CustomEnvironments/DubinsCar-v0": "Environments.dubins_car_batched:dubins_car_batched",
-    "CustomEnvironments/CartPoleSimulator-v0": "Environments.cartpole_simulator_batched:cartpole_simulator_batched",
-    "CustomEnvironments/HalfCheetahBatched-v0": "Environments.half_cheetah_batched:half_cheetah_batched",
-    "CustomEnvironments/BipedalWalkerBatched-v0": "Environments.bipedal_walker_batched:bipedal_walker_batched",
-    "CustomEnvironments/ObstacleAvoidance-v0": "Environments.obstacle_avoidance_batched:obstacle_avoidance_batched",
+    "CartPoleContinuous-v0": "Environments.continuous_cartpole_batched:continuous_cartpole_batched",
+    "MountainCarContinuous-v0": "Environments.continuous_mountaincar_batched:continuous_mountaincar_batched",
+    "Pendulum-v0": "Environments.pendulum_batched:pendulum_batched",
+    "Acrobot-v0": "Environments.acrobot_batched:acrobot_batched",
+    "DubinsCar-v0": "Environments.dubins_car_batched:dubins_car_batched",
+    "CartPoleSimulator-v0": "Environments.cartpole_simulator_batched:cartpole_simulator_batched",
+    "HalfCheetahBatched-v0": "Environments.half_cheetah_batched:half_cheetah_batched",
+    "BipedalWalkerBatched-v0": "Environments.bipedal_walker_batched:bipedal_walker_batched",
+    "ObstacleAvoidance-v0": "Environments.obstacle_avoidance_batched:obstacle_avoidance_batched",
 }
 
 
