@@ -3,7 +3,7 @@ import os
 
 from SI_Toolkit.computation_library import TensorType
 from Control_Toolkit.Cost_Functions import cost_function_base
-from Environments.cartpole_simulator_batched import cartpole_simulator_batched
+from Environments.continuous_mountaincar_batched import continuous_mountaincar_batched
 
 
 config = yaml.load(
@@ -19,10 +19,12 @@ class default(cost_function_base):
     def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         position, velocity = self.lib.unstack(states, 2, -1)
         force = inputs[..., 0]
+        goal_position = self.controller.goal_position
+        goal_velocity = self.controller.goal_velocity
         
         cost = (
             - altitude_weight * self.lib.sin(3 * position)
-            - done_reward * self.lib.cast(cartpole_simulator_batched.is_done(self.lib, states), self.lib.float32)  # This part is not differentiable
+            - done_reward * self.lib.cast(continuous_mountaincar_batched.is_done(self.lib, states, goal_position, goal_velocity), self.lib.float32)  # This part is not differentiable
             + control_penalty * (force**2)
         )
         return cost
