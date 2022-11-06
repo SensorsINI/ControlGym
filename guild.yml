@@ -46,6 +46,7 @@
         - Control_Toolkit_ASF
         - SI_Toolkit
         - SI_Toolkit_ASF
+        - Environments
   resources:  # Define all configuration files here
     config:
       - config: config.yml
@@ -62,30 +63,6 @@
     SI_Toolkit_ASF:
       - file: SI_Toolkit_ASF
         target-type: copy
-
-    # config_controllers:
-    #   - config: Control_Toolkit_ASF/config_controllers.yml
-    #     target-path: Control_Toolkit_ASF/
-    #     target-type: copy
-    # config_cost_function:
-    #   - config: Control_Toolkit_ASF/config_cost_function.yml
-    #     target-path: Control_Toolkit_ASF/
-    #     target-type: copy
-    # config_optimizers:
-    #   - config: Control_Toolkit_ASF/config_optimizers.yml
-    #     target-path: Control_Toolkit_ASF/
-    #     target-type: copy
-    # config_predictors:
-    #   - config: SI_Toolkit_ASF/config_predictors.yml
-    #     target-path: SI_Toolkit_ASF/
-    #     target-type: copy
-    # optimizers:
-    #   - Control_Toolkit/Optimizers
-    #     target-path: Control_Toolkit
-    # controllers:
-    #   - Control_Toolkit/Controllers
-    #     target-path: Control_Toolkit
-    # cost_functions:
-    #   - Control_Toolkit_ASF/Cost_Functions
-    #     target-path: Control_Toolkit_ASF
-    
+    Environments:
+      - file: Environments/config_environments.yml
+        target-type: copy

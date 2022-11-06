@@ -21,13 +21,6 @@ custom_config_overwrites:
   config_controllers:
     mpc:
       optimizer: cem-tf
-      controller_logging:
-  config_predictors:
-    predictors:
-      ODE_TF_default:
-        model_name: overwritten
-      GP_default:
-        model_name: overwritten
 
 
 ### ------------------------------------------------------- ###
