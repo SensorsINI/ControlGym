@@ -11,19 +11,20 @@ logger = get_logger(__name__)
 
 def generate_experiment_plots(
     config: dict,
+    environment_config: dict,
     controller_output: "dict[str, np.ndarray]",
     timestamp: str,
     frames: "list[np.ndarray]" = None,
 ):
     if frames is not None:
-        save_video(frames, OutputPath.get_output_path(timestamp, "", ""), fps=20)
+        save_video(frames, OutputPath.get_output_path(timestamp, ""), fps=20)
     
     if (
         controller_output["s_logged"] is not None
         and controller_output["u_logged"] is not None
     ):
         logger.info("Creating summary plot...")
-        horizon_cost_plotter = SummaryPlotter(timestamp=timestamp, config=config)
+        horizon_cost_plotter = SummaryPlotter(timestamp=timestamp, run_config=config, environment_config=environment_config)
         horizon_cost_plotter.plot(
             controller_output["s_logged"],
             controller_output["u_logged"],
@@ -37,7 +38,7 @@ def generate_experiment_plots(
 
     if controller_output["J_logged"] is not None:
         logger.info("Creating horizon cost plot...")
-        horizon_cost_plotter = HorizonCostPlotter(timestamp=timestamp, config=config)
+        horizon_cost_plotter = HorizonCostPlotter(timestamp=timestamp, run_config=config, environment_config=environment_config)
         horizon_cost_plotter.plot(
             controller_output["J_logged"],
             save_to_image=config["1_data_generation"]["save_plots_to_file"],
@@ -51,7 +52,7 @@ def generate_experiment_plots(
         and controller_output["J_logged"] is not None
     ):
         logger.info("Creating input plan animation...")
-        input_plan_plotter = InputPlanPlotter(timestamp=timestamp, config=config)
+        input_plan_plotter = InputPlanPlotter(timestamp=timestamp, run_config=config, environment_config=environment_config)
         input_plan_plotter.plot(
             controller_output["Q_logged"],
             controller_output["J_logged"],

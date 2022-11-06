@@ -1,0 +1,104 @@
+CartPoleContinuous-v0:
+  actuator_noise:
+  - 0.0
+  dt: 0.02
+MountainCarContinuous-v0:
+  goal_velocity: 0.0
+  actuator_noise:
+  - 0.0
+  dt: 1.0
+Pendulum-v0:
+  actuator_noise:
+  - 0.2
+  dt: 0.05
+DubinsCar-v0:
+  actuator_noise:
+  - 0.0
+  - 0.0
+  target_point: [0.9, 0.0, 0.0]
+  initial_state: null
+  # initial_state: [-0.95, 0.0, 0.0, 0.0]
+  obstacle_positions: []
+  # obstacle_positions:
+  # - [-0.6, +0.8, 0.2]
+  # - [-0.6, +0.6, 0.2]
+  # - [-0.6, +0.4, 0.2]
+  # - [-0.6, +0.2, 0.2]
+  # - [-0.6, -0.4, 0.2]
+  # - [-0.6, -0.6, 0.2]
+  # - [-0.6, -0.8, 0.2]
+  # - [-0.2, -0.4, 0.2]
+  # - [-0.2, -0.6, 0.2]
+  # - [-0.2, -0.8, 0.2]
+  # - [+0.2, +0.6, 0.2]
+  # - [+0.2, +0.0, 0.2]
+  # - [+0.2, -0.2, 0.2]
+  # - [+0.2, -0.4, 0.2]
+  # - [+0.2, -0.6, 0.2]
+  # - [+0.2, -0.8, 0.2]
+  # obstacle_positions:
+  # - [-0.8, +0.2, 0.1]
+  # - [-0.8, -0.2, 0.1]
+  # - [-0.7, +0.2, 0.1]
+  # - [-0.7, -0.2, 0.1]
+  # - [-0.6, +0.2, 0.1]
+  # - [-0.6, -0.2, 0.1]
+  # - [-0.5, +0.2, 0.1]
+  # - [-0.5, -0.2, 0.1]
+  # - [-0.4, +0.2, 0.1]
+  # - [-0.4, -0.2, 0.1]
+  # - [-0.1, +0.2, 0.1]
+  # - [-0.1, -0.2, 0.1]
+  # - [+0.0, +0.2, 0.1]
+  # - [+0.0, -0.2, 0.1]
+  # - [+0.1, +0.2, 0.1]
+  # - [+0.1, -0.2, 0.1]
+  # - [+0.2, +0.2, 0.1]
+  # - [+0.2, -0.2, 0.1]
+  # - [+0.3, +0.2, 0.1]
+  # - [+0.3, -0.2, 0.1]
+  # - [+0.4, +0.2, 0.1]
+  # - [+0.4, -0.2, 0.1]
+  # - [+0.5, +0.2, 0.1]
+  # - [+0.5, -0.2, 0.1]
+  # - [+0.6, +0.2, 0.1]
+  # - [+0.6, -0.2, 0.1]
+  # - [+0.6, +0.1, 0.1]
+  # - [+0.6, -0.1, 0.1]
+  # - [+0.6, +0.0, 0.1]
+  dt: 0.005
+  shuffle_target_every: 30
+HalfCheetahBatched-v0:
+  actuator_noise:
+  - 0.0
+  forward_reward_weight: 1.0
+  ctrl_cost_weight: 0.1
+  reset_noise_scale: 0.1
+  exclude_current_positions_from_observation: true
+  dt: 0.02
+Acrobot-v0:
+  actuator_noise:
+  - 0.0
+  dt: 0.2
+CartPoleSimulator-v0:
+  actuator_noise:
+  - 0.0
+  dt: 0.02
+  mode: stabilization
+  cart_length: 4.4e-2
+  usable_track_length: 44.0e-2
+  u_max: 2.62
+  shuffle_target_every: 100
+BipedalWalkerBatched-v0:
+  actuator_noise:
+  - 0.0
+  dt: 0.02
+ObstacleAvoidance-v0:
+  actuator_noise:
+  - 0.0
+  dt: 0.02
+  target_point: null
+  initial_state: null
+  obstacle_positions: []
+  shuffle_target_every: 30
+  num_dimensions: 2

@@ -72,7 +72,7 @@ class SummaryPlotter(Plotter):
 
         if save_to_image:
             self.fig.savefig(
-                OutputPath.get_output_path(self._timestamp, "summary_logged", ".svg"),
+                OutputPath.get_output_path(self._timestamp, "summary_logged.svg"),
                 bbox_inches="tight",
             )
         else:

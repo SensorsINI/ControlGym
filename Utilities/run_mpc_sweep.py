@@ -47,7 +47,11 @@ if __name__ == "__main__":
         
         # Iterate over all zipped hyperparameter combinations:
         for sweep_value_tuple in zip(*sweep_values):
-            OutputPath.collection_folder_name = os.path.join(f"{datetime_str}_sweep_controller_name", f"controller_name={controller_name}")
+            OutputPath.collection_folder_name = os.path.join(
+                f"{datetime_str}_sweep_{','.join(parameters_to_sweep)}",
+                f"{datetime_str}_{controller_name}_{optimizer_name}_{environment_name}",
+                f"{datetime_str}_{','.join(parameters_to_sweep)}={','.join(list(map(str, sweep_value_tuple)))}",
+            )
             CurrentRunMemory.current_controller_name = controller_name
             CurrentRunMemory.current_optimizer_name = optimizer_name
             CurrentRunMemory.current_environment_name = environment_name

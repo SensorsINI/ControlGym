@@ -130,7 +130,7 @@ class InputPlanPlotter(Plotter):
 
         if save_to_video:
             anim.save(
-                OutputPath.get_output_path(self._timestamp, "Q_logged", ".mp4"),
+                OutputPath.get_output_path(self._timestamp, "Q_logged.mp4"),
                 writer=animation.FFMpegWriter(fps=15),
             )
         else:

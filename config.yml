@@ -1,3 +1,44 @@
+### ------------------------------------------------------- ###
+### Add any flags here that you'd like to use to overwrite the defaults
+### The syntax is:
+### custom_config_overwrites:
+###   <<config_name without ".yml" suffix>>:
+###     key:
+###       key: <<optionally: a value>>
+###       ...
+### Example:
+### custom_config_overwrites:
+###   config_optimizers:
+###     cem-tf:
+###       cem_best_k: 4
+###   config_controllers:
+###     mpc:
+###       controller_logging:
+### Any parameter specified here can also be overwritten as flag in bash.
+### Example: `guild run controller_mpc:run_control custom_config_overwrites.config_optimizers.cem-tf.cem_best_k='[1,4,16]'`
+###
+custom_config_overwrites:
+  config_controllers:
+    mpc:
+      optimizer: cem-tf
+      controller_logging:
+  config_predictors:
+    predictors:
+      ODE_TF_default:
+        model_name: overwritten
+      GP_default:
+        model_name: overwritten
+
+
+### ------------------------------------------------------- ###
+
+### The following flags are required. Modify them as needed: ###
+### Alternatively, you can pass values as flags in bash      ###
+controller_name: controller_mpc
+environment_name: MountainCarContinuous-v0
+
+### ------------------------------------------------------- ###
+
 1_data_generation:
   controller_names:
   - controller_mpc
@@ -10,131 +51,26 @@
   # - optimizer_gradient_tf
   # - optimizer_random_action_tf
   - optimizer_rpgd_tf
-  # - optimizer_rpgd_me_tf
+  - optimizer_rpgd_me_tf
   # - optimizer_rpgd_ml_tf
   environment_names:
-  - CustomEnvironments/MountainCarContinuous-v0
-  # - CustomEnvironments/CartPoleSimulator-v0
-  # - CustomEnvironments/DubinsCar-v0
-  # - CustomEnvironments/Acrobot-v0
-  # - CustomEnvironments/Pendulum-v0
-  # - CustomEnvironments/CartPoleContinuous-v0
-  # - CustomEnvironments/BipedalWalkerBatched-v0
-  # - CustomEnvironments/ObstacleAvoidance-v0
+  - MountainCarContinuous-v0
+  - CartPoleSimulator-v0
+  # - DubinsCar-v0
+  # - Acrobot-v0
+  # - Pendulum-v0
+  # - CartPoleContinuous-v0
+  # - BipedalWalkerBatched-v0
+  # - ObstacleAvoidance-v0
   debug: false  # false to use tf.compile
   use_jit_compilation: false  # false for reproducibility
   use_gpu: false
-  logging_level: DEBUG
-  num_experiments: 1
-  num_iterations: 500
-  render_for_humans: true
+  logging_level: ERROR
+  num_experiments: 10
+  num_iterations: 200
+  render_for_humans: false
   save_plots_to_file: false
   seed_entropy: 49604
   split:
   - 0.6
   - 0.2
-2_environments:
-  CustomEnvironments/CartPoleContinuous-v0:
-    actuator_noise:
-    - 0.0
-    dt: 0.02
-  CustomEnvironments/MountainCarContinuous-v0:
-    goal_velocity: 0.0
-    actuator_noise:
-    - 0.0
-    dt: 1.0
-  CustomEnvironments/Pendulum-v0:
-    actuator_noise:
-    - 0.2
-    dt: 0.05
-  CustomEnvironments/DubinsCar-v0:
-    actuator_noise:
-    - 0.0
-    - 0.0
-    target_point: [0.9, 0.0, 0.0]
-    initial_state: null
-    # initial_state: [-0.95, 0.0, 0.0, 0.0]
-    obstacle_positions: []
-    # obstacle_positions:
-    # - [-0.6, +0.8, 0.2]
-    # - [-0.6, +0.6, 0.2]
-    # - [-0.6, +0.4, 0.2]
-    # - [-0.6, +0.2, 0.2]
-    # - [-0.6, -0.4, 0.2]
-    # - [-0.6, -0.6, 0.2]
-    # - [-0.6, -0.8, 0.2]
-    # - [-0.2, -0.4, 0.2]
-    # - [-0.2, -0.6, 0.2]
-    # - [-0.2, -0.8, 0.2]
-    # - [+0.2, +0.6, 0.2]
-    # - [+0.2, +0.0, 0.2]
-    # - [+0.2, -0.2, 0.2]
-    # - [+0.2, -0.4, 0.2]
-    # - [+0.2, -0.6, 0.2]
-    # - [+0.2, -0.8, 0.2]
-    # obstacle_positions:
-    # - [-0.8, +0.2, 0.1]
-    # - [-0.8, -0.2, 0.1]
-    # - [-0.7, +0.2, 0.1]
-    # - [-0.7, -0.2, 0.1]
-    # - [-0.6, +0.2, 0.1]
-    # - [-0.6, -0.2, 0.1]
-    # - [-0.5, +0.2, 0.1]
-    # - [-0.5, -0.2, 0.1]
-    # - [-0.4, +0.2, 0.1]
-    # - [-0.4, -0.2, 0.1]
-    # - [-0.1, +0.2, 0.1]
-    # - [-0.1, -0.2, 0.1]
-    # - [+0.0, +0.2, 0.1]
-    # - [+0.0, -0.2, 0.1]
-    # - [+0.1, +0.2, 0.1]
-    # - [+0.1, -0.2, 0.1]
-    # - [+0.2, +0.2, 0.1]
-    # - [+0.2, -0.2, 0.1]
-    # - [+0.3, +0.2, 0.1]
-    # - [+0.3, -0.2, 0.1]
-    # - [+0.4, +0.2, 0.1]
-    # - [+0.4, -0.2, 0.1]
-    # - [+0.5, +0.2, 0.1]
-    # - [+0.5, -0.2, 0.1]
-    # - [+0.6, +0.2, 0.1]
-    # - [+0.6, -0.2, 0.1]
-    # - [+0.6, +0.1, 0.1]
-    # - [+0.6, -0.1, 0.1]
-    # - [+0.6, +0.0, 0.1]
-    dt: 0.005
-    shuffle_target_every: 30
-  CustomEnvironments/HalfCheetahBatched-v0:
-    actuator_noise:
-    - 0.0
-    forward_reward_weight: 1.0
-    ctrl_cost_weight: 0.1
-    reset_noise_scale: 0.1
-    exclude_current_positions_from_observation: true
-    dt: 0.02
-  CustomEnvironments/Acrobot-v0:
-    actuator_noise:
-    - 0.0
-    dt: 0.2
-  CustomEnvironments/CartPoleSimulator-v0:
-    actuator_noise:
-    - 0.0
-    dt: 0.02
-    mode: stabilization
-    cart_length: 4.4e-2
-    usable_track_length: 44.0e-2
-    u_max: 2.62
-    shuffle_target_every: 100
-  CustomEnvironments/BipedalWalkerBatched-v0:
-    actuator_noise:
-    - 0.0
-    dt: 0.02
-  CustomEnvironments/ObstacleAvoidance-v0:
-    actuator_noise:
-    - 0.0
-    dt: 0.02
-    target_point: null
-    initial_state: null
-    obstacle_positions: []
-    shuffle_target_every: 20
-    num_dimensions: 3

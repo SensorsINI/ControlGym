@@ -3,14 +3,14 @@ import sys
 import time
 from datetime import datetime
 from importlib import import_module
-from typing import Any
 
 from glob import glob
+from typing import Any
 import gym
 import numpy as np
 import tensorflow as tf
 from numpy.random import SeedSequence
-from yaml import FullLoader, dump, load
+from yaml import dump
 
 from Control_Toolkit.Controllers import template_controller
 from Control_Toolkit.Cost_Functions.cost_function_wrapper import CostFunctionWrapper
@@ -19,25 +19,17 @@ from Environments import ENV_REGISTRY, register_envs
 from SI_Toolkit.computation_library import TensorFlowLibrary
 from Utilities.csv_helpers import save_to_csv
 from Utilities.generate_plots import generate_experiment_plots
-from Utilities.utils import CurrentRunMemory, OutputPath, SeedMemory, get_logger
+from Utilities.utils import ConfigManager, CurrentRunMemory, OutputPath, SeedMemory, get_logger, nested_assignment_to_ordereddict
 
 
-# Keep allowing absolute imports within CartPoleSimulation subgit
-sys.path.append(os.path.join(os.path.abspath("."), "CartPoleSimulation"))
+sys.path.append(os.path.join(os.path.abspath("."), "CartPoleSimulation"))  # Keep allowing absolute imports within CartPoleSimulation subgit
 register_envs()  # Gym API: Register custom environments
 logger = get_logger(__name__)
-
-
-# Load from configs
-config_controllers = load(open(os.path.join("Control_Toolkit_ASF", "config_controllers.yml"), "r"), Loader=FullLoader)
-config_cost_function = load(open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"), Loader=FullLoader)
-config_optimizers = load(open(os.path.join("Control_Toolkit_ASF", "config_optimizers.yml"), "r"), Loader=FullLoader)
-config: dict = load(open("config.yml", "r"), Loader=FullLoader)
+config_manager = ConfigManager(".", "Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments")
 
 
 def run_data_generator(
     controller_name: str,
-    optimizer_name: str,
     environment_name: str,
     config: "dict[str, Any]",
     run_for_ML_Pipeline=False,
@@ -59,24 +51,25 @@ def run_data_generator(
         frac_train, frac_val = config["1_data_generation"]["split"]
         assert record_path is not None, "If ML mode is on, need to provide record_path."
 
-    # Set current controller/env names in config which is saved later
-    config["1_data_generation"].update(
-        {"controller_name": controller_name, "optimizer_name": optimizer_name, "environment_name": environment_name}
-    )
     controller_short_name = controller_name.replace("controller_", "").replace("_", "-")
-    optimizer_short_name = optimizer_name.replace("optimizer_", "").replace("_", "-")
-
+    optimizer_short_name = config_manager("config_controllers")[controller_short_name]["optimizer"]
+    optimizer_name = "optimizer_" + optimizer_short_name.replace("-", "_")
+    CurrentRunMemory.current_optimizer_name = optimizer_name
+    all_mean_rewards = []
+    all_steps_to_completion = []
+    
     # Loop through independent experiments
     for i in range(num_experiments):
         # Generate new seeds for environment and controller
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.set_seeds(seeds)
         
-        config_controller = dict(config_controllers[controller_short_name])
-        config_optimizer = dict(config_optimizers[optimizer_short_name])
+        config_controller = dict(config_manager("config_controllers")[controller_short_name])
+        config_optimizer = dict(config_manager("config_optimizers")[optimizer_short_name])
         config_optimizer.update({"seed": int(seeds[1])})
-        config_environment = dict(config["2_environments"][environment_name])
+        config_environment = dict(config_manager("config_environments")[environment_name])
         config_environment.update({"seed": int(seeds[0])})
+        all_rewards = []
 
         ##### ----------------------------------------------- #####
         ##### ----------------- ENVIRONMENT ----------------- #####
@@ -132,6 +125,7 @@ def run_data_generator(
                     tf.convert_to_tensor(action[np.newaxis, np.newaxis, ...]),
                     None
                 ))
+                all_rewards.append(reward)
             if config_controller.get("controller_logging", False):
                 controller.logs["realized_cost_logged"].append(np.array([-reward]).copy())
                 env.set_logs(controller.logs)
@@ -163,6 +157,8 @@ def run_data_generator(
         ##### ----------------- LOGGING AND PLOTS ----------------- #####
         OutputPath.RUN_NUM = i + 1
         controller_output = controller.get_outputs()
+        all_mean_rewards.append(np.mean(all_rewards))
+        all_steps_to_completion.append(step + 1)
 
         if run_for_ML_Pipeline:
             # Save data as csv
@@ -179,6 +175,7 @@ def run_data_generator(
                 # Generate and save plots in default location
                 generate_experiment_plots(
                     config=config,
+                    environment_config=config_manager("config_environments"),
                     controller_output=controller_output,
                     timestamp=timestamp_str,
                     frames=frames if len(frames) > 0 else None,
@@ -186,7 +183,7 @@ def run_data_generator(
             # Save .npy files 
             for n, a in controller_output.items():
                 with open(
-                    OutputPath.get_output_path(timestamp_str, environment_name, controller_name, config_controller["predictor_specification"], f"{str(n)}.npy"),
+                    OutputPath.get_output_path(timestamp_str, f"{str(n)}.npy"),
                     "wb",
                 ) as f:
                     np.save(f, a)
@@ -195,19 +192,43 @@ def run_data_generator(
             for config_file in config_files:
                 config_name = config_file.split(os.sep)[-1]
                 with open(
-                    OutputPath.get_output_path(timestamp_str, environment_name, controller_name, config_controller["predictor_specification"], config_name), "w"
+                    OutputPath.get_output_path(timestamp_str, config_name), "w"
                 ) as f:
                     dump(config, f)
+    
+    # These output metrics are detected by GUILD AI and follow a "key: value" format
+    print("Output metrics:")
+    print(f"Mean reward: {np.mean(all_mean_rewards)}")
+    print(f"Mean steps to completion: {np.mean(all_steps_to_completion)}")
 
 
-if __name__ == "__main__":
-    CurrentRunMemory.current_controller_name = config["controller_name"]
-    CurrentRunMemory.current_optimizer_name = config["optimizer_name"]
-    CurrentRunMemory.current_environment_name = config["environment_name"]
+def prepare_and_run():
+    import ruamel.yaml
+    # Scan for any custom parameters that should overwrite the toolkit configs:
+    submodule_configs = ConfigManager("Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments").loaders
+    for base_name, loader in submodule_configs.items():
+        if base_name in config_manager("config")["custom_config_overwrites"]:
+            data: ruamel.yaml.comments.CommentedMap = loader.load()
+            update_dict = config_manager("config")["custom_config_overwrites"][base_name]
+            nested_assignment_to_ordereddict(data, update_dict)
+            loader.overwrite_config(data)
+    
+    # Retrieve required parameters from config:
+    CurrentRunMemory.current_controller_name = config_manager("config")["controller_name"]
+    CurrentRunMemory.current_environment_name = config_manager("config")["environment_name"]
+    
     run_data_generator(
         controller_name=CurrentRunMemory.current_controller_name,
-        optimizer_name=CurrentRunMemory.current_optimizer_name,
         environment_name=CurrentRunMemory.current_environment_name,
-        config=config,
+        config=config_manager("config"),
         run_for_ML_Pipeline=False,
     )
+
+# TODO: Add a top-level dict that references all config files
+if __name__ == "__main__":
+    if os.getenv("GUILD_RUN") == "1":
+        # Run as guild script
+        from guild import ipy as guild
+        guild.run(prepare_and_run)
+    else:
+        prepare_and_run()

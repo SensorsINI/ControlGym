@@ -33,3 +33,4 @@ torchvision
 tqdm
 typing-extensions
 guildai
+ruamel.yaml
