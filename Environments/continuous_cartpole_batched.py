@@ -99,7 +99,7 @@ class continuous_cartpole_batched(EnvironmentBatched, CartPoleEnv):
 
         self.state = self.step_dynamics(self.state, action, self.dt)
 
-        terminated = self.is_done(self.lib, self.state)
+        terminated = bool(self.is_done(self.lib, self.state))
         truncated = False
         reward = 0.0
 

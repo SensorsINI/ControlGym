@@ -98,7 +98,7 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         state_updated: tf.Tensor = self.step_dynamics(self.state, action, self.dt)
         self.state = self.lib.to_numpy(state_updated)
 
-        terminated = self.is_done(self.lib, self.state, self.goal_position, self.goal_velocity)
+        terminated = bool(self.is_done(self.lib, self.state, self.goal_position, self.goal_velocity))
         truncated = False
         reward = 0.0
 

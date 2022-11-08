@@ -104,7 +104,7 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         th2_vel_new = self.lib.clip(th2_vel_new, -self.MAX_VEL_2, self.MAX_VEL_2)
         self.state = self.lib.stack([th1_new, th2_new, th1_vel_new, th2_vel_new], 1)
 
-        terminated = self.is_done(self.lib, self.state)
+        terminated = bool(self.is_done(self.lib, self.state))
         truncated = False
         reward = 0.0
 

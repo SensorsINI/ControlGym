@@ -295,7 +295,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         self.state = self.lib.to_numpy(self.step_dynamics(self.state, action, self.dt))
 
-        terminated = self.is_done(self.lib, self.state, self.target_point)
+        terminated = bool(self.is_done(self.lib, self.state, self.target_point))
         truncated = False
         reward = 0.0
 

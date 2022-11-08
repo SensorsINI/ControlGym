@@ -247,7 +247,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         self.state = self.step_dynamics(self.state, action, self.dt)
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
 
-        terminated = self.is_done(NumpyLibrary, self.state, self.target_point)
+        terminated = bool(self.is_done(NumpyLibrary, self.state, self.target_point))
         truncated = False
         reward = 0.0
 

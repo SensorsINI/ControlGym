@@ -201,7 +201,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self.count += 1
 
         reward = 0.0
-        terminated = self.is_done(self.lib, self.state)
+        terminated = bool(self.is_done(self.lib, self.state))
         truncated = False
 
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))

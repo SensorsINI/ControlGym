@@ -65,7 +65,7 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
         
         self.state = self.step_dynamics(self.state, action, self.dt)
 
-        terminated = self.is_done(self.state)
+        terminated = bool(self.is_done(self.state))
         truncated = False
         reward = self.get_reward(self.state, action)
 
