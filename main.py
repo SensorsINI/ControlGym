@@ -120,7 +120,7 @@ def run_data_generator(
             if c_fun is not None:
                 assert isinstance(c_fun, CostFunctionWrapper)
                 # Compute reward from the cost function that the controller optimized
-                reward = float(c_fun.get_stage_cost(
+                reward = -float(c_fun.get_stage_cost(
                     tf.convert_to_tensor(new_obs[np.newaxis, np.newaxis, ...]),  # Add batch / MPC horizon dimensions
                     tf.convert_to_tensor(action[np.newaxis, np.newaxis, ...]),
                     None
@@ -198,8 +198,8 @@ def run_data_generator(
     
     # These output metrics are detected by GUILD AI and follow a "key: value" format
     print("Output metrics:")
-    print(f"Mean reward: {np.mean(all_mean_rewards)}")
-    print(f"Mean steps to completion: {np.mean(all_steps_to_completion)}")
+    print(f"mean_reward: {np.mean(all_mean_rewards)}")
+    print(f"mean_steps_to_completion: {np.mean(all_steps_to_completion)}")
 
 
 def prepare_and_run():
