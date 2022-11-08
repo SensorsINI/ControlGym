@@ -37,18 +37,18 @@ def run_data_generator(
 ):
     # Generate seeds and set timestamp
     timestamp = datetime.now()
-    seed_entropy = config["1_data_generation"]["seed_entropy"]
+    seed_entropy = config["seed_entropy"]
     if seed_entropy is None:
         seed_entropy = int(timestamp.timestamp())
         logger.info("No seed entropy specified. Setting to posix timestamp.")
 
-    num_experiments = config["1_data_generation"]["num_experiments"]
+    num_experiments = config["num_experiments"]
     seed_sequences = SeedSequence(entropy=seed_entropy).spawn(num_experiments)
     timestamp_str = timestamp.strftime("%Y%m%d-%H%M%S")
 
     if run_for_ML_Pipeline:
         # Get training/validation split
-        frac_train, frac_val = config["1_data_generation"]["split"]
+        frac_train, frac_val = config["split"]
         assert record_path is not None, "If ML mode is on, need to provide record_path."
 
     controller_short_name = controller_name.replace("controller_", "").replace("_", "-")
@@ -74,9 +74,9 @@ def run_data_generator(
         ##### ----------------------------------------------- #####
         ##### ----------------- ENVIRONMENT ----------------- #####
         ##### --- Instantiate environment and call reset ---- #####
-        if config["1_data_generation"]["render_for_humans"]:
+        if config["render_for_humans"]:
             render_mode = "human"
-        elif config["1_data_generation"]["save_plots_to_file"]:
+        elif config["save_plots_to_file"]:
             render_mode = "rgb_array"
         else:
             render_mode = None
@@ -112,7 +112,7 @@ def run_data_generator(
         ##### ----------------- MAIN CONTROL LOOP ----------------- #####
         frames = []
         start_time = time.time()
-        num_iterations = config["1_data_generation"]["num_iterations"]
+        num_iterations = config["num_iterations"]
         for step in range(num_iterations):
             action = controller.step(obs, updated_attributes=env.environment_attributes)
             new_obs, reward, terminated, truncated, info = env.step(action)
@@ -129,9 +129,9 @@ def run_data_generator(
             if config_controller.get("controller_logging", False):
                 controller.logs["realized_cost_logged"].append(np.array([-reward]).copy())
                 env.set_logs(controller.logs)
-            if config["1_data_generation"]["render_for_humans"]:
+            if config["render_for_humans"]:
                 env.render()
-            elif config["1_data_generation"]["save_plots_to_file"]:
+            elif config["save_plots_to_file"]:
                 frames.append(env.render())
 
             time.sleep(1e-6)
@@ -171,7 +171,7 @@ def run_data_generator(
             os.makedirs(csv, exist_ok=True)
             save_to_csv(config, controller, environment_name, csv)
         elif config_controller.get("controller_logging", False):
-            if config["1_data_generation"]["save_plots_to_file"]:
+            if config["save_plots_to_file"]:
                 # Generate and save plots in default location
                 generate_experiment_plots(
                     config=config,

@@ -32,38 +32,15 @@ environment_name: MountainCarContinuous-v0
 
 ### ------------------------------------------------------- ###
 
-1_data_generation:
-  controller_names:
-  - controller_mpc
-  optimizer_names:
-  # - optimizer_cem_tf
-  # - optimizer_mppi_tf
-  # - optimizer_mppi_var_tf
-  # - optimizer_mppi_optimize_tf
-  # - optimizer_cem_grad_bharadhwaj_tf
-  # - optimizer_gradient_tf
-  # - optimizer_random_action_tf
-  - optimizer_rpgd_tf
-  - optimizer_rpgd_me_tf
-  # - optimizer_rpgd_ml_tf
-  environment_names:
-  - MountainCarContinuous-v0
-  - CartPoleSimulator-v0
-  # - DubinsCar-v0
-  # - Acrobot-v0
-  # - Pendulum-v0
-  # - CartPoleContinuous-v0
-  # - BipedalWalkerBatched-v0
-  # - ObstacleAvoidance-v0
-  debug: false  # false to use tf.compile
-  use_jit_compilation: false  # false for reproducibility
-  use_gpu: false
-  logging_level: ERROR
-  num_experiments: 10
-  num_iterations: 200
-  render_for_humans: false
-  save_plots_to_file: false
-  seed_entropy: 49604
-  split:
-  - 0.6
-  - 0.2
+debug: false  # false to use tf.compile
+use_jit_compilation: false  # false for reproducibility
+use_gpu: false
+logging_level: ERROR
+num_experiments: 5
+num_iterations: 200
+render_for_humans: false
+save_plots_to_file: false
+seed_entropy: 49604
+split:
+- 0.6
+- 0.2

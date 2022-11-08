@@ -1,6 +1,18 @@
 from Utilities.utils import CurrentRunMemory, get_logger
 from main import run_data_generator
 
+controller_names = ["controller_mpc"]
+environment_names = [
+    "MountainCarContinuous-v0",
+    # "CartPoleSimulator-v0",
+    # "DubinsCar-v0",
+    # "Acrobot-v0",
+    # "Pendulum-v0",
+    # "CartPoleContinuous-v0",
+    # "BipedalWalkerBatched-v0",
+    # "ObstacleAvoidance-v0",
+]
+
 # Automatically create new path to save everything in
 
 import tensorflow as tf
@@ -26,7 +38,7 @@ def get_record_path():
 if __name__ == '__main__':
     record_path = get_record_path()
     
-    controller_names, environment_names, num_experiments = config_GymEnv["1_data_generation"]["controller_names"], config_GymEnv["1_data_generation"]["environment_names"], config_GymEnv["1_data_generation"]["num_experiments"]
+    num_experiments = config_GymEnv["num_experiments"]
     if isinstance(controller_names, list):
         if len(controller_names) > 1:
             logger.warning("Multiple controller names supplied. Only using the first one.")
@@ -52,7 +64,7 @@ if __name__ == '__main__':
     CurrentRunMemory.current_environment_name = environment_name
 
     device_name = "/CPU:0"
-    if config_GymEnv["1_data_generation"]["use_gpu"]:
+    if config_GymEnv["use_gpu"]:
         if len(tf.config.list_physical_devices("GPU")) > 0:
             device_name = "/GPU:0"
         else:

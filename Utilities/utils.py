@@ -46,7 +46,7 @@ class CustomFormatter(logging.Formatter):
 def get_logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(
-        getattr(import_module("logging"), config["1_data_generation"]["logging_level"])
+        getattr(import_module("logging"), config["logging_level"])
     )
     # create console handler
     ch = logging.StreamHandler()
@@ -180,7 +180,7 @@ def nested_assignment_to_ordereddict(target: OrderedDict, source: dict):
 
 ### Below is copied from CartPole repo
 
-if config["1_data_generation"]["debug"]:
+if config["debug"]:
     CompileTF = lambda func: func
     CompileTorch = lambda func: func
 else:

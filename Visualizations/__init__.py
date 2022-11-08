@@ -10,7 +10,7 @@ class Plotter:
         self.axs: "list[plt.Axes]" = None
         self._timestamp: str = timestamp
         self._config_to_disp: dict = {
-            "Controller name": run_config["1_data_generation"]["controller_name"],
+            "Controller name": run_config["controller_name"],
             "Actuation stdev/range(actions)": environment_config["actuator_noise"],
         }
 

@@ -137,7 +137,7 @@ def generate_global_plots() -> None:
     logger.info("Generating box plot...")
     box_plot_plotter = CostScatterPlotPlotter(
         datetime.now().strftime("%Y%m%d-%H%M%S"),
-        {"1_data_generation": {"controller_name": "", "environment_name": ""}},
+        {"controller_name": "", "environment_name": ""},
         {"": {"actuator_noise": ""}},
     )
     if sweep_value == "resamp_per":
@@ -154,7 +154,7 @@ def generate_global_plots() -> None:
     #     logger.info("Generating trajectory age plot...")
     #     trajectory_age_plot = TrajectoryAgePlotter(
     #         datetime.now().strftime("%Y%m%d-%H%M%S"),
-    #         {"1_data_generation": {"controller_name": "", "environment_name": ""}},
+    #         {"controller_name": "", "environment_name": ""},
     #         {"": {"actuator_noise": 0}},
     #     )
     #     trajectory_age_plot.plot(all_ages_data, True)

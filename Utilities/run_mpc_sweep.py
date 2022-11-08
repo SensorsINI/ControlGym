@@ -11,6 +11,29 @@ You can additionally specify hyperparameters to sweep. Each hyperparameter combi
 
 parameters_to_sweep = ["num_rollouts"]
 sweep_values = [[16, 32]]  # One list per parameter above. All sublists need to have same length
+controller_names = ["controller_mpc"]
+optimizer_names = [
+    "optimizer_cem_tf",
+    "optimizer_mppi_tf",
+    "optimizer_mppi_var_tf",
+    "optimizer_mppi_optimize_tf",
+    "optimizer_cem_grad_bharadhwaj_tf",
+    "optimizer_gradient_tf",
+    "optimizer_random_action_tf",
+    "optimizer_rpgd_tf",
+    "optimizer_rpgd_me_tf",
+    "optimizer_rpgd_ml_tf"
+]
+environment_names = [
+    "MountainCarContinuous-v0",
+    "CartPoleSimulator-v0",
+    "DubinsCar-v0",
+    "Acrobot-v0",
+    "Pendulum-v0",
+    "CartPoleContinuous-v0",
+    "BipedalWalkerBatched-v0",
+    "ObstacleAvoidance-v0",
+]
 
 ### ------------------------------------------------------------------------------------ ###
 from datetime import datetime
@@ -30,14 +53,9 @@ config_controllers = load(open(os.path.join("Control_Toolkit_ASF", "config_contr
 config_optimizers = load(open(os.path.join("Control_Toolkit_ASF", "config_optimizers.yml"), "r"), Loader=FullLoader)
 config = load(open("config.yml", "r"), Loader=FullLoader)
 
-controller_names = config["1_data_generation"]["controller_names"]
 if len(controller_names) != 1 or controller_names[0] != "controller_mpc":
     raise ValueError("This script is designed to run when the config.yml has controller_names=[controller_mpc].")
-
 controller_name = controller_names[0]
-optimizer_names = config["1_data_generation"]["optimizer_names"]
-environment_names = config["1_data_generation"]["environment_names"]
-
 
 if __name__ == "__main__":
     datetime_str = datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -63,7 +81,7 @@ if __name__ == "__main__":
                 config_optimizers[optimizer_short_name][param_name] = param_value
 
             device_name = "/CPU:0"
-            if config["1_data_generation"]["use_gpu"]:
+            if config["use_gpu"]:
                 if len(tf.config.list_physical_devices("GPU")) > 0:
                     device_name = "/GPU:0"
                 else:
