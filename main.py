@@ -4,7 +4,6 @@ import time
 from datetime import datetime
 from importlib import import_module
 
-from glob import glob
 from typing import Any
 import gym
 import numpy as np
@@ -175,7 +174,7 @@ def run_data_generator(
                 # Generate and save plots in default location
                 generate_experiment_plots(
                     config=config,
-                    environment_config=config_manager("config_environments"),
+                    environment_config=config_manager("config_environments")[environment_name],
                     controller_output=controller_output,
                     timestamp=timestamp_str,
                     frames=frames if len(frames) > 0 else None,
@@ -188,11 +187,9 @@ def run_data_generator(
                 ) as f:
                     np.save(f, a)
             # Save configs
-            config_files = glob("config*.yml", recursive=True) + glob("Control_Toolkit_ASF/*config*.yml", recursive=True) + glob("SI_Toolkit_ASF/*config*.yml", recursive=True)
-            for config_file in config_files:
-                config_name = config_file.split(os.sep)[-1]
+            for loader in config_manager.loaders.values():
                 with open(
-                    OutputPath.get_output_path(timestamp_str, config_name), "w"
+                    OutputPath.get_output_path(timestamp_str, loader.name), "w"
                 ) as f:
                     dump(config, f)
     

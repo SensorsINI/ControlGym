@@ -20,7 +20,7 @@
 custom_config_overwrites:
   config_controllers:
     mpc:
-      optimizer: cem-tf
+      optimizer: rpgd-tf
 
 
 ### ------------------------------------------------------- ###
@@ -35,11 +35,11 @@ environment_name: MountainCarContinuous-v0
 debug: false  # false to use tf.compile
 use_jit_compilation: false  # false for reproducibility
 use_gpu: false
-logging_level: ERROR
+logging_level: DEBUG
 num_experiments: 5
 num_iterations: 200
 render_for_humans: false
-save_plots_to_file: false
+save_plots_to_file: true
 seed_entropy: 49604
 split:
 - 0.6

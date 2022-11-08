@@ -8,7 +8,6 @@ from Visualizations.plot_summary import SummaryPlotter
 
 logger = get_logger(__name__)
 
-
 def generate_experiment_plots(
     config: dict,
     environment_config: dict,
@@ -17,7 +16,7 @@ def generate_experiment_plots(
     frames: "list[np.ndarray]" = None,
 ):
     if frames is not None:
-        save_video(frames, OutputPath.get_output_path(timestamp, ""), fps=20)
+        save_video(frames, OutputPath.get_output_path(timestamp, None), fps=20, name_prefix=f"recording_{OutputPath.RUN_NUM}")
     
     if (
         controller_output["s_logged"] is not None

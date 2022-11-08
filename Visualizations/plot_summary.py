@@ -13,8 +13,10 @@ class SummaryPlotter(Plotter):
         assert states.shape[0] == actions.shape[0]
 
         num_steps, n = states.shape
-        _, m = actions.shape
-
+        if actions.ndim == 1:
+            actions = actions[:, np.newaxis]
+        m = actions.shape[-1]
+        
         if self.axs is None:
             self.fig = plt.figure(figsize=(12, 8))
             self.gs = gridspec.GridSpec(

@@ -63,21 +63,20 @@ class OutputPath:
     collection_folder_name = ""
 
     @classmethod
-    def get_output_path(cls, timestamp: str, file_name: str) -> str:
+    def get_output_path(cls, timestamp: str, file_name: Optional[str]) -> str:
         folder = os.path.join(
             "Output",
             cls.collection_folder_name,
             timestamp,
         )
         Path(folder).mkdir(parents=True, exist_ok=True)
-        f, suffix = file_name.split(".")
-        suffix = f".{suffix}"
-        return os.path.join(
-            folder,
-            f"{timestamp}_{f}_{suffix}"
-            if cls.RUN_NUM is None
-            else f"{timestamp}_{f}_{cls.RUN_NUM}{suffix}",
-        )
+        if file_name is not None:
+            f, suffix = file_name.split(".")
+            suffix = f".{suffix}"
+            fn = f"{timestamp}_{f}_{suffix}" if cls.RUN_NUM is None else f"{timestamp}_{f}_{cls.RUN_NUM}{suffix}"
+        else:
+            fn = ""
+        return os.path.join(folder, fn)
 
 
 class SeedMemory:
