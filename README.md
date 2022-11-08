@@ -1,18 +1,17 @@
 # ControlGym - Repo to Test New Control Strategies
 
-> This branch (`reproduction_of_results_sep22`) belongs to the paper "A Small-Batch Parallel Gradient Descent Optimizer with Explorative Resampling for Nonlinear Model Predictive Control"
-
 Main features:
 * Conforms to OpenAI Gym API
 * Implements batched versions of OpenAI Gym environments
-* Can implement new controllers and test them
+* Can implement new controllers and MPC optimizers and test them
+* Experiment management using GUILD AI
 
 ### New: Experiment Management with GUILD AI
 We use the [GUILD AI](https://guild.ai) library to manage experiments and controllers. The difficulty lies in adapting the framework to suit the needs of this repository and the git submodules.
 
 The following components are important to make GUILD AI work for your workflow:
 
-+ `config.yml` Run configuraiton file: The top section can be used to overwrite the controller, optimizer, cost function and predictor configurations. Below that, you can specify how long runs are, what to plot and how to save outputs.
+* `config.yml` Main configuration file: The top section can be used to overwrite the controller, optimizer, cost function and predictor configurations. Below that, you can specify how long runs are, what to plot and how to save outputs.
 * `guild.yml` GUILD AI configuration file: It instructs the framework to look in the `config.yml` for hyperparameters
 * `main.py` script is called through GUILD AI
 
@@ -25,6 +24,7 @@ The following components are important to make GUILD AI work for your workflow:
 * `guild runs`: List past runs and hyperparameters
 * `guild cat <<run_id>>`: Print console outputs of a run
 * `guild view`: Open GUILD AI dashboard
++ `guild run controller_mpc:run_control custom_config_overwrites.config_controllers.mpc.optimizer='rpgd-tf' custom_config_overwrites.config_optimizers.rpgd-tf.learning_rate='[0.0001:0.5]' --optimizer gp --max-trials 10 --maximize mean_reward`
 
 ### Reproduction of Simulation Results
 * `config.yml` contains the right controller parameters
