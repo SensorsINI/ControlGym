@@ -12,6 +12,7 @@
   - optimizer_rpgd_tf
   # - optimizer_rpgd_me_tf
   # - optimizer_rpgd_ml_tf
+   - optimizer_lqr_forces
   environment_names:
   - CustomEnvironments/MountainCarContinuous-v0
   # - CustomEnvironments/CartPoleSimulator-v0
