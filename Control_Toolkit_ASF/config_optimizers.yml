@@ -203,3 +203,15 @@ lqr-forces:
   state_max: [ 0.198, inf, inf, inf ]
   q: 1.0                                #State cost
   r: 1.0                                #Input cost
+cartpole-forces:
+  seed: null
+  mpc_horizon: 5                     # steps
+  num_rollouts: 1
+  # Cartpole
+  jacobian_path: CartPoleSimulation.CartPole.cartpole_jacobian
+  #  action_max: 2.62
+  action_max: 12.62
+  #  state_max: [0.198, 0.8, inf, 100.0] #[TrackHalfLegth, vmax, inf, v ang. max]
+  state_max: [ 0.198, inf, inf, inf ]
+  Q: 1.0                                #State cost
+  R: 1.0                                #Input cost
