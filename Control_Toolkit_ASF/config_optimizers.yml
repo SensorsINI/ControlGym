@@ -193,11 +193,13 @@ random-action-tf:
   num_rollouts: 320
 lqr-forces:
   seed: null
-  mpc_horizon: 5                      # steps
+  mpc_horizon: 5                     # steps
   num_rollouts: 1
   # Cartpole
   jacobian_path: CartPoleSimulation.CartPole.cartpole_jacobian
-  action_max: 2.62
-  state_max: [0.198, 0.8, 100.0, 100.0] #[TrackHalfLegth, vmax, inf, v ang. max]
-  P: 1.0
-  R: 1.0
+#  action_max: 2.62
+  action_max: 12.62
+#  state_max: [0.198, 0.8, inf, 100.0] #[TrackHalfLegth, vmax, inf, v ang. max]
+  state_max: [ 0.198, inf, inf, inf ]
+  q: 1.0                                #State cost
+  r: 1.0                                #Input cost
