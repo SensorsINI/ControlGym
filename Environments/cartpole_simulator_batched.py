@@ -57,6 +57,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self.environment_attributes = {
             "target_position": self.target_position,
         }
+        self.initial_state = kwargs['initial_state']
 
         self.x_threshold = (
             0.9 * track_half_length
@@ -100,10 +101,11 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
     ) -> "Tuple[np.ndarray, dict]":
         if seed is not None:
             self._set_up_rng(seed)
+
         state = options.get("state", None) if isinstance(options, dict) else None
         self.count = 0
 
-        if state is None:
+        if state is None and self.initial_state is None:
             low = np.array([-self.lib.pi / 4, 1.0e-1, 1.0e-1, 1.0e-1])
             high = np.array([self.lib.pi / 4, 1.0e-1, 1.0e-1, 1.0e-1])
             angle, angleD, position, positionD = self.lib.unstack(
@@ -129,6 +131,22 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
                 1,
             )
             self.steps_beyond_done = None
+        elif state is None and self.initial_state is not None:
+
+            state = [0]*6
+            state[0] = self.initial_state[0]
+            state[1] = self.initial_state[1]
+            state[2] = self.lib.cos(self.initial_state[0])
+            state[3] = self.lib.sin(self.initial_state[0])
+            state[4] = self.initial_state[2]
+            state[5] = self.initial_state[3]
+
+            state = self.lib.unsqueeze(
+                self.lib.to_tensor(state, self.lib.float32), 0
+            )
+
+            self.state = state
+            pass
         else:
             if self.lib.ndim(state) < 2:
                 state = self.lib.unsqueeze(

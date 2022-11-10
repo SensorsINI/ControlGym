@@ -169,6 +169,7 @@
     usable_track_length: 44.0e-2
     u_max: 2.62
     shuffle_target_every: 100
+    initial_state: [0.0, 0.0, 0.0, 0.0]     #theta, dtheta/dt, x, v,
   CustomEnvironments/BipedalWalkerBatched-v0:
     actuator_noise:
     - 0.0
