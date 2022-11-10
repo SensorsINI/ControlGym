@@ -112,6 +112,23 @@ class optimizer_cartpole_forces(template_optimizer):
         nx = self.nx
         nu = self.nu
 
+
+        s = np.array([0.0, 0.0, 0.0, 0.0]).astype(np.float32)
+        jacobian = self.jacobian(s, 0.0)  # linearize around u=0.0
+        A = jacobian[:, :-1]
+        B = np.reshape(jacobian[:, -1], newshape=(4, 1)) * self.action_high
+        self.A = A
+        self.B = B
+
+        for i in range(N):
+            # equality constraints
+            if (i < N - 1):
+                stages.eq[i]['C'] = np.hstack((np.zeros((nx, nu)), A))
+            if (i > 0):
+                stages.eq[i]['c'] = np.zeros((nx, 1))
+            stages.eq[i]['D'] = np.hstack((B, -np.eye(nx)))
+
+
         for i in range(N):
 
             # dimensions
@@ -140,9 +157,18 @@ class optimizer_cartpole_forces(template_optimizer):
         # solver settings
         stages.codeoptions['name'] = 'myMPC_FORCESPRO'
         stages.codeoptions['printlevel'] = 0
+        stages.codeoptions['floattype'] = 'float'
+
+        stages.newParam('minusA_times_x0', [1], 'eq.c')  # RHS of first eq. constr. is a parameter: z1=-A*x0
 
         # define output of the solver
         stages.newOutput('u0', 1, list(range(1, nu + 1)))
+
+        # generate code
+        stages.generateCode(get_userid.userid)
+        import myMPC_FORCESPRO_py
+        self.myMPC_FORCESPRO_py = myMPC_FORCESPRO_py
+        self.problem = myMPC_FORCESPRO_py.myMPC_FORCESPRO_params
 
 
     def cartpole_order2jacobian_order(self, s: np.ndarray):
@@ -166,36 +192,10 @@ class optimizer_cartpole_forces(template_optimizer):
         return new_s
 
     def step(self, s: np.ndarray, time=None):
+
         s = self.cartpole_order2jacobian_order(s)
-        jacobian = self.jacobian(s, 0.0)  #linearize around u=0.0
-        A = jacobian[:, :-1]
-        B = np.reshape(jacobian[:, -1], newshape=(4, 1)) * self.action_high
-
-        #for readability
-        stages = self.stages
-        nx = self.nx
-        nu = self.nu
-        N = self.mpc_horizon
-
-        for i in range(N):
-            # equality constraints
-            if (i < N - 1):
-                stages.eq[i]['C'] = np.hstack((np.zeros((nx, nu)), A))
-            if (i > 0):
-                stages.eq[i]['c'] = np.zeros((nx, 1))
-            stages.eq[i]['D'] = np.hstack((B, -np.eye(nx)))
-
-        stages.newParam('minusA_times_x0', [1], 'eq.c')  # RHS of first eq. constr. is a parameter: z1=-A*x0
-
-        # generate code
-        stages.generateCode(get_userid.userid)
-
-        import myMPC_FORCESPRO_py
-        self.problem = myMPC_FORCESPRO_py.myMPC_FORCESPRO_params
-        self.A = A
-
         self.problem['minusA_times_x0'] = -np.dot(self.A, s)
-        [solverout, exitflag, info] = myMPC_FORCESPRO_py.myMPC_FORCESPRO_solve(self.problem)
+        [solverout, exitflag, info] = self.myMPC_FORCESPRO_py.myMPC_FORCESPRO_solve(self.problem)
         if (exitflag == 1):
             u = solverout['u0']
             print('Problem solved in %5.3f milliseconds (%d iterations).' % (1000.0 * info.solvetime, info.it))
