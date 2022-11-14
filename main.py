@@ -24,30 +24,29 @@ from Utilities.utils import ConfigManager, CurrentRunMemory, OutputPath, SeedMem
 sys.path.append(os.path.join(os.path.abspath("."), "CartPoleSimulation"))  # Keep allowing absolute imports within CartPoleSimulation subgit
 register_envs()  # Gym API: Register custom environments
 logger = get_logger(__name__)
-config_manager = ConfigManager(".", "Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments")
 
 
 def run_data_generator(
     controller_name: str,
     environment_name: str,
-    config: "dict[str, Any]",
+    config_manager: ConfigManager,
     run_for_ML_Pipeline=False,
     record_path=None,
 ):
     # Generate seeds and set timestamp
     timestamp = datetime.now()
-    seed_entropy = config["seed_entropy"]
+    seed_entropy = config_manager("config")["seed_entropy"]
     if seed_entropy is None:
         seed_entropy = int(timestamp.timestamp())
         logger.info("No seed entropy specified. Setting to posix timestamp.")
 
-    num_experiments = config["num_experiments"]
+    num_experiments = config_manager("config")["num_experiments"]
     seed_sequences = SeedSequence(entropy=seed_entropy).spawn(num_experiments)
     timestamp_str = timestamp.strftime("%Y%m%d-%H%M%S")
 
     if run_for_ML_Pipeline:
         # Get training/validation split
-        frac_train, frac_val = config["split"]
+        frac_train, frac_val = config_manager("config")["split"]
         assert record_path is not None, "If ML mode is on, need to provide record_path."
 
     controller_short_name = controller_name.replace("controller_", "").replace("_", "-")
@@ -73,9 +72,9 @@ def run_data_generator(
         ##### ----------------------------------------------- #####
         ##### ----------------- ENVIRONMENT ----------------- #####
         ##### --- Instantiate environment and call reset ---- #####
-        if config["render_for_humans"]:
+        if config_manager("config")["render_for_humans"]:
             render_mode = "human"
-        elif config["save_plots_to_file"]:
+        elif config_manager("config")["save_plots_to_file"]:
             render_mode = "rgb_array"
         else:
             render_mode = None
@@ -111,7 +110,7 @@ def run_data_generator(
         ##### ----------------- MAIN CONTROL LOOP ----------------- #####
         frames = []
         start_time = time.time()
-        num_iterations = config["num_iterations"]
+        num_iterations = config_manager("config")["num_iterations"]
         for step in range(num_iterations):
             action = controller.step(obs, updated_attributes=env.environment_attributes)
             new_obs, reward, terminated, truncated, info = env.step(action)
@@ -128,9 +127,9 @@ def run_data_generator(
             if config_controller.get("controller_logging", False):
                 controller.logs["realized_cost_logged"].append(np.array([-reward]).copy())
                 env.set_logs(controller.logs)
-            if config["render_for_humans"]:
+            if config_manager("config")["render_for_humans"]:
                 env.render()
-            elif config["save_plots_to_file"]:
+            elif config_manager("config")["save_plots_to_file"]:
                 frames.append(env.render())
 
             time.sleep(1e-6)
@@ -168,12 +167,12 @@ def run_data_generator(
             else:
                 csv = os.path.join(record_path, "Test")
             os.makedirs(csv, exist_ok=True)
-            save_to_csv(config, controller, environment_name, csv)
+            save_to_csv(config_manager("config"), controller, environment_name, csv)
         elif config_controller.get("controller_logging", False):
-            if config["save_plots_to_file"]:
+            if config_manager("config")["save_plots_to_file"]:
                 # Generate and save plots in default location
                 generate_experiment_plots(
-                    config=config,
+                    config=config_manager("config"),
                     environment_config=config_manager("config_environments")[environment_name],
                     controller_output=controller_output,
                     timestamp=timestamp_str,
@@ -191,7 +190,7 @@ def run_data_generator(
                 with open(
                     OutputPath.get_output_path(timestamp_str, loader.name), "w"
                 ) as f:
-                    dump(config, f)
+                    dump(loader.config, f)
     
     # These output metrics are detected by GUILD AI and follow a "key: value" format
     print("Output metrics:")
@@ -201,10 +200,12 @@ def run_data_generator(
 
 def prepare_and_run():
     import ruamel.yaml
+    
+    config_manager = ConfigManager(".", "Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments")
     # Scan for any custom parameters that should overwrite the toolkit configs:
     submodule_configs = ConfigManager("Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments").loaders
     for base_name, loader in submodule_configs.items():
-        if base_name in config_manager("config")["custom_config_overwrites"]:
+        if base_name in config_manager("config").get("custom_config_overwrites", {}):
             data: ruamel.yaml.comments.CommentedMap = loader.load()
             update_dict = config_manager("config")["custom_config_overwrites"][base_name]
             nested_assignment_to_ordereddict(data, update_dict)
@@ -217,7 +218,7 @@ def prepare_and_run():
     run_data_generator(
         controller_name=CurrentRunMemory.current_controller_name,
         environment_name=CurrentRunMemory.current_environment_name,
-        config=config_manager("config"),
+        config_manager=config_manager,
         run_for_ML_Pipeline=False,
     )
 

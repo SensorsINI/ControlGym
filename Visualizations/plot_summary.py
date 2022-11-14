@@ -1,3 +1,4 @@
+import os
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
@@ -74,7 +75,7 @@ class SummaryPlotter(Plotter):
 
         if save_to_image:
             self.fig.savefig(
-                OutputPath.get_output_path(self._timestamp, "summary_logged.svg"),
+                os.path.join(self._path, "summary_logged.svg"),
                 bbox_inches="tight",
             )
         else:

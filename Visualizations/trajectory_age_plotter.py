@@ -38,7 +38,7 @@ class TrajectoryAgePlotter(Plotter):
             self.ax.set_xlabel("Age of Input Plan")
 
             if save_to_image:
-                path = os.path.join("Output", f"{self._timestamp}_trajectory_ages")
+                path = os.path.join(self._path, f"trajectory_ages")
                 if not os.path.exists(path):
                     os.makedirs(path)
                 self.fig.savefig(

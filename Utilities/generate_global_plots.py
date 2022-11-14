@@ -28,14 +28,14 @@ from natsort import natsorted
 # ]
 
 ### Option 2: Specify a top-level folder
-EXPERIMENT_FOLDER = "20221102-194840_sweep_num_rollouts"
-ENVIRONMENT_NAME = "MountainCar"
+EXPERIMENT_FOLDER = "20221114-190635_sweep_config_controllers.mpc.optimizer"
+ENVIRONMENT_NAME = "ObstacleAvoidance"
 ### ------------- Do not modify the following two lines ------------- ###
 experiments_to_plot = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*/*/*/", recursive="True")
 experiments_to_plot = natsorted(experiments_to_plot)
 ### ------------- ------------- ------------- ------------- ------------- ###
 
-sweep_value = EXPERIMENT_FOLDER.split("sweep_")[1].split("_controller")[0]
+sweep_value = EXPERIMENT_FOLDER.split("sweep_")[1]
 
 ### ------------- 2. Specify what the sweeped value is (labeled on x-axis) ------------- ###
 sweep_values = {
@@ -136,9 +136,9 @@ def generate_global_plots() -> None:
 
     logger.info("Generating box plot...")
     box_plot_plotter = CostScatterPlotPlotter(
-        datetime.now().strftime("%Y%m%d-%H%M%S"),
+        os.path.join("Output", EXPERIMENT_FOLDER),
         {"controller_name": "", "environment_name": ""},
-        {"": {"actuator_noise": ""}},
+        {"actuator_noise": ""},
     )
     if sweep_value == "resamp_per":
         box_plot_plotter.plot(all_trajectory_cost_data, sweep_values, True)

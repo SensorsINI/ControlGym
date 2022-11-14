@@ -95,10 +95,10 @@ BipedalWalkerBatched-v0:
   dt: 0.02
 ObstacleAvoidance-v0:
   actuator_noise:
-  - 0.0
+  - 0.1
   dt: 0.02
   target_point: null
   initial_state: null
   obstacle_positions: []
-  shuffle_target_every: 30
+  shuffle_target_every: 100
   num_dimensions: 2

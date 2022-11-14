@@ -1,3 +1,4 @@
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -41,7 +42,7 @@ class HorizonCostPlotter(Plotter):
 
         if save_to_image:
             self.fig.savefig(
-                OutputPath.get_output_path(self._timestamp, "J_logged.svg"),
+                os.path.join(self._path, "J_logged.svg"),
                 bbox_inches="tight",
             )
         else:

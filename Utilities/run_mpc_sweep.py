@@ -5,33 +5,26 @@ You can additionally specify hyperparameters to sweep. Each hyperparameter combi
 """
 # 1. Specify the following (can be an empty list)
 # Example:
-#   parameters_to_sweep = ["learning_rate", "batch_size"]
+#   parameters_to_sweep = ["config_optimizers.rpgd-tf.learning_rate", "config_optimizers.rpgd-tf.batch_size"]
 #   sweep_values = [[0.01, 0.05, 0.2], [1, 5, 10]]
 #   -> Creates 3 runs with zipped parameter tuples (0.01, 1), (0.05, 5), (0.2, 10).
+#   -> Hint: Make sure that the optimizer you sweep over is also set either here or directly in config
 
-parameters_to_sweep = ["num_rollouts"]
-sweep_values = [[16, 32]]  # One list per parameter above. All sublists need to have same length
-controller_names = ["controller_mpc"]
-optimizer_names = [
-    "optimizer_cem_tf",
-    "optimizer_mppi_tf",
-    "optimizer_mppi_var_tf",
-    "optimizer_mppi_optimize_tf",
-    "optimizer_cem_grad_bharadhwaj_tf",
-    "optimizer_gradient_tf",
-    "optimizer_random_action_tf",
-    "optimizer_rpgd_tf",
-    "optimizer_rpgd_me_tf",
-    "optimizer_rpgd_ml_tf"
+parameters_to_sweep = [
+    "config_controllers.mpc.optimizer",  # syntax: <<config_name>>.<<config_entry>>.<<parameter_name>>
 ]
+sweep_values = [
+    ["rpgd-tf", "rpgd-me-tf"],
+]  # One list per parameter above. All sublists need to have same length
+controller_names = ["controller_mpc"]
 environment_names = [
-    "MountainCarContinuous-v0",
-    "CartPoleSimulator-v0",
-    "DubinsCar-v0",
-    "Acrobot-v0",
-    "Pendulum-v0",
-    "CartPoleContinuous-v0",
-    "BipedalWalkerBatched-v0",
+    # "MountainCarContinuous-v0",
+    # "CartPoleSimulator-v0",
+    # "DubinsCar-v0",
+    # "Acrobot-v0",
+    # "Pendulum-v0",
+    # "CartPoleContinuous-v0",
+    # "BipedalWalkerBatched-v0",
     "ObstacleAvoidance-v0",
 ]
 
@@ -42,16 +35,14 @@ from itertools import product
 
 import tensorflow as tf
 from main import run_data_generator
-from yaml import FullLoader, load
+import ruamel.yaml
 
-from Utilities.utils import CurrentRunMemory, OutputPath, get_logger
+from Utilities.utils import ConfigManager, CurrentRunMemory, OutputPath, get_logger, nested_assignment_to_ordereddict
 
 logger = get_logger(__name__)
 
 
-config_controllers = load(open(os.path.join("Control_Toolkit_ASF", "config_controllers.yml"), "r"), Loader=FullLoader)
-config_optimizers = load(open(os.path.join("Control_Toolkit_ASF", "config_optimizers.yml"), "r"), Loader=FullLoader)
-config = load(open("config.yml", "r"), Loader=FullLoader)
+config_manager = ConfigManager(".", "Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments")
 
 if len(controller_names) != 1 or controller_names[0] != "controller_mpc":
     raise ValueError("This script is designed to run when the config.yml has controller_names=[controller_mpc].")
@@ -60,28 +51,31 @@ controller_name = controller_names[0]
 if __name__ == "__main__":
     datetime_str = datetime.now().strftime('%Y%m%d-%H%M%S')
     # Iterate over all optimizer-environment combinations:
-    for optimizer_name, environment_name in product(optimizer_names, environment_names):
-        optimizer_short_name = optimizer_name.replace("optimizer_", "").replace("_", "-")
-        
+    for environment_name in environment_names:
         # Iterate over all zipped hyperparameter combinations:
         for sweep_value_tuple in zip(*sweep_values):
             OutputPath.collection_folder_name = os.path.join(
                 f"{datetime_str}_sweep_{','.join(parameters_to_sweep)}",
-                f"{datetime_str}_{controller_name}_{optimizer_name}_{environment_name}",
+                f"{datetime_str}_{controller_name}_{environment_name}",
                 f"{datetime_str}_{','.join(parameters_to_sweep)}={','.join(list(map(str, sweep_value_tuple)))}",
             )
             CurrentRunMemory.current_controller_name = controller_name
-            CurrentRunMemory.current_optimizer_name = optimizer_name
             CurrentRunMemory.current_environment_name = environment_name
             
-            for param_name, param_value in zip(parameters_to_sweep, sweep_value_tuple):
-                if param_name not in config_optimizers[optimizer_short_name]:
-                    raise ValueError(f"{param_name} is not used in {optimizer_name}")
+            for param_desc, param_value in zip(parameters_to_sweep, sweep_value_tuple):
+                config_name, config_entry, param_name = param_desc.split(".")
+                if param_name not in config_manager(config_name)[config_entry]:
+                    raise ValueError(f"{param_name} is not used in {config_name}")
                 # Overwrite with sweep value:
-                config_optimizers[optimizer_short_name][param_name] = param_value
+                # config_manager(config_name)[config_entry][param_name] = param_value
+                
+                loader = config_manager.loaders[config_name]
+                data: ruamel.yaml.comments.CommentedMap = loader.load()
+                nested_assignment_to_ordereddict(data, {config_entry: {param_name: param_value}})
+                loader.overwrite_config(data)
 
             device_name = "/CPU:0"
-            if config["use_gpu"]:
+            if config_manager("config")["use_gpu"]:
                 if len(tf.config.list_physical_devices("GPU")) > 0:
                     device_name = "/GPU:0"
                 else:
@@ -92,7 +86,6 @@ if __name__ == "__main__":
             with tf.device(device_name):
                 run_data_generator(
                     CurrentRunMemory.current_controller_name,
-                    CurrentRunMemory.current_optimizer_name,
                     CurrentRunMemory.current_environment_name,
-                    config
+                    config_manager,
                 )

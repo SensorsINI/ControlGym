@@ -119,7 +119,7 @@ class ConfigManager:
     
     @property
     def loaders(self):
-        return self._config_loaders.copy()
+        return self._config_loaders
     
     def __call__(self, config_name: str) -> Any:
         """Get the config with specified name (without '.yml' suffix) if it is loaded."""
