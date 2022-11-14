@@ -21,6 +21,10 @@ custom_config_overwrites:
   config_controllers:
     mpc:
       optimizer: rpgd-tf
+  config_optimizers:
+    rpgd-tf:
+      # period_interpolation_inducing_points:
+      learning_rate: 0.6
 
 
 ### ------------------------------------------------------- ###
