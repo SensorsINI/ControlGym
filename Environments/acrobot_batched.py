@@ -14,6 +14,7 @@ from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, Ten
 class acrobot_batched(EnvironmentBatched, AcrobotEnv):
     num_actions = 1
     num_states = 4
+    book_or_nips = "nips"
 
     def __init__(
         self,
