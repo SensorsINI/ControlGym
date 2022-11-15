@@ -11,6 +11,12 @@ acrobot_batched:
   default:
     angle_weight: 1.0
     angleD_weight: 0.01
+  discounted_horizon:
+    angle1_weight: 1.0
+    angle2_weight: 0.5
+    angleD1_weight: 0.02
+    angleD2_weight: 0.01
+    discount_factor: 0.95
 cartpole_simulator_batched:
   default:
     angle_weight: 1.0

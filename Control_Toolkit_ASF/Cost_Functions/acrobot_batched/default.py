@@ -18,7 +18,7 @@ class default(cost_function_base):
         th1, th2, th1_vel, th2_vel = self.lib.unstack(states, 4, -1)
         cost = (
             angle_weight * (self.lib.cos(th1) + self.lib.cos(th2 + th1))
-            + angleD_weight * (th1_vel + th2_vel)
+            + angleD_weight * (th1_vel ** 2 + th2_vel ** 2)
         )
         return cost
 
