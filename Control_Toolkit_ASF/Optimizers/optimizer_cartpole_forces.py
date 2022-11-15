@@ -165,7 +165,7 @@ class optimizer_cartpole_forces(template_optimizer):
         stages.newOutput('u0', 1, list(range(1, nu + 1)))
 
         # generate code
-        stages.generateCode(get_userid.userid)
+        # stages.generateCode(get_userid.userid)
         import myMPC_FORCESPRO_py
         self.myMPC_FORCESPRO_py = myMPC_FORCESPRO_py
         self.problem = myMPC_FORCESPRO_py.myMPC_FORCESPRO_params
@@ -195,13 +195,13 @@ class optimizer_cartpole_forces(template_optimizer):
 
         s = self.cartpole_order2jacobian_order(s)
         self.problem['minusA_times_x0'] = -np.dot(self.A, s)
-        [solverout, exitflag, info] = self.myMPC_FORCESPRO_py.myMPC_FORCESPRO_solve(self.problem)
+        [solverout, exitflag, info] = self.myMPC_FORCESPRO_py.solve(self.problem)
         if (exitflag == 1):
             u = solverout['u0']
             print('Problem solved in %5.3f milliseconds (%d iterations).' % (1000.0 * info.solvetime, info.it))
         else:
             print(info)
-            raise RuntimeError('Some problem in solver')
+            raise RuntimeError('Some problem in solver, exitflag=' + str(exitflag))
 
         return u.astype(np.float32)
 
