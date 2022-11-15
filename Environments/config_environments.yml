@@ -79,7 +79,7 @@ HalfCheetahBatched-v0:
 Acrobot-v0:
   actuator_noise:
   - 0.0
-  dt: 0.05
+  dt: 0.1
 CartPoleSimulator-v0:
   actuator_noise:
   - 0.0
