@@ -16,17 +16,7 @@ parameters_to_sweep = [
 sweep_values = [
     ["rpgd-tf", "rpgd-me-tf"],
 ]  # One list per parameter above. All sublists need to have same length
-controller_names = ["controller_mpc"]
-environment_names = [
-    # "MountainCarContinuous-v0",
-    # "CartPoleSimulator-v0",
-    # "DubinsCar-v0",
-    # "Acrobot-v0",
-    # "Pendulum-v0",
-    # "CartPoleContinuous-v0",
-    # "BipedalWalkerBatched-v0",
-    "ObstacleAvoidance-v0",
-]
+controller_name = "controller_mpc"
 
 ### ------------------------------------------------------------------------------------ ###
 from datetime import datetime
@@ -43,49 +33,45 @@ logger = get_logger(__name__)
 
 
 config_manager = ConfigManager(".", "Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments")
+environment_name = config_manager("config")["environment_name"]
 
-if len(controller_names) != 1 or controller_names[0] != "controller_mpc":
+if controller_name != "controller_mpc":
     raise ValueError("This script is designed to run when the config.yml has controller_names=[controller_mpc].")
-controller_name = controller_names[0]
 
 if __name__ == "__main__":
     datetime_str = datetime.now().strftime('%Y%m%d-%H%M%S')
-    # Iterate over all optimizer-environment combinations:
-    for environment_name in environment_names:
-        # Iterate over all zipped hyperparameter combinations:
-        for sweep_value_tuple in zip(*sweep_values):
-            OutputPath.collection_folder_name = os.path.join(
-                f"{datetime_str}_sweep_{','.join(parameters_to_sweep)}",
-                f"{datetime_str}_{controller_name}_{environment_name}",
-                f"{datetime_str}_{','.join(parameters_to_sweep)}={','.join(list(map(str, sweep_value_tuple)))}",
-            )
-            CurrentRunMemory.current_controller_name = controller_name
-            CurrentRunMemory.current_environment_name = environment_name
-            
-            for param_desc, param_value in zip(parameters_to_sweep, sweep_value_tuple):
-                config_name, config_entry, param_name = param_desc.split(".")
-                if param_name not in config_manager(config_name)[config_entry]:
-                    raise ValueError(f"{param_name} is not used in {config_name}")
-                # Overwrite with sweep value:
-                # config_manager(config_name)[config_entry][param_name] = param_value
-                
-                loader = config_manager.loaders[config_name]
-                data: ruamel.yaml.comments.CommentedMap = loader.load()
-                nested_assignment_to_ordereddict(data, {config_entry: {param_name: param_value}})
-                loader.overwrite_config(data)
+    # Iterate over all zipped hyperparameter combinations:
+    for sweep_value_tuple in zip(*sweep_values):
+        OutputPath.collection_folder_name = os.path.join(
+            f"{datetime_str}_sweep_{','.join(parameters_to_sweep)}",
+            f"{datetime_str}_{controller_name}_{environment_name}",
+            f"{datetime_str}_{','.join(parameters_to_sweep)}={','.join(list(map(str, sweep_value_tuple)))}",
+        )
+        CurrentRunMemory.current_controller_name = controller_name
+        CurrentRunMemory.current_environment_name = environment_name
+        
+        for param_desc, param_value in zip(parameters_to_sweep, sweep_value_tuple):
+            config_name, config_entry, param_name = param_desc.split(".")
+            if param_name not in config_manager(config_name)[config_entry]:
+                raise ValueError(f"{param_name} is not used in {config_name}")
+            # Overwrite with sweep value:
+            loader = config_manager.loaders[config_name]
+            data: ruamel.yaml.comments.CommentedMap = loader.load()
+            nested_assignment_to_ordereddict(data, {config_entry: {param_name: param_value}})
+            loader.overwrite_config(data)
 
-            device_name = "/CPU:0"
-            if config_manager("config")["use_gpu"]:
-                if len(tf.config.list_physical_devices("GPU")) > 0:
-                    device_name = "/GPU:0"
-                else:
-                    logger.info(
-                        "GPU use specified in config but no device available. Using CPU instead."
-                    )
-
-            with tf.device(device_name):
-                run_data_generator(
-                    CurrentRunMemory.current_controller_name,
-                    CurrentRunMemory.current_environment_name,
-                    config_manager,
+        device_name = "/CPU:0"
+        if config_manager("config")["use_gpu"]:
+            if len(tf.config.list_physical_devices("GPU")) > 0:
+                device_name = "/GPU:0"
+            else:
+                logger.info(
+                    "GPU use specified in config but no device available. Using CPU instead."
                 )
+
+        with tf.device(device_name):
+            run_data_generator(
+                CurrentRunMemory.current_controller_name,
+                CurrentRunMemory.current_environment_name,
+                config_manager,
+            )
