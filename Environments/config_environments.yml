@@ -102,3 +102,11 @@ ObstacleAvoidance-v0:
   obstacle_positions: []
   shuffle_target_every: 100
   num_dimensions: 2
+LunarLander-v2:
+  actuator_noise:
+  - 0.0
+  dt: 0.02
+  gravity: -10.0
+  enable_wind: false
+  wind_power: 15.0
+  turbulence_power: 1.5

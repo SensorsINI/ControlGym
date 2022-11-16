@@ -3,9 +3,9 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import tensorflow as tf
 import torch
-from gym import spaces
-from gym.envs.classic_control import utils
-from gym.envs.classic_control.acrobot import AcrobotEnv
+from gymnasium import spaces
+from gymnasium.envs.classic_control import utils
+from gymnasium.envs.classic_control.acrobot import AcrobotEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType

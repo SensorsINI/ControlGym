@@ -6,7 +6,9 @@
       main: main
       flags-dest: config:config.yml
       flags-import: all
-      output-scalars: '(\key): (\value)'
+      output-scalars:
+        - mean_reward: 'Mean total reward: (\value)'
+        - mean_steps_to_completion: 'Mean steps to completion: (\value)'
       sourcecode:
         - '**.py'
         - '**.yml'

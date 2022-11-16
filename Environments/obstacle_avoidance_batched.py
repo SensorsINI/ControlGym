@@ -30,12 +30,12 @@ SOFTWARE.
 import math
 from typing import Optional, Tuple, Union
 
-import gym
+import gymnasium as gym
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from Control_Toolkit.others.environment import EnvironmentBatched
-from gym import spaces
+from gymnasium import spaces
 from matplotlib.patches import Circle
 from SI_Toolkit.computation_library import (ComputationLibrary, NumpyLibrary,
                                             TensorType)

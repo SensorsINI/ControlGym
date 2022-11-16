@@ -1,5 +1,5 @@
 import numpy as np
-from gym.utils.save_video import save_video
+from gymnasium.utils.save_video import save_video
 from Visualizations.plot_horizon_costs import HorizonCostPlotter
 from Visualizations.plot_input_plans import InputPlanPlotter
 

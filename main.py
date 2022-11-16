@@ -5,7 +5,7 @@ from datetime import datetime
 from importlib import import_module
 
 from typing import Any
-import gym
+import gymnasium as gym
 import numpy as np
 import tensorflow as tf
 from numpy.random import SeedSequence
@@ -53,7 +53,7 @@ def run_data_generator(
     optimizer_short_name = config_manager("config_controllers")[controller_short_name]["optimizer"]
     optimizer_name = "optimizer_" + optimizer_short_name.replace("-", "_")
     CurrentRunMemory.current_optimizer_name = optimizer_name
-    all_mean_rewards = []
+    all_total_rewards = []
     all_steps_to_completion = []
     
     # Loop through independent experiments
@@ -155,7 +155,7 @@ def run_data_generator(
         ##### ----------------- LOGGING AND PLOTS ----------------- #####
         OutputPath.RUN_NUM = i + 1
         controller_output = controller.get_outputs()
-        all_mean_rewards.append(np.mean(all_rewards))
+        all_total_rewards.append(np.sum(all_rewards))
         all_steps_to_completion.append(step + 1)
 
         if run_for_ML_Pipeline:
@@ -194,8 +194,8 @@ def run_data_generator(
     
     # These output metrics are detected by GUILD AI and follow a "key: value" format
     print("Output metrics:")
-    print(f"mean_reward: {np.mean(all_mean_rewards)}")
-    print(f"mean_steps_to_completion: {np.mean(all_steps_to_completion)}")
+    print(f"Mean total reward: {np.mean(all_total_rewards)}")
+    print(f"Mean steps to completion: {np.mean(all_steps_to_completion)}")
 
 
 def prepare_and_run():

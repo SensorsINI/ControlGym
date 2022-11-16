@@ -17,14 +17,15 @@
 ### Any parameter specified here can also be overwritten as flag in bash.
 ### Example: `guild run controller_mpc:run_control custom_config_overwrites.config_optimizers.cem-tf.cem_best_k='[1,4,16]'`
 ###
-# custom_config_overwrites:
-#   config_controllers:
-#     mpc:
-#       optimizer: rpgd-me-tf
-  # config_optimizers:
-    # rpgd-tf:
-      # period_interpolation_inducing_points:
-      # learning_rate: 0.6
+custom_config_overwrites:
+  # config_controllers:
+  #   mpc:
+  #     optimizer: rpgd-me-tf
+  config_optimizers:
+    rpgd-me-tf:
+      maximum_entropy_alpha: 0.1
+  #     period_interpolation_inducing_points:
+  #     learning_rate: 0.6
 
 
 ### ------------------------------------------------------- ###
@@ -32,12 +33,12 @@
 ### The following flags are required. Modify them as needed: ###
 ### Alternatively, you can pass values as flags in bash      ###
 controller_name: controller_mpc
-environment_name: Acrobot-v0
+environment_name: LunarLander-v2
 
 ### ------------------------------------------------------- ###
 
-debug: false  # false to use tf.compile
-use_jit_compilation: false  # false for reproducibility
+debug: true  # false to use tf.compile
+use_jit_compilation: true  # false for reproducibility
 use_gpu: false
 logging_level: DEBUG
 num_experiments: 50

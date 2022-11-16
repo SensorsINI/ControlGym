@@ -6,7 +6,7 @@ engineering_notation
 git+https://github.com/homangab/gradcem@master#egg=mpc
 GitPython
 gpflow
-gym[classic_control,mujoco,box2d]>=0.26.0
+gymnasium[classic_control,mujoco,box2d]>=0.26.0
 imageio
 matplotlib
 moviepy

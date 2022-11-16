@@ -3,7 +3,7 @@ from typing import Union
 import numpy as np
 import tensorflow as tf
 import torch
-from gym.envs.registration import register
+from gymnasium.envs.registration import register
 from numpy.random import Generator
 from Utilities.utils import get_logger
 
@@ -19,6 +19,7 @@ ENV_REGISTRY = {
     "HalfCheetahBatched-v0": "Environments.half_cheetah_batched:half_cheetah_batched",
     "BipedalWalkerBatched-v0": "Environments.bipedal_walker_batched:bipedal_walker_batched",
     "ObstacleAvoidance-v0": "Environments.obstacle_avoidance_batched:obstacle_avoidance_batched",
+    "LunarLander-v2": "Environments.lunar_lander_batched:lunar_lander_batched",
 }
 
 

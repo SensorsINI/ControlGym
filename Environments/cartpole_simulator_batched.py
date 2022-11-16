@@ -10,7 +10,7 @@ from CartPoleSimulation.CartPole.state_utilities import (ANGLE_COS_IDX,
 from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
-from gym.spaces import Box
+from gymnasium.spaces import Box
 
 
 class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):

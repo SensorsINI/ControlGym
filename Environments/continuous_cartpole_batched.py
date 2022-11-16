@@ -3,8 +3,8 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import tensorflow as tf
 import torch
-from gym import spaces
-from gym.envs.classic_control.cartpole import CartPoleEnv
+from gymnasium import spaces
+from gymnasium.envs.classic_control.cartpole import CartPoleEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType

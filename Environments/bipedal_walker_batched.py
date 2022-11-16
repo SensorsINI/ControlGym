@@ -1,12 +1,12 @@
 from typing import Optional, Tuple, Union
 
-import gym
+import gymnasium as gym
 import numpy as np
 import tensorflow as tf
 import torch
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import NumpyLibrary, TensorType
-from gym.envs.box2d.bipedal_walker import *
+from gymnasium.envs.box2d.bipedal_walker import *
 
 
 class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
