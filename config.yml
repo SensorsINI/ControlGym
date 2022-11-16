@@ -12,7 +12,8 @@
   - optimizer_rpgd_tf
   # - optimizer_rpgd_me_tf
   # - optimizer_rpgd_ml_tf
-   - optimizer_lqr_forces
+  # - optimizer_cartpole_forces
+    - optimizer_nlp_forces
   environment_names:
   - CustomEnvironments/MountainCarContinuous-v0
   # - CustomEnvironments/CartPoleSimulator-v0
@@ -169,7 +170,7 @@
     usable_track_length: 44.0e-2
     u_max: 2.62
     shuffle_target_every: 100
-    initial_state: [0.0, 0.0, 0.0, 0.0]     #theta, dtheta/dt, x, v,
+    initial_state: [0.01, 0.02, 0.03, 0.04]       #angle, angleD, position, positionD,
   CustomEnvironments/BipedalWalkerBatched-v0:
     actuator_noise:
     - 0.0
