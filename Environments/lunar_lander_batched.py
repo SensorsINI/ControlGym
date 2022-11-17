@@ -19,8 +19,8 @@ except ImportError:
 
 SCALE = 30.0  # affects how fast-paced the game is, forces should be adjusted as well
 
-MAIN_ENGINE_POWER = 7 * 13.0
-SIDE_ENGINE_POWER = 70 * 0.6
+MAIN_ENGINE_POWER = 10 * 13.0
+SIDE_ENGINE_POWER = 200 * 0.6
 
 LANDER_MASS = 5.0
 LANDER_INERTIA = 5.0
@@ -50,6 +50,20 @@ class GroundContactDetector:
         self.sky_polys = self.lib.to_tensor(self.sky_polys[:, :2, :], self.lib.float32)  # Select only the coordinates describing the boundary between sky and ground
         self.lander_points = np.array(LANDER_POLY, np.float32)
     
+    def surface_y_at_point(self, x: TensorType):
+        # Determine which sky segment is needed
+        sky_idcs = self.lib.cast(
+            ((self.lib.clip(x[:, :], -0.9999, 0.9999) + 1.0) * 5),
+            self.lib.int32
+        )
+        sky_line_segments = self.lib.gather(self.sky_polys, sky_idcs, 0)
+        
+        # Determine linear interpolation between line segment end points
+        fraction_between_points = (x[:, :] - sky_line_segments[:, :, 0, 0]) / (sky_line_segments[:, :, 1, 0] - sky_line_segments[:, :, 0, 0])
+        segment_height_at_point = (1.0 - fraction_between_points) * sky_line_segments[:, :, 0, 1] + fraction_between_points * sky_line_segments[:, :, 1, 1]
+        
+        return segment_height_at_point
+    
     def touched(self, pos_x: TensorType, pos_y: TensorType, angle: TensorType):
         # Dimensions: [batch, points_of_lunar_lander, x/y]
         lander_outline_point = self.lib.repeat(
@@ -78,17 +92,8 @@ class GroundContactDetector:
             self.lib.shape(lander_outline_point)[1],
             1
         )
-            
-        # Determine which sky segment is needed
-        sky_idcs = self.lib.cast(
-            ((self.lib.clip(lander_outline_point[:, :, 0], -0.9999, 0.9999) + 1.0) * 5),
-            self.lib.int32
-        )
-        sky_line_segments = self.lib.gather(self.sky_polys, sky_idcs, 0)
-            
-        # Determine linear interpolation between line segment end points
-        fraction_between_points = (lander_outline_point[:, :, 0] - sky_line_segments[:, :, 0, 0]) / (sky_line_segments[:, :, 1, 0] - sky_line_segments[:, :, 0, 0])
-        segment_height_at_point = (1.0 - fraction_between_points) * sky_line_segments[:, :, 0, 1] + fraction_between_points * sky_line_segments[:, :, 1, 1]
+        
+        segment_height_at_point = self.surface_y_at_point(lander_outline_point[:, :, 0])  
         
         # Or-connection for all lander outline points
         touched = self.lib.sum(self.lib.cast(lander_outline_point[:, :, 1] <= segment_height_at_point, self.lib.int32), 1)
@@ -165,12 +170,15 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
                 1.0,
             ]
         ).astype(np.float32)
-
-        # useful range is -1 .. +1, but spikes can be higher
         self.observation_space = spaces.Box(low, high)
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
+        
+        self.target_point = self.lib.to_variable([[0.0, 0.0]], self.lib.float32)
+        self.environment_attributes = {
+            "target_point": self.target_point,
+        }
     
     def step_dynamics(self, state: TensorType, action: TensorType, dt: float) -> TensorType:
         pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact = self.lib.unstack(state, 7, 1)
@@ -257,8 +265,8 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
         state_updated: TensorType = self.step_dynamics(self.state, action, self.dt)
         self.state = self.lib.to_numpy(state_updated)
 
-        terminated = bool(self.is_done(self.lib, self.state))
-        truncated = False
+        terminated = bool(self.is_done(self.lib, self.state, self.target_point))
+        truncated = bool(self.is_truncated(self.state, self.target_point))
         reward = 0.0
 
         self.state = self.lib.squeeze(self.state)
@@ -301,6 +309,9 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
             p2 = (chunk_x[i + 1], smooth_y[i + 1])
             self.sky_polys.append([p1, p2, (p2[0], H), (p1[0], H)])
         self.ground_contact_detector = GroundContactDetector(self.lib, self.sky_polys)
+        
+        target_x = self.lib.uniform(self.rng, (1, 1), -0.8, 0.8, self.lib.float32)
+        self.lib.assign(self.target_point, self.lib.concat([target_x, self.ground_contact_detector.surface_y_at_point(target_x)], 1))
     
         if seed is not None:
             self._set_up_rng(seed)
@@ -364,6 +375,46 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
             ))
             coords.append((c[0], c[1]))
         pygame.draw.polygon(self.surf, (220, 10, 10), coords)
+        
+        # Draw target
+        target = list(self.target_point[0, :].numpy())
+        target_x_scaled = target[0] * (VIEWPORT_W / 2) + (VIEWPORT_W / 2)
+        target_y_scaled = target[1] * (-VIEWPORT_H / 2) + (VIEWPORT_H / 2)
+        pygame.draw.line(
+            self.surf,
+            color=(255, 255, 255),
+            start_pos=[target_x_scaled, target_y_scaled],
+            end_pos=[target_x_scaled, target_y_scaled - 0.1 * VIEWPORT_H],
+            width=1,
+        )
+        pygame.draw.polygon(
+            self.surf,
+            color=(204, 204, 0),
+            points=[
+                (target_x_scaled, target_y_scaled - 0.10 * VIEWPORT_H),
+                (target_x_scaled, target_y_scaled - 0.05 * VIEWPORT_H),
+                (target_x_scaled + 0.05 * VIEWPORT_W, target_y_scaled - 0.075 * VIEWPORT_H),
+            ],
+        )
+        
+        # Render rollouts
+        trajectories = self._logs.get("rollout_trajectories_logged", None)
+        costs = self._logs.get("J_logged")
+        
+        if len(trajectories) and len(costs):
+            trajectories = trajectories[-1]
+            costs = costs[-1]
+            if trajectories is not None:
+                trajectories[:, :, 0] = trajectories[:, :, 0] * (VIEWPORT_W / 2) + (VIEWPORT_W / 2)
+                trajectories[:, :, 1] = trajectories[:, :, 1] * (-VIEWPORT_H / 2) + (VIEWPORT_H / 2)
+                for i, trajectory in enumerate(trajectories):
+                    if i == np.argmin(costs):
+                        alpha = 1.0
+                        color = (255, 0, 0, alpha)
+                    else:
+                        alpha = min(2.0 / trajectories.shape[0], 1.0)
+                        color = (0, 255, 0, alpha)
+                    pygame.draw.lines(self.surf, color, False, trajectory[:, :2], width=1)
 
         if self.render_mode == "human":
             assert self.screen is not None
@@ -377,6 +428,25 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
             )
     
     @staticmethod
-    def is_done(lib: "type[ComputationLibrary]", state: TensorType, *args, **kwargs):
-        pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact = lib.unstack(state, 7, 1)
-        return lib.cast(contact, lib.bool)
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType, target_point: TensorType):
+        pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact = lib.unstack(state, 7, -1)
+        target_point = lib.to_tensor(target_point, lib.float32)
+        
+        return (
+            lib.cast(contact, lib.bool)
+            & ((pos_x - target_point[0, 0]) ** 2 < 0.02)
+            & ((pos_y - target_point[0, 1]) ** 2 < 0.02)
+            & (vel_y ** 2 < 0.1)
+        )
+    
+    def is_truncated(self, state: TensorType, target_point: TensorType):
+        pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact = self.lib.unstack(state, 7, -1)
+        target_point = self.lib.to_tensor(target_point, self.lib.float32)
+        
+        return (
+            self.lib.cast(contact, self.lib.bool) & ~lunar_lander_batched.is_done(self.lib, state, target_point)  # lander touched ground but not at target and not soft enough
+            | (self.lib.abs(pos_x) > 1.0)  # Out of bounds
+            | (self.lib.abs(pos_y) > 1.0)  # Out of bounds
+        )
+        
+        

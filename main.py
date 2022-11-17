@@ -133,9 +133,13 @@ def run_data_generator(
                 frames.append(env.render())
 
             time.sleep(1e-6)
-
-            if terminated or truncated:
-                # If the episode is up, start a new experiment
+            
+            # If the episode is up, start a new experiment
+            if truncated:
+                logger.info(f"Episode truncated (failure)")
+                break
+            elif terminated:
+                logger.info(f"Episode terminated successfully")
                 break
 
             logger.debug(

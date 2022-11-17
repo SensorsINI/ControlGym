@@ -53,6 +53,6 @@ pendulum_batched:
     control_weight: 0.001
 lunar_lander_batched:
   default:
-    pos_y_weight: 1.0
-    vel_y_weight: 0.01
-    vel_angle_weight: 0.001
+    pos_weight: 1.0
+    vel_y_weight: 0.1
+    vel_angle_weight: 0.0
