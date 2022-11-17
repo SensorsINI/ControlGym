@@ -191,27 +191,28 @@ random-action-tf:
   seed: null                          # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
   mpc_horizon: 35                      # steps
   num_rollouts: 320
-lqr-forces:
-  seed: null
-  mpc_horizon: 11                     # steps
-  num_rollouts: 1
-  # Cartpole
-  jacobian_path: CartPoleSimulation.CartPole.cartpole_jacobian
-  action_max: 2.62
-#  action_max: 12.62
-  state_max: [0.198, 0.8, inf, 100.0] #[TrackHalfLegth, vmax, inf, v ang. max]
-#  state_max: [ 100.0, inf, inf, inf ]
-  q: 1.0                                #State cost
-  r: 1.0                                #Input cost
 cartpole-forces:
   seed: null
-  mpc_horizon: 5                     # steps
+  mpc_horizon: 30                     # steps
   num_rollouts: 1
   # Cartpole
-  jacobian_path: CartPoleSimulation.CartPole.cartpole_jacobian
+  linear_dynamics: cartpole_linear_dynamics
   #  action_max: 2.62
   action_max: 2.62
   state_max: [0.198, 0.8, inf, 100.0] #[TrackHalfLegth, vmax, inf, v ang. max]
 #  state_max: [ 100.0, inf, inf, inf ]
   Q: 1.0                                #State cost
   R: 1.0                                #Input cost
+nlp-forces:
+  seed: null
+  mpc_horizon: 11                     # steps
+  num_rollouts: 1
+  # Cartpole
+  dynamics: cartpole_non_linear_dynamics
+  optimize_over: [0, 1, 4, 5]           #optimization variables idxs
+  action_max: [2.62]
+#  action_max: 12.62
+  state_max: [1.571, 100.0, 0.198, 0.8]   #[pi/2, v ang. max, TrackHalfLegth, vmax]
+#  state_max: [ 100.0, inf, inf, inf ]
+  q: 1.0                                #State cost
+  r: 1.0                                #Input cost
