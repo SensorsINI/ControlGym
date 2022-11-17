@@ -51,23 +51,47 @@ class GroundContactDetector:
         self.lander_points = np.array(LANDER_POLY, np.float32)
     
     def touched(self, pos_x: TensorType, pos_y: TensorType, angle: TensorType):
-        touched = self.lib.cast(self.lib.zeros_like(pos_x), self.lib.int32)
-        for lander_point in self.lander_points:
-            lander_outline_point = self.lib.repeat(self.lib.to_tensor([lander_point[0] * 2 / VIEWPORT_W, -lander_point[1] * 2 / VIEWPORT_H], self.lib.float32)[self.lib.newaxis, :, self.lib.newaxis], self.lib.shape(touched), 0)
+        # Dimensions: [batch, points_of_lunar_lander, x/y]
+        lander_outline_point = self.lib.repeat(
+            self.lib.stack(
+                [self.lander_points[:, 0] * 2 / VIEWPORT_W, -self.lander_points[:, 1] * 2 / VIEWPORT_H], 1
+            )[self.lib.newaxis, :, :, self.lib.newaxis],
+            self.lib.shape(pos_x),
+            0
+        )
             
-            # Rotate point around origin
-            rot_matrix = self.lib.permute(self.lib.to_tensor([[self.lib.cos(angle), -self.lib.sin(angle)], [self.lib.sin(angle), self.lib.cos(angle)]], self.lib.float32), (2, 0, 1))
-            lander_outline_point = self.lib.matmul(rot_matrix, lander_outline_point)[:, :, 0]
-            lander_outline_point += self.lib.stack([pos_x, pos_y], axis=1)
+        # Rotate point around origin
+        rot_matrix = self.lib.repeat(
+            self.lib.permute(
+                self.lib.to_tensor(
+                    [[self.lib.cos(angle), -self.lib.sin(angle)], [self.lib.sin(angle), self.lib.cos(angle)]],
+                    self.lib.float32
+                ),
+                (2, 0, 1)
+            )[:, self.lib.newaxis, :, :],
+            self.lib.shape(lander_outline_point)[1],
+            1
+        )
+        lander_outline_point = self.lib.matmul(rot_matrix, lander_outline_point)[:, :, :, 0]
+        lander_outline_point += self.lib.repeat(
+            self.lib.stack([pos_x, pos_y], axis=1)[:, self.lib.newaxis, :],
+            self.lib.shape(lander_outline_point)[1],
+            1
+        )
             
-            # Determine which sky segment is needed
-            sky_idcs = self.lib.cast(((self.lib.clip(lander_outline_point[:, 0], -0.9999, 0.9999) + 1.0) * 5), self.lib.int32)
-            sky_line_segments = self.lib.gather(self.sky_polys, sky_idcs, 0)
+        # Determine which sky segment is needed
+        sky_idcs = self.lib.cast(
+            ((self.lib.clip(lander_outline_point[:, :, 0], -0.9999, 0.9999) + 1.0) * 5),
+            self.lib.int32
+        )
+        sky_line_segments = self.lib.gather(self.sky_polys, sky_idcs, 0)
             
-            # Determine linear interpolation between line segment end points
-            fraction_between_points = (lander_outline_point[:, 0] - sky_line_segments[:, 0, 0]) / (sky_line_segments[:, 1, 0] - sky_line_segments[:, 0, 0])
-            segment_height_at_point = (1.0 - fraction_between_points) * sky_line_segments[:, 0, 1] + fraction_between_points * sky_line_segments[:, 1, 1]
-            touched += self.lib.cast(lander_outline_point[:, 1] <= segment_height_at_point, self.lib.int32)
+        # Determine linear interpolation between line segment end points
+        fraction_between_points = (lander_outline_point[:, :, 0] - sky_line_segments[:, :, 0, 0]) / (sky_line_segments[:, :, 1, 0] - sky_line_segments[:, :, 0, 0])
+        segment_height_at_point = (1.0 - fraction_between_points) * sky_line_segments[:, :, 0, 1] + fraction_between_points * sky_line_segments[:, :, 1, 1]
+        
+        # Or-connection for all lander outline points
+        touched = self.lib.sum(self.lib.cast(lander_outline_point[:, :, 1] <= segment_height_at_point, self.lib.int32), 1)
             
         return self.lib.cast(self.lib.clip(touched, 0, 1), self.lib.float32)
 
