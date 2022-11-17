@@ -12,16 +12,18 @@ config = yaml.load(
 )
 pos_y_weight = float(config["lunar_lander_batched"]["default"]["pos_y_weight"])
 vel_y_weight = float(config["lunar_lander_batched"]["default"]["vel_y_weight"])
+vel_angle_weight = float(config["lunar_lander_batched"]["default"]["vel_angle_weight"])
 
 
 class default(cost_function_base):
     def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
-        pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact_1, contact_2 = self.lib.unstack(states, 8, -1)
+        pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact = self.lib.unstack(states, 7, -1)
         throttle_main, throttle_lr = self.lib.unstack(inputs, 2, -1)
         
         cost = (
-            + pos_y_weight * pos_y
+            pos_x**2 + (pos_y + 0.5)**2
             + vel_y_weight * (vel_y ** 2)
+            + vel_angle_weight * (vel_angle ** 2)
         )
         return cost
 

@@ -2,15 +2,25 @@
 from typing import Optional, Tuple, Union
 import numpy as np
 from gymnasium.envs.box2d.lunar_lander import LunarLander
+from gymnasium import spaces
+import gymnasium as gym
 
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType, RandomGeneratorType
 
+try:
+    import pygame
+    from pygame import gfxdraw
+except ImportError:
+    raise gym.error.DependencyNotInstalled(
+        "pygame is not installed, run `pip install gymnasium[box2d]`"
+    )
+
 
 SCALE = 30.0  # affects how fast-paced the game is, forces should be adjusted as well
 
-MAIN_ENGINE_POWER = 13.0
-SIDE_ENGINE_POWER = 0.6
+MAIN_ENGINE_POWER = 7 * 13.0
+SIDE_ENGINE_POWER = 70 * 0.6
 
 LANDER_MASS = 5.0
 LANDER_INERTIA = 5.0
@@ -31,19 +41,35 @@ VIEWPORT_H = 400
 
 
 class GroundContactDetector:
-    def __init__(self, lib: "type[ComputationLibrary]", rng: RandomGeneratorType) -> None:
+    def __init__(self, lib: "type[ComputationLibrary]", sky_polys: list) -> None:
         self.ground_height = 1.0
         self.lib = lib
-        self.rng = rng
+        self.sky_polys = np.array(sky_polys)
+        self.sky_polys[:, :, 0] = self.sky_polys[:, :, 0] * 2 * SCALE / VIEWPORT_W - 1.0
+        self.sky_polys[:, :, 1] = self.sky_polys[:, :, 1] * 2 * SCALE / VIEWPORT_H - 1.0
+        self.sky_polys = self.lib.to_tensor(self.sky_polys[:, :2, :], self.lib.float32)  # Select only the coordinates describing the boundary between sky and ground
+        self.lander_points = np.array(LANDER_POLY, np.float32)
     
-    def touched(self, pos_x, pos_y, angle):
-        tip = (self.lib.sin(angle), self.lib.cos(angle))
-        side = (-tip[1], tip[0])
-        dispersion = [self.lib.uniform(self.rng, self.lib.shape(angle), -1.0, +1.0, self.lib.float32) / SCALE for _ in range(2)]
-        ox = tip[0] * (4 / SCALE + 2 * dispersion[0]) + side[0] * dispersion[1]
-        oy = -tip[1] * (4 / SCALE + 2 * dispersion[0]) - side[1] * dispersion[1]
-        
-        return self.lib.cast(pos_y + oy < self.ground_height, self.lib.float32)
+    def touched(self, pos_x: TensorType, pos_y: TensorType, angle: TensorType):
+        touched = self.lib.cast(self.lib.zeros_like(pos_x), self.lib.int32)
+        for lander_point in self.lander_points:
+            lander_outline_point = self.lib.repeat(self.lib.to_tensor([lander_point[0] * 2 / VIEWPORT_W, -lander_point[1] * 2 / VIEWPORT_H], self.lib.float32)[self.lib.newaxis, :, self.lib.newaxis], self.lib.shape(touched), 0)
+            
+            # Rotate point around origin
+            rot_matrix = self.lib.permute(self.lib.to_tensor([[self.lib.cos(angle), -self.lib.sin(angle)], [self.lib.sin(angle), self.lib.cos(angle)]], self.lib.float32), (2, 0, 1))
+            lander_outline_point = self.lib.matmul(rot_matrix, lander_outline_point)[:, :, 0]
+            lander_outline_point += self.lib.stack([pos_x, pos_y], axis=1)
+            
+            # Determine which sky segment is needed
+            sky_idcs = self.lib.cast(((self.lib.clip(lander_outline_point[:, 0], -0.9999, 0.9999) + 1.0) * 5), self.lib.int32)
+            sky_line_segments = self.lib.gather(self.sky_polys, sky_idcs, 0)
+            
+            # Determine linear interpolation between line segment end points
+            fraction_between_points = (lander_outline_point[:, 0] - sky_line_segments[:, 0, 0]) / (sky_line_segments[:, 1, 0] - sky_line_segments[:, 0, 0])
+            segment_height_at_point = (1.0 - fraction_between_points) * sky_line_segments[:, 0, 1] + fraction_between_points * sky_line_segments[:, 1, 1]
+            touched += self.lib.cast(lander_outline_point[:, 1] <= segment_height_at_point, self.lib.int32)
+            
+        return self.lib.cast(self.lib.clip(touched, 0, 1), self.lib.float32)
 
 
 class lunar_lander_batched(EnvironmentBatched, LunarLander):
@@ -53,13 +79,13 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
     """
 
     num_actions = 2  # throttle of the main and left/right engines
-    # The state is an 8-dimensional vector:
+    # The state is a 7-dimensional vector:
     # - the coordinates of the lander in x & y
     # - its linear velocities in x & y
     # - its angle
     # - its angular velocity
-    # - two booleans that represent whether each leg is in contact with the ground or not
-    num_states = 8
+    # - a booleans that represents whether the lander is in contact with ground
+    num_states = 7
     
     def __init__(
         self,
@@ -84,49 +110,72 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
         self.continuous = True
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
+        
+        low = np.array(
+            [
+                # these are bounds for position
+                # realistically the environment should have ended
+                # long before we reach more than 50% outside
+                -1.5,
+                -1.5,
+                # velocity bounds is 5x rated speed
+                -5.0,
+                -5.0,
+                -np.pi,
+                -5.0,
+                -0.0,
+            ]
+        ).astype(np.float32)
+        high = np.array(
+            [
+                # these are bounds for position
+                # realistically the environment should have ended
+                # long before we reach more than 50% outside
+                1.5,
+                1.5,
+                # velocity bounds is 5x rated speed
+                5.0,
+                5.0,
+                np.pi,
+                5.0,
+                1.0,
+            ]
+        ).astype(np.float32)
+
+        # useful range is -1 .. +1, but spikes can be higher
+        self.observation_space = spaces.Box(low, high)
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        
-        self.ground_contact_detector = GroundContactDetector(self.lib, self.rng)
     
     def step_dynamics(self, state: TensorType, action: TensorType, dt: float) -> TensorType:
-        pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact_1, contact_2 = self.lib.unstack(state, 8, 1)
-        
-        # Convert state from view-related variables to actual variables
-        pos_x = pos_x * (VIEWPORT_W / SCALE / 2) + (VIEWPORT_W / SCALE / 2)
-        pos_y = pos_y * (VIEWPORT_H / SCALE / 2) + (self.helipad_y + LEG_DOWN / SCALE)
-        vel_x = vel_x * self.FPS / (VIEWPORT_W / SCALE / 2)
-        vel_y = vel_y * self.FPS / (VIEWPORT_H / SCALE / 2)
-        angle = angle
-        vel_angle = vel_angle * self.FPS / 20.0
-        contact_1 = contact_1
-        contact_2 = contact_2
+        pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact = self.lib.unstack(state, 7, 1)
         
         # Define variables for state derivatives
         acc_x = self.lib.zeros_like(vel_x)
-        acc_y = self.lib.zeros_like(vel_y)
+        acc_y = self.gravity * self.lib.ones_like(vel_y)
         angleDD = self.lib.zeros_like(angle)
         
-        if self.enable_wind and not (contact_1 or contact_2):
-            # Define horizontal wind disturbance
-            wind_mag = (
-                self.lib.tanh(
-                    self.lib.sin(0.02 * self.wind_idx)
-                    + (self.lib.sin(self.lib.pi * 0.01 * self.wind_idx))
-                )
-                * self.wind_power
+        # Disturbances
+        contact_mask = self.enable_wind * (1.0 - self.lib.cast(contact, self.lib.float32))  # not contact
+        # Define horizontal wind disturbance
+        wind_mag = (
+            self.lib.tanh(
+                self.lib.sin(0.02 * self.wind_idx)
+                + (self.lib.sin(self.lib.pi * 0.01 * self.wind_idx))
             )
-            self.wind_idx += 1  # TODO: This might not work in compile mode
-            acc_x += wind_mag / LANDER_MASS
-            
-            # Define rotational turbulence disturbance
-            torque_mag = self.lib.tanh(
-                self.lib.sin(0.02 * self.torque_idx)
-                + (self.lib.sin(self.lib.pi * 0.01 * self.torque_idx))
-            ) * (self.turbulence_power)
-            self.torque_idx += 1
-            angleDD += torque_mag / LANDER_INERTIA
+            * self.wind_power
+        )
+        self.wind_idx += 1  # TODO: This might not work in compile mode
+        acc_x += contact_mask * wind_mag / LANDER_MASS
+        
+        # Define rotational turbulence disturbance
+        torque_mag = self.lib.tanh(
+            self.lib.sin(0.02 * self.torque_idx)
+            + (self.lib.sin(self.lib.pi * 0.01 * self.torque_idx))
+        ) * (self.turbulence_power)
+        self.torque_idx += 1
+        angleDD += contact_mask * torque_mag / LANDER_INERTIA
         
         # Prepare action
         action = self.lib.clip(action, -1.0, 1.0)
@@ -139,78 +188,32 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
 
         m_power = 0.0
         
-        throttle_main_mask = self.lib.cast(throttle_main > 0.0, self.lib.float32)
         # Main engine power, if <=0.0 then engine is off
+        throttle_main_mask = self.lib.cast(throttle_main > 0.0, self.lib.float32)
         m_power = throttle_main_mask * (self.lib.clip(throttle_main, 0.0, 1.0) + 1.0) * 0.5  # 0.5..1.0
+        acc_x += tip[0] * MAIN_ENGINE_POWER * m_power / LANDER_MASS
+        acc_y += tip[1] * MAIN_ENGINE_POWER * m_power / LANDER_MASS
         
-        # 4 is move a bit downwards, +-2 for randomness
-        ox = tip[0] * (4 / SCALE + 2 * dispersion[0]) + side[0] * dispersion[1]
-        oy = -tip[1] * (4 / SCALE + 2 * dispersion[0]) - side[1] * dispersion[1]
-        impulse_pos = (pos_x + ox, pos_y + oy)
-        # p = self._create_particle(
-        #     3.5,  # 3.5 is here to make particle speed adequate
-        #     impulse_pos[0],
-        #     impulse_pos[1],
-        #     m_power,
-        # )  # particles are just a decoration
-        # p.ApplyLinearImpulse(
-        #     (ox * MAIN_ENGINE_POWER * m_power, oy * MAIN_ENGINE_POWER * m_power),
-        #     impulse_pos,
-        #     True,
-        # )
-        acc_x += -ox * MAIN_ENGINE_POWER * m_power / LANDER_MASS
-        acc_y += -oy * MAIN_ENGINE_POWER * m_power / LANDER_MASS
-        
-        s_power = self.lib.zeros_like(throttle_lr)
-        
-        throttle_lr_mask = self.lib.cast(self.lib.abs(throttle_lr) > 0.5, self.lib.float32)
         # Orientation engines
+        throttle_lr_mask = self.lib.cast(self.lib.abs(throttle_lr) > 0.5, self.lib.float32)
         direction = self.lib.sign(throttle_lr)
         s_power = throttle_lr_mask * self.lib.clip(self.lib.abs(throttle_lr), 0.5, 1.0)
         
-        ox = tip[0] * dispersion[0] + side[0] * (
-            3 * dispersion[1] + direction * SIDE_ENGINE_AWAY / SCALE
-        )
-        oy = -tip[1] * dispersion[0] - side[1] * (
-            3 * dispersion[1] + direction * SIDE_ENGINE_AWAY / SCALE
-        )
-        
-        impulse_pos = (
-            pos_x + ox - tip[0] * 17 / SCALE,
-            pos_y + oy + tip[1] * SIDE_ENGINE_HEIGHT / SCALE,
-        )
-        # p = self._create_particle(0.7, impulse_pos[0], impulse_pos[1], s_power)
-        # p.ApplyLinearImpulse(
-        #     (ox * SIDE_ENGINE_POWER * s_power, oy * SIDE_ENGINE_POWER * s_power),
-        #     impulse_pos,
-        #     True,
-        # )
-        acc_x += -ox * SIDE_ENGINE_POWER * s_power / LANDER_MASS
-        acc_y += -oy * SIDE_ENGINE_POWER * s_power / LANDER_MASS
-        angleDD += (tip[0] * 17 / SCALE) * s_power / LANDER_INERTIA
+        # acc_x += tip[0] * SIDE_ENGINE_POWER * s_power / LANDER_MASS
+        # acc_y += tip[1] * SIDE_ENGINE_POWER * s_power / LANDER_MASS
+        angleDD += SIDE_ENGINE_POWER * direction * s_power / LANDER_INERTIA
         
         # Euler integration
-        pos_x += self.dt * vel_x
-        pos_y += self.dt * vel_y
-        vel_x += self.dt * acc_x
-        vel_y += self.dt * acc_y
-        angle += self.dt * vel_angle
-        vel_angle += self.dt * angleDD
+        pos_x_updated = pos_x + self.dt * vel_x
+        pos_y_updated = pos_y + self.dt * vel_y
+        vel_x_updated = vel_x + self.dt * acc_x
+        vel_y_updated = vel_y + self.dt * acc_y
+        angle_updated = angle + self.dt * vel_angle
+        vel_angle_updated = vel_angle + self.dt * angleDD
         
-        contact_1 = self.ground_contact_detector.touched(pos_x, pos_y, angle)
-        contact_2 = contact_1
+        contact_updated = self.ground_contact_detector.touched(pos_x, pos_y, angle)
         
-        # Recover state info
-        state_updated = self.lib.stack([
-            (pos_x - VIEWPORT_W / SCALE / 2) / (VIEWPORT_W / SCALE / 2),
-            (pos_y - (self.helipad_y + LEG_DOWN / SCALE)) / (VIEWPORT_H / SCALE / 2),
-            vel_x * (VIEWPORT_W / SCALE / 2) / self.FPS,
-            vel_y * (VIEWPORT_H / SCALE / 2) / self.FPS,
-            angle,
-            20.0 * vel_angle / self.FPS,
-            contact_1,
-            contact_2,
-        ], 1)
+        state_updated = self.lib.stack([pos_x_updated, pos_y_updated, vel_x_updated, vel_y_updated, angle_updated, vel_angle_updated, contact_updated], 1)
         
         return state_updated
 
@@ -245,7 +248,6 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
         )
     
     def reset(self, seed: "Optional[int]" = None, options: "Optional[dict]" = None) -> "Tuple[np.ndarray, dict]":
-        self.ground_contact_detector = GroundContactDetector(self.lib, self.rng)
         self.game_over = False
         self.prev_shaping = None
 
@@ -264,94 +266,17 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
         height[CHUNKS // 2 + 0] = self.helipad_y
         height[CHUNKS // 2 + 1] = self.helipad_y
         height[CHUNKS // 2 + 2] = self.helipad_y
-        # smooth_y = [
-        #     0.33 * (height[i - 1] + height[i + 0] + height[i + 1])
-        #     for i in range(CHUNKS)
-        # ]
+        smooth_y = [
+            0.33 * (height[i - 1] + height[i + 0] + height[i + 1])
+            for i in range(CHUNKS)
+        ]
 
-        # self.moon = self.world.CreateStaticBody(
-        #     shapes=edgeShape(vertices=[(0, 0), (W, 0)])
-        # )
-        # self.sky_polys = []
-        # for i in range(CHUNKS - 1):
-        #     p1 = (chunk_x[i], smooth_y[i])
-        #     p2 = (chunk_x[i + 1], smooth_y[i + 1])
-        #     self.moon.CreateEdgeFixture(vertices=[p1, p2], density=0, friction=0.1)
-        #     self.sky_polys.append([p1, p2, (p2[0], H), (p1[0], H)])
-
-        # self.moon.color1 = (0.0, 0.0, 0.0)
-        # self.moon.color2 = (0.0, 0.0, 0.0)
-
-        initial_y = VIEWPORT_H / SCALE
-        # self.lander: Box2D.b2Body = self.world.CreateDynamicBody(
-        #     position=(VIEWPORT_W / SCALE / 2, initial_y),
-        #     angle=0.0,
-        #     fixtures=fixtureDef(
-        #         shape=polygonShape(
-        #             vertices=[(x / SCALE, y / SCALE) for x, y in LANDER_POLY]
-        #         ),
-        #         density=5.0,
-        #         friction=0.1,
-        #         categoryBits=0x0010,
-        #         maskBits=0x001,  # collide only with ground
-        #         restitution=0.0,
-        #     ),  # 0.99 bouncy
-        # )
-        # self.lander.color1 = (128, 102, 230)
-        # self.lander.color2 = (77, 77, 128)
-        # self.lander.ApplyForceToCenter(
-        #     (
-        #         self.np_random.uniform(-INITIAL_RANDOM, INITIAL_RANDOM),
-        #         self.np_random.uniform(-INITIAL_RANDOM, INITIAL_RANDOM),
-        #     ),
-        #     True,
-        # )
-        
-
-        # self.legs = []
-        # for i in [-1, +1]:
-        #     leg = self.world.CreateDynamicBody(
-        #         position=(VIEWPORT_W / SCALE / 2 - i * LEG_AWAY / SCALE, initial_y),
-        #         angle=(i * 0.05),
-        #         fixtures=fixtureDef(
-        #             shape=polygonShape(box=(LEG_W / SCALE, LEG_H / SCALE)),
-        #             density=1.0,
-        #             restitution=0.0,
-        #             categoryBits=0x0020,
-        #             maskBits=0x001,
-        #         ),
-        #     )
-        #     leg.ground_contact = False
-        #     leg.color1 = (128, 102, 230)
-        #     leg.color2 = (77, 77, 128)
-        #     rjd = revoluteJointDef(
-        #         bodyA=self.lander,
-        #         bodyB=leg,
-        #         localAnchorA=(0, 0),
-        #         localAnchorB=(i * LEG_AWAY / SCALE, LEG_DOWN / SCALE),
-        #         enableMotor=True,
-        #         enableLimit=True,
-        #         maxMotorTorque=LEG_SPRING_TORQUE,
-        #         motorSpeed=+0.3 * i,  # low enough not to jump back into the sky
-        #     )
-        #     if i == -1:
-        #         rjd.lowerAngle = (
-        #             +0.9 - 0.5
-        #         )  # The most esoteric numbers here, angled legs have freedom to travel within
-        #         rjd.upperAngle = +0.9
-        #     else:
-        #         rjd.lowerAngle = -0.9
-        #         rjd.upperAngle = -0.9 + 0.5
-        #     leg.joint = self.world.CreateJoint(rjd)
-        #     self.legs.append(leg)
-
-        # self.drawlist = [self.lander] + self.legs
-
-        # if self.render_mode == "human":
-        #     self.render()
-        # return self.step(np.array([0, 0]) if self.continuous else 0)[0], {}
-    
-    
+        self.sky_polys = []
+        for i in range(CHUNKS - 1):
+            p1 = (chunk_x[i], smooth_y[i])
+            p2 = (chunk_x[i + 1], smooth_y[i + 1])
+            self.sky_polys.append([p1, p2, (p2[0], H), (p1[0], H)])
+        self.ground_contact_detector = GroundContactDetector(self.lib, self.sky_polys)
     
         if seed is not None:
             self._set_up_rng(seed)
@@ -366,7 +291,7 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
             angle = self.lib.uniform(self.rng, (self._batch_size, 1), -0.2, 0.2, self.lib.float32)
             vel_angle = self.lib.uniform(self.rng, (self._batch_size, 1), -1.0, 1.0, self.lib.float32)
             
-            self.state = self.lib.concat([pos_x, pos_y, vel_x, vel_y, angle, vel_angle, self.lib.zeros((self._batch_size, 1)), self.lib.zeros((self._batch_size, 1))], 1)
+            self.state = self.lib.concat([pos_x, pos_y, vel_x, vel_y, angle, vel_angle, self.lib.zeros((self._batch_size, 1))], 1)
         else:
             if self.lib.ndim(state) < 2:
                 state = self.lib.unsqueeze(
@@ -378,7 +303,56 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
                 self.state = state
 
         return self._get_reset_return_val()
+
+    def render(self):
+        if self.render_mode is None:
+            gym.logger.warn(
+                "You are calling render method without specifying any render mode. "
+                "You can specify the render_mode at initialization, "
+                f'e.g. gym("{self.spec.id}", render_mode="rgb_array")'
+            )
+            return
+
+        if self.screen is None and self.render_mode == "human":
+            pygame.init()
+            pygame.display.init()
+            self.screen = pygame.display.set_mode((VIEWPORT_W, VIEWPORT_H))
+        if self.clock is None:
+            self.clock = pygame.time.Clock()
+
+        self.surf = pygame.Surface((VIEWPORT_W, VIEWPORT_H))
+
+        pygame.draw.rect(self.surf, (255, 255, 255), self.surf.get_rect())  # Draw white background
+
+        for p in self.sky_polys:
+            scaled_poly = []
+            for coord in p:
+                scaled_poly.append((coord[0] * SCALE, VIEWPORT_H - coord[1] * SCALE))
+            pygame.draw.polygon(self.surf, (0, 0, 0), scaled_poly)
+            # gfxdraw.aapolygon(self.surf, scaled_poly, (0, 0, 0))
+        
+        coords = []
+        for c in LANDER_POLY:
+            lander_outline_point = pygame.math.Vector2((c[0], -c[1])).rotate_rad(self.state[4])
+            c = pygame.math.Vector2((
+                lander_outline_point[0] + float(self.state[0]) * (VIEWPORT_W / 2) + (VIEWPORT_W / 2),
+                lander_outline_point[1] + float(self.state[1]) * (-VIEWPORT_H / 2) + (VIEWPORT_H / 2)
+            ))
+            coords.append((c[0], c[1]))
+        pygame.draw.polygon(self.surf, (220, 10, 10), coords)
+
+        if self.render_mode == "human":
+            assert self.screen is not None
+            self.screen.blit(self.surf, (0, 0))
+            pygame.event.pump()
+            self.clock.tick(self.metadata["render_fps"])
+            pygame.display.flip()
+        elif self.render_mode == "rgb_array":
+            return np.transpose(
+                np.array(pygame.surfarray.pixels3d(self.surf)), axes=(1, 0, 2)
+            )
     
     @staticmethod
     def is_done(lib: "type[ComputationLibrary]", state: TensorType, *args, **kwargs):
-        return False
+        pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact = lib.unstack(state, 7, 1)
+        return lib.cast(contact, lib.bool)
