@@ -54,5 +54,7 @@ pendulum_batched:
 lunar_lander_batched:
   default:
     pos_weight: 1.0
-    vel_y_weight: 0.1
+    vel_weight: 0.2
+    angle_weight: 0.1
     vel_angle_weight: 0.0
+    discount_factor: 0.95
