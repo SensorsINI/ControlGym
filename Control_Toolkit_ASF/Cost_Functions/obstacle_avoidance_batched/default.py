@@ -20,9 +20,9 @@ control_penalty = float(
 
 
 class default(cost_function_base):
-    def _distance_to_obstacle_cost(self, x: TensorType) -> TensorType:
+    def _distance_to_obstacle_cost(self, x: TensorType, num_dimensions: int) -> TensorType:
         # x has shape batch_size x mpc_horizon x num_dimensions
-        x_obs = self.controller.obstacle_positions[:, :-1]  # [num_obstacles, num_dimensions]
+        x_obs = self.controller.obstacle_positions[:, :num_dimensions]  # [num_obstacles, num_dimensions]
         x_obs = x_obs[:, self.lib.newaxis, self.lib.newaxis, :]
         radius = self.controller.obstacle_positions[:, -1:]  # [num_obstacles, 1]
         radius = radius[:, self.lib.newaxis, :]
@@ -42,7 +42,7 @@ class default(cost_function_base):
 
     def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         target = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
-        num_dimensions = int(self.lib.shape(states)[-1] / 2)
+        num_dimensions = self.controller.num_dimensions
         position = states[..., :num_dimensions]
 
         ld = self.get_distance(position, self.lib.unsqueeze(target, 0))
@@ -51,9 +51,10 @@ class default(cost_function_base):
         car_at_target = obstacle_avoidance_batched._at_target(self.lib, position, target)
 
         reward = (
-            self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
+            - ld
+            + self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
             + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32)
-            * (-1.0 * (ld + 4 * self._distance_to_obstacle_cost(position)))
+            * (-1.0 * (ld + 4 * self._distance_to_obstacle_cost(position, num_dimensions)))
             + self.lib.cast(~car_in_bounds, self.lib.float32) * (-10.0)
         )
 

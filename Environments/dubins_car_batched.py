@@ -37,6 +37,7 @@ import tensorflow as tf
 from Control_Toolkit.others.environment import EnvironmentBatched
 from gymnasium import spaces
 from matplotlib.patches import Circle
+from matplotlib import use
 from SI_Toolkit.computation_library import (ComputationLibrary, NumpyLibrary,
                                             TensorType)
 from SI_Toolkit.Functions.TF.Compile import CompileTF
@@ -311,6 +312,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             # Turn interactive plotting off
             plt.ioff()
         else:
+            if self.render_mode in {"human"}:
+                use("QtAgg")
             plt.ion()
 
         # Storing tracked trajectory
@@ -479,8 +482,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             )
 
     def plot_trajectory_plans(self):
-        trajectories = self._logs.get("rollout_trajectories_logged", None)
-        costs = self._logs.get("J_logged")
+        trajectories = self.logs.get("rollout_trajectories_logged", [])
+        costs = self.logs.get("J_logged", [])
         
         if len(trajectories) and len(costs):
             trajectories = trajectories[-1]

@@ -411,8 +411,8 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
         )
         
         # Render rollouts
-        trajectories = self._logs.get("rollout_trajectories_logged", None)
-        costs = self._logs.get("J_logged")
+        trajectories = self.logs.get("rollout_trajectories_logged", [])
+        costs = self.logs.get("J_logged", [])
         
         if len(trajectories) and len(costs):
             trajectories = trajectories[-1]

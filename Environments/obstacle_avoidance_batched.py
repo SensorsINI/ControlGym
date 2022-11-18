@@ -36,6 +36,7 @@ import numpy as np
 from Control_Toolkit.others.environment import EnvironmentBatched
 from gymnasium import spaces
 from matplotlib.patches import Circle
+from matplotlib import use
 from SI_Toolkit.computation_library import (ComputationLibrary, NumpyLibrary,
                                             TensorType)
 from SI_Toolkit.Functions.TF.Compile import CompileTF
@@ -152,6 +153,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         self.environment_attributes = {
             "target_point": self.target_point,
             "obstacle_positions": self.obstacle_positions,
+            "num_dimensions": self.num_dimensions,
         }
 
         self.fig: plt.Figure = None
@@ -166,6 +168,9 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             self._set_up_rng(seed)
         state = options.get("state", None) if isinstance(options, dict) else None
         self.count = 1
+        
+        target_point = self.lib.uniform(self.rng, (self.num_dimensions,), -1.0, 1.0, self.lib.float32)
+        self.lib.assign(self.target_point, target_point)
 
         if state is None:
             if self.initial_state is None:
@@ -265,6 +270,8 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             # Turn interactive plotting off
             plt.ioff()
         else:
+            if self.render_mode in {"human"}:
+                use("QtAgg")
             plt.ion()
 
         # Storing tracked trajectory
@@ -323,9 +330,9 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             # Turn interactive plotting off
             plt.ioff()
         else:
+            if self.render_mode in {"human"}:
+                use("QtAgg")
             plt.ion()
-        
-        
 
         # Storing tracked trajectory
         self.traj_x.append(float(self.state[0]))
@@ -441,8 +448,8 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         return patches
 
     def plot_trajectory_plans(self, lines=None):
-        trajectories = self._logs.get("rollout_trajectories_logged", None)
-        costs = self._logs.get("J_logged")
+        trajectories = self.logs.get("rollout_trajectories_logged", [])
+        costs = self.logs.get("J_logged", [])
         create_new_lines = lines == None
         lines = [] if lines == None else lines
         
