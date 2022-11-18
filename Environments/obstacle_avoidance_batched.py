@@ -33,7 +33,6 @@ from typing import Optional, Tuple, Union
 import gymnasium as gym
 import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
 from Control_Toolkit.others.environment import EnvironmentBatched
 from gymnasium import spaces
 from matplotlib.patches import Circle
@@ -108,7 +107,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
 
         if target_point is None:
             target_point = self.lib.uniform(self.rng, (self.num_dimensions,), -1.0, 1.0, self.lib.float32)
-        self.target_point = tf.Variable(target_point)
+        self.target_point = self.lib.to_variable(target_point, self.lib.float32)
         self.shuffle_target_every = shuffle_target_every
         self.num_obstacles = math.floor(
             float(self.lib.uniform(self.rng, (), 2**self.num_dimensions, 3**self.num_dimensions, self.lib.float32))
@@ -137,8 +136,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             self.obstacle_positions = (
                 obstacle_positions  # List of lists [[x_pos, y_pos, radius], ...]
             )
-
-        self.action = np.repeat(0.0, self.num_actions)  # Action
+        self.obstacle_positions = self.lib.to_variable(self.obstacle_positions, self.lib.float32)
 
         self.config = {
             **kwargs,

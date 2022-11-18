@@ -134,6 +134,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             self.obstacle_positions = (
                 obstacle_positions  # List of lists [[x_pos, y_pos, radius], ...]
             )
+        self.obstacle_positions = self.lib.to_variable(self.obstacle_positions, self.lib.float32)
 
         self.action = [0.0, 0.0]  # Action
 
@@ -278,6 +279,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         Union[np.ndarray, bool],
         dict,
     ]:
+        self.action = list(np.array(action))
         if self.count % self.shuffle_target_every == 0:
             target_new = tf.convert_to_tensor(
                 [
