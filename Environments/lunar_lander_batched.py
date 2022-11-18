@@ -44,23 +44,28 @@ class GroundContactDetector:
     def __init__(self, lib: "type[ComputationLibrary]", sky_polys: list) -> None:
         self.ground_height = 1.0
         self.lib = lib
-        self.sky_polys = np.array(sky_polys)
-        self.sky_polys[:, :, 0] = self.sky_polys[:, :, 0] * 2 * SCALE / VIEWPORT_W - 1.0
-        self.sky_polys[:, :, 1] = self.sky_polys[:, :, 1] * 2 * SCALE / VIEWPORT_H - 1.0
-        self.sky_polys = self.lib.to_tensor(self.sky_polys[:, :2, :], self.lib.float32)  # Select only the coordinates describing the boundary between sky and ground
         self.lander_points = np.array(LANDER_POLY, np.float32)
+        self.sky_polys_full = self.lib.to_variable(sky_polys, self.lib.float32)
+        self.sky_polys = self.lib.to_variable(self.sky_polys_full[:, :2, :], self.lib.float32)
+    
+    def set_sky_polys(self, sky_polys: list):
+        self.lib.assign(self.sky_polys_full, sky_polys)
+        sky_polys_full = self.lib.to_numpy(self.sky_polys_full)
+        sky_polys_full[:, :, 0] = sky_polys_full[:, :, 0] * 2 * SCALE / VIEWPORT_W - 1.0
+        sky_polys_full[:, :, 1] = sky_polys_full[:, :, 1] * 2 * SCALE / VIEWPORT_H - 1.0
+        self.lib.assign(self.sky_polys, sky_polys_full[:, :2, :])  # Select only the coordinates describing the boundary between sky and ground
     
     def surface_y_at_point(self, x: TensorType):
         # Determine which sky segment is needed
         sky_idcs = self.lib.cast(
-            ((self.lib.clip(x[:, :], -0.9999, 0.9999) + 1.0) * 5),
+            ((self.lib.clip(x, -0.9999, 0.9999) + 1.0) * 5),
             self.lib.int32
         )
         sky_line_segments = self.lib.gather(self.sky_polys, sky_idcs, 0)
         
         # Determine linear interpolation between line segment end points
-        fraction_between_points = (x[:, :] - sky_line_segments[:, :, 0, 0]) / (sky_line_segments[:, :, 1, 0] - sky_line_segments[:, :, 0, 0])
-        segment_height_at_point = (1.0 - fraction_between_points) * sky_line_segments[:, :, 0, 1] + fraction_between_points * sky_line_segments[:, :, 1, 1]
+        fraction_between_points = (x - sky_line_segments[..., 0, 0]) / (sky_line_segments[..., 1, 0] - sky_line_segments[..., 0, 0])
+        segment_height_at_point = (1.0 - fraction_between_points) * sky_line_segments[..., 0, 1] + fraction_between_points * sky_line_segments[..., 1, 1]
         
         return segment_height_at_point
     
@@ -176,8 +181,11 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
         self._set_up_rng(kwargs["seed"])
         
         self.target_point = self.lib.to_variable([[0.0, 0.0]], self.lib.float32)
+        self.sky_polys = self.init_sky_polys()
+        self.ground_contact_detector = GroundContactDetector(self.lib, self.sky_polys)
         self.environment_attributes = {
             "target_point": self.target_point,
+            "ground_contact_detector": self.ground_contact_detector,
         }
     
     def step_dynamics(self, state: TensorType, action: TensorType, dt: float) -> TensorType:
@@ -278,14 +286,11 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
             truncated,
             {},
         )
-    
-    def reset(self, seed: "Optional[int]" = None, options: "Optional[dict]" = None) -> "Tuple[np.ndarray, dict]":
-        self.game_over = False
-        self.prev_shaping = None
-
+        
+    def init_sky_polys(self):
         W = VIEWPORT_W / SCALE
         H = VIEWPORT_H / SCALE
-
+        
         # terrain
         CHUNKS = 11
         height = self.lib.uniform(self.rng, [CHUNKS + 1,], 0, H / 2, self.lib.float32).numpy()
@@ -302,13 +307,21 @@ class lunar_lander_batched(EnvironmentBatched, LunarLander):
             0.33 * (height[i - 1] + height[i + 0] + height[i + 1])
             for i in range(CHUNKS)
         ]
-
-        self.sky_polys = []
+        
+        sky_polys = []
         for i in range(CHUNKS - 1):
             p1 = (chunk_x[i], smooth_y[i])
             p2 = (chunk_x[i + 1], smooth_y[i + 1])
-            self.sky_polys.append([p1, p2, (p2[0], H), (p1[0], H)])
-        self.ground_contact_detector = GroundContactDetector(self.lib, self.sky_polys)
+            sky_polys.append([p1, p2, (p2[0], H), (p1[0], H)])
+            
+        return sky_polys
+    
+    def reset(self, seed: "Optional[int]" = None, options: "Optional[dict]" = None) -> "Tuple[np.ndarray, dict]":
+        self.game_over = False
+        self.prev_shaping = None
+
+        self.sky_polys = self.init_sky_polys()
+        self.ground_contact_detector.set_sky_polys(self.sky_polys)
         
         target_x = self.lib.uniform(self.rng, (1, 1), -0.8, 0.8, self.lib.float32)
         self.lib.assign(self.target_point, self.lib.concat([target_x, self.ground_contact_detector.surface_y_at_point(target_x)], 1))
