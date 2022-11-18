@@ -20,42 +20,46 @@ control_penalty = float(
 
 
 class default(cost_function_base):
-    def _distance_to_obstacle_cost(self, x: TensorType, num_dimensions: int) -> TensorType:
-        # x has shape batch_size x mpc_horizon x num_dimensions
-        x_obs = self.controller.obstacle_positions[:, :num_dimensions]  # [num_obstacles, num_dimensions]
-        x_obs = x_obs[:, self.lib.newaxis, self.lib.newaxis, :]
-        radius = self.controller.obstacle_positions[:, -1:]  # [num_obstacles, 1]
-        radius = radius[:, self.lib.newaxis, :]
+    def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType, z: TensorType) -> TensorType:
+        # x/y/z each has shape batch_size x mpc_horizon
+        x_obs, y_obs, z_obs, radius = self.lib.unstack(self.controller.obstacle_positions, 4, -1)
+        x_obs = x_obs[:, self.lib.newaxis, self.lib.newaxis]
+        y_obs = y_obs[:, self.lib.newaxis, self.lib.newaxis]
+        z_obs = z_obs[:, self.lib.newaxis, self.lib.newaxis]
+        radius = radius[:, self.lib.newaxis, self.lib.newaxis]
         
         num_obstacles = self.lib.shape(x_obs)[0]
-        # Repeat x and y to match the shape of the obstacle map
-        x_repeated = self.lib.repeat(self.lib.unsqueeze(x, 0), num_obstacles, 0)
-        d = self.lib.sqrt(self.lib.sum(
-            (x_repeated - x_obs) ** 2, 3
-        ))
+        d = self.lib.sqrt(
+            (self.lib.repeat(x[self.lib.newaxis, ...], num_obstacles, 0) - x_obs) ** 2
+            + (self.lib.repeat(y[self.lib.newaxis, ...], num_obstacles, 0) - y_obs) ** 2
+            + (self.lib.repeat(z[self.lib.newaxis, ...], num_obstacles, 0) - z_obs) ** 2
+        )
         c = 1.0 - (self.lib.min(1.0, d / radius)) ** 2
         return self.lib.reduce_max(c, 0)
 
     def get_distance(self, x1, x2):
-        # Distance between points x1 and x2
-        return self.lib.sqrt(self.lib.sum((x1 - x2) ** 2, -1))
+        # Squared distance between points x1 and x2
+        return (x1 - x2) ** 2
 
     def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         target = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
-        num_dimensions = self.controller.num_dimensions
-        position = states[..., :num_dimensions]
+        pos_x, pos_y, pos_z, _, _, _ = self.lib.unstack(states, 6, -1)
 
-        ld = self.get_distance(position, self.lib.unsqueeze(target, 0))
+        ld = (
+            self.get_distance(pos_x, target[0])
+            + self.get_distance(pos_y, target[1])
+            + self.get_distance(pos_z, target[2])
+        )
 
-        car_in_bounds = obstacle_avoidance_batched._in_bounds(self.lib, position)
-        car_at_target = obstacle_avoidance_batched._at_target(self.lib, position, target)
+        car_in_bounds = obstacle_avoidance_batched._in_bounds(self.lib, pos_x, pos_y, pos_z)
+        car_at_target = obstacle_avoidance_batched._at_target(self.lib, pos_x, pos_y, pos_z, target)
 
         reward = (
             - ld
             + self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
             + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32)
-            * (-1.0 * (ld + 4 * self._distance_to_obstacle_cost(position, num_dimensions)))
-            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-10.0)
+            * (-1.0 * (ld + 4 * self._distance_to_obstacle_cost(pos_x, pos_y, pos_z)))
+            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-1e4)
         )
 
         return -reward

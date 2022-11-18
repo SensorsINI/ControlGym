@@ -50,8 +50,9 @@ logger = get_logger(__name__)
 MAX_ACCELERATION = 5.0
 MAX_POSITION = 1.0
 MAX_VELOCITY = 1.0
+NUM_DIMENSIONS = 3  # Do not change
 
-THRESHOLD_DISTANCE_2_GOAL = 0.01
+THRESHOLD_DISTANCE_2_GOAL = 0.05
 max_ep_length = 800
 
 # Vehicle parameters
@@ -65,8 +66,8 @@ WB = 0.25  # [m]
 
 
 class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
-    num_states = None
-    num_actions = None
+    num_states = 6  # One position and velocity per dimension
+    num_actions = 3  # One acceleration per dimension
     metadata = {"render_modes": ["console", "single_rgb_array", "rgb_array", "human"], "video.frames_per_second": 30, "render_fps": 30}
 
     def __init__(
@@ -75,7 +76,6 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         shuffle_target_every: int,
         obstacle_positions: "list[list[float]]",
         initial_state: "list[float]",
-        num_dimensions: int,
         batch_size=1,
         computation_lib=NumpyLibrary,
         render_mode: str = None,
@@ -85,18 +85,15 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
 
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
-        self.num_dimensions = num_dimensions
-        self.__class__.num_states = 2 * self.num_dimensions  # One position and velocity per dimension
-        self.__class__.num_actions = self.num_dimensions  # One acceleration per dimension
 
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
         self.render_mode = render_mode
         
-        action_high = np.repeat(MAX_ACCELERATION, self.num_dimensions)
+        action_high = np.repeat(MAX_ACCELERATION, NUM_DIMENSIONS)
         observation_high = np.concatenate([
-            np.repeat(MAX_POSITION, self.num_dimensions),
-            np.repeat(MAX_VELOCITY, self.num_dimensions)
+            np.repeat(MAX_POSITION, NUM_DIMENSIONS),
+            np.repeat(MAX_VELOCITY, NUM_DIMENSIONS)
         ], dtype=np.float32)
         
         self.action_space = spaces.Box(
@@ -107,25 +104,25 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         )
 
         if target_point is None:
-            target_point = self.lib.uniform(self.rng, (self.num_dimensions,), -1.0, 1.0, self.lib.float32)
+            target_point = self.lib.uniform(self.rng, (NUM_DIMENSIONS,), -1.0, 1.0, self.lib.float32)
         self.target_point = self.lib.to_variable(target_point, self.lib.float32)
         self.shuffle_target_every = shuffle_target_every
-        self.num_obstacles = math.floor(
-            float(self.lib.uniform(self.rng, (), 2**self.num_dimensions, 3**self.num_dimensions, self.lib.float32))
+        self.num_obstacles = int(
+            float(self.lib.uniform(self.rng, (), float(2**NUM_DIMENSIONS), float(3**NUM_DIMENSIONS), self.lib.float32))
         )
         self.initial_state = initial_state
         self.dt = kwargs["dt"]
 
         if obstacle_positions is None or obstacle_positions == []:
             self.obstacle_positions = []
-            range_max = np.repeat(0.9, self.num_dimensions)
+            range_max = np.repeat(0.9, NUM_DIMENSIONS)
             for _ in range(self.num_obstacles):
                 self.obstacle_positions.append(
                     list(
                         self.lib.to_numpy(
                             self.lib.uniform(
                                 self.rng,
-                                (self.num_dimensions + 1,),
+                                (NUM_DIMENSIONS + 1,),
                                 list(-range_max) + [0.05],
                                 list(range_max) + [0.3],
                                 self.lib.float32,
@@ -147,13 +144,12 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
                 target_point=self.target_point,
                 obstacle_positions=self.obstacle_positions,
                 shuffle_target_every=self.shuffle_target_every,
-                num_dimensions=self.num_dimensions,
+                num_dimensions=NUM_DIMENSIONS,
             ),
         }
         self.environment_attributes = {
             "target_point": self.target_point,
             "obstacle_positions": self.obstacle_positions,
-            "num_dimensions": self.num_dimensions,
         }
 
         self.fig: plt.Figure = None
@@ -169,19 +165,19 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         state = options.get("state", None) if isinstance(options, dict) else None
         self.count = 1
         
-        target_point = self.lib.uniform(self.rng, (self.num_dimensions,), -1.0, 1.0, self.lib.float32)
+        target_point = self.lib.uniform(self.rng, (NUM_DIMENSIONS,), -1.0, 1.0, self.lib.float32)
         self.lib.assign(self.target_point, target_point)
 
         if state is None:
             if self.initial_state is None:
-                positions = self.lib.uniform(self.rng, (1, self.num_dimensions), -MAX_POSITION, MAX_POSITION, self.lib.float32)
-                velocities = self.lib.uniform(self.rng, (1, self.num_dimensions), -MAX_VELOCITY, MAX_VELOCITY, self.lib.float32)
+                positions = self.lib.uniform(self.rng, (1, NUM_DIMENSIONS), -MAX_POSITION, MAX_POSITION, self.lib.float32)
+                velocities = self.lib.uniform(self.rng, (1, NUM_DIMENSIONS), -MAX_VELOCITY, MAX_VELOCITY, self.lib.float32)
                 self.state = self.lib.to_numpy(self.lib.concat([positions, velocities], 1))
             else:
                 self.state = self.lib.unsqueeze(self.lib.to_numpy(self.initial_state), 0)
             self.traj_x = [float(self.state[..., 0])]
             self.traj_y = [float(self.state[..., 1])]
-            if self.num_dimensions >= 3:
+            if NUM_DIMENSIONS >= 3:
                 self.traj_z = [float(self.state[..., 2])]
         else:
             if self.lib.ndim(state) < 2:
@@ -196,27 +192,34 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         return self._get_reset_return_val()
     
     @staticmethod
-    def _in_bounds(lib: "type[ComputationLibrary]", x: TensorType) -> TensorType:
-        return lib.reduce_all(lib.abs(x) < 1.0, -1)
+    def _in_bounds(lib: "type[ComputationLibrary]", x: TensorType, y: TensorType, z: TensorType) -> TensorType:
+        return (
+            (lib.abs(x) < 1.0)
+            & (lib.abs(y) < 1.0)
+            & (lib.abs(z) < 1.0)
+        )
 
     @staticmethod
     def _at_target(
         lib: "type[ComputationLibrary]",
         x: TensorType,
+        y: TensorType,
+        z: TensorType,
         target: TensorType,
     ) -> TensorType:
-        return lib.reduce_all(
-            lib.abs(x - target) < THRESHOLD_DISTANCE_2_GOAL, -1
+        return (
+            (lib.abs(x - target[0]) < THRESHOLD_DISTANCE_2_GOAL)
+            & (lib.abs(y - target[1]) < THRESHOLD_DISTANCE_2_GOAL)
+            & (lib.abs(z - target[2]) < THRESHOLD_DISTANCE_2_GOAL)
         )
     
     @staticmethod
     def is_done(lib: "type[ComputationLibrary]", state: TensorType, target_point: TensorType):
         target = lib.to_tensor(target_point, lib.float32)
-        num_dimensions = int(lib.shape(state)[-1] / 2)
-        position = state[..., :num_dimensions]
+        pos_x, pos_y, pos_z, _, _, _ = lib.unstack(state, 6, -1)
 
-        car_in_bounds = obstacle_avoidance_batched._in_bounds(lib, position)
-        car_at_target = obstacle_avoidance_batched._at_target(lib, position, target)
+        car_in_bounds = obstacle_avoidance_batched._in_bounds(lib, pos_x, pos_y, pos_z)
+        car_at_target = obstacle_avoidance_batched._at_target(lib, pos_x, pos_y, pos_z, target)
         done = ~(car_in_bounds & (~car_at_target))
         return done
 
@@ -239,7 +242,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         dict,
     ]:
         if self.count % self.shuffle_target_every == 0:
-            target_new = self.lib.uniform(self.rng, [self.num_dimensions,], -MAX_POSITION, MAX_POSITION, self.lib.float32)
+            target_new = self.lib.uniform(self.rng, [NUM_DIMENSIONS,], -MAX_POSITION, MAX_POSITION, self.lib.float32)
             self.target_point.assign(target_new)
         self.count += 1
         self.state, action = self._expand_arrays(self.state, action)
@@ -257,9 +260,9 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         return self.state, float(reward), terminated, truncated, {}
 
     def render(self):
-        if self.num_dimensions == 2:
+        if NUM_DIMENSIONS == 2:
             return self._render2d()
-        elif self.num_dimensions == 3:
+        elif NUM_DIMENSIONS == 3:
             return self._render3d()
         else:
             return self._render2d()
@@ -397,19 +400,24 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         # For Gym AI compatibility
         plt.close(self.fig)
 
-    def update_state(self, state, action, DT):
-        position, velocity = state[:, :self.num_dimensions], state[:, self.num_dimensions:]
+    def update_state(self, state, action, dt):
+        pos_x, pos_y, pos_z, vel_x, vel_y, vel_z = self.lib.unstack(state, 6, -1)
+        acc_x, acc_y, acc_z = self.lib.unstack(action, 3, -1)
 
-        position += DT * velocity
-        velocity += DT * action
+        pos_x += dt * vel_x
+        pos_y += dt * vel_y
+        pos_z += dt * vel_z
+        vel_x += dt * acc_x
+        vel_y += dt * acc_y
+        vel_z += dt * acc_z
         
-        return self.lib.concat([position, velocity], 1)
+        return self.lib.stack([pos_x, pos_y, pos_z, vel_x, vel_y, vel_z], 1)
 
     def plot_point_mass(self):
         x = self.state[0]
         y = self.state[1]
         r = 0.05
-        if self.num_dimensions == 3:
+        if NUM_DIMENSIONS == 3:
             z = self.state[2]
             (patch,) = self.ax.plot3D([x], [y], [z], "or", markersize=4, label="point_mass", animated=True)
         else:
@@ -426,7 +434,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
 
     def plot_obstacles(self):
         patches = []
-        if self.num_dimensions == 3:
+        if NUM_DIMENSIONS == 3:
             for obstacle_position in self.obstacle_positions:
                 pos_x, pos_y, pos_z, radius = obstacle_position
                 sphere = Sphere([pos_x, pos_y, pos_z], radius)
@@ -467,7 +475,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
                         alpha = min(5.0 / trajectories.shape[0], 1.0)
                         zorder = 4
                     if create_new_lines:
-                        if self.num_dimensions == 3:
+                        if NUM_DIMENSIONS == 3:
                             (ln,) = self.ax.plot3D(
                                 trajectory[:, 0],
                                 trajectory[:, 1],
@@ -488,7 +496,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
                             )
                         lines.append(ln)
                     else:
-                        if self.num_dimensions == 3:
+                        if NUM_DIMENSIONS == 3:
                             lines[i].set_data(trajectory[:, 0], trajectory[:, 1])
                             lines[i].set_3d_properties(trajectory[:, 2])
                         else:

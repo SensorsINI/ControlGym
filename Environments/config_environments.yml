@@ -101,7 +101,6 @@ ObstacleAvoidance-v0:
   initial_state: null
   obstacle_positions: []
   shuffle_target_every: 100
-  num_dimensions: 3
 LunarLander-v2:
   actuator_noise:
   - 0.0
