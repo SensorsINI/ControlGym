@@ -7,8 +7,11 @@
       flags-dest: config:config.yml
       flags-import: all
       output-scalars:
-        - mean_reward: 'Mean total reward: (\value)'
-        - mean_steps_to_completion: 'Mean steps to completion: (\value)'
+        - reward_mean: 'Mean total reward: (\value)'
+        - reward_stdev: 'Stdev of reward: (\value)'
+        - timeout_rate: 'Timeout rate: (\value)'
+        - terminated_rate: 'Terminated rate: (\value)'
+        - truncated_rate: 'Truncated rate: (\value)'
       sourcecode:
         - '**.py'
         - '**.yml'

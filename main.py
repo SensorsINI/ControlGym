@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import csv
 from datetime import datetime
 from importlib import import_module
 
@@ -53,8 +54,12 @@ def run_data_generator(
     optimizer_short_name = config_manager("config_controllers")[controller_short_name]["optimizer"]
     optimizer_name = "optimizer_" + optimizer_short_name.replace("-", "_")
     CurrentRunMemory.current_optimizer_name = optimizer_name
-    all_total_rewards = []
-    all_steps_to_completion = []
+    all_metrics = dict(
+        total_rewards = [],
+        timeout = [],
+        terminated = [],
+        truncated = [],
+    )
     
     # Loop through independent experiments
     for i in range(num_experiments):
@@ -159,19 +164,21 @@ def run_data_generator(
         ##### ----------------- LOGGING AND PLOTS ----------------- #####
         OutputPath.RUN_NUM = i + 1
         controller_output = controller.get_outputs()
-        all_total_rewards.append(np.sum(all_rewards))
-        all_steps_to_completion.append(step + 1)
+        all_metrics["total_rewards"].append(np.mean(all_rewards))
+        all_metrics["timeout"].append(float(not(terminated or truncated)))
+        all_metrics["terminated"].append(float(terminated))
+        all_metrics["truncated"].append(float(truncated))
 
         if run_for_ML_Pipeline:
             # Save data as csv
             if i < int(frac_train * num_experiments):
-                csv = os.path.join(record_path, "Train")
+                csv_path = os.path.join(record_path, "Train")
             elif i < int((frac_train + frac_val) * num_experiments):
-                csv = os.path.join(record_path, "Validate")
+                csv_path = os.path.join(record_path, "Validate")
             else:
-                csv = os.path.join(record_path, "Test")
-            os.makedirs(csv, exist_ok=True)
-            save_to_csv(config_manager("config"), controller, environment_name, csv)
+                csv_path = os.path.join(record_path, "Test")
+            os.makedirs(csv_path, exist_ok=True)
+            save_to_csv(config_manager("config"), controller, environment_name, csv_path)
         elif config_controller.get("controller_logging", False):
             if config_manager("config")["save_plots_to_file"]:
                 # Generate and save plots in default location
@@ -196,10 +203,21 @@ def run_data_generator(
                 ) as f:
                     dump(loader.config, f)
     
+    # Dump all saved scalar metrics as csv
+    with open(
+        OutputPath.get_output_path(timestamp_str, f"output_scalars.csv"),
+        "w",
+    ) as f:
+        writer = csv.writer(f)
+        writer.writerow(all_metrics.keys())
+        writer.writerows(zip(*all_metrics.values()))
     # These output metrics are detected by GUILD AI and follow a "key: value" format
     print("Output metrics:")
-    print(f"Mean total reward: {np.mean(all_total_rewards)}")
-    print(f"Mean steps to completion: {np.mean(all_steps_to_completion)}")
+    print(f"Mean total reward: {np.mean(all_metrics['total_rewards'])}")
+    print(f"Stdev of reward: {np.std(all_metrics['total_rewards'])}")
+    print(f"Timeout rate: {np.mean(all_metrics['timeout'])}")
+    print(f"Terminated rate: {np.mean(all_metrics['terminated'])}")
+    print(f"Truncated rate: {np.mean(all_metrics['truncated'])}")
 
 
 def prepare_and_run():
