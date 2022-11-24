@@ -1,5 +1,4 @@
 import numpy as np
-from gymnasium.utils.save_video import save_video
 from Visualizations.plot_horizon_costs import HorizonCostPlotter
 from Visualizations.plot_input_plans import InputPlanPlotter
 
@@ -16,6 +15,7 @@ def generate_experiment_plots(
     frames: "list[np.ndarray]" = None,
 ):
     if frames is not None:
+        from gymnasium.utils.save_video import save_video
         save_video(frames, OutputPath.get_output_path(timestamp, None), fps=20, name_prefix=f"recording_{OutputPath.RUN_NUM}")
     
     if (
