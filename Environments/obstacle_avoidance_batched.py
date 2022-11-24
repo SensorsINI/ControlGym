@@ -40,7 +40,6 @@ from matplotlib import use
 from SI_Toolkit.computation_library import (ComputationLibrary, NumpyLibrary,
                                             TensorType)
 from SI_Toolkit.Functions.TF.Compile import CompileTF
-from skspatial.objects import Sphere
 
 from Control_Toolkit.others.globals_and_utils import get_logger
 
@@ -433,6 +432,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         return patch
 
     def plot_obstacles(self):
+        from skspatial.objects import Sphere
         patches = []
         if NUM_DIMENSIONS == 3:
             for obstacle_position in self.obstacle_positions:
