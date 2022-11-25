@@ -9,7 +9,6 @@ gpflow
 gymnasium[classic_control,mujoco,box2d]>=0.26.0
 imageio
 matplotlib
-moviepy
 natsort
 nni
 numba
@@ -18,11 +17,9 @@ pandas
 pip
 pygame
 pyyaml
-PyYAML
 scienceplots
 scipy
 setuptools
-scikit-learn
 scikit-spatial
 snakeviz
 sympy
