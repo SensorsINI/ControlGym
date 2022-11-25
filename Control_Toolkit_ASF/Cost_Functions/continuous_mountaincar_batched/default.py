@@ -16,7 +16,9 @@ control_penalty = float(config["continuous_mountaincar_batched"]["default"]["con
 
 
 class default(cost_function_base):
-    def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
+    MAX_COST = altitude_weight + control_penalty
+    
+    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         position, velocity = self.lib.unstack(states, 2, -1)
         force = inputs[..., 0]
         goal_position = self.controller.goal_position
@@ -28,6 +30,3 @@ class default(cost_function_base):
             + control_penalty * (force**2)
         )
         return cost
-
-    def get_terminal_cost(self, terminal_states: TensorType) -> TensorType:
-        return 0.0

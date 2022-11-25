@@ -16,10 +16,21 @@ vel_weight = float(config["lunar_lander_batched"]["default"]["vel_weight"])
 angle_weight = float(config["lunar_lander_batched"]["default"]["angle_weight"])
 vel_angle_weight = float(config["lunar_lander_batched"]["default"]["vel_angle_weight"])
 discount_factor = float(config["lunar_lander_batched"]["default"]["discount_factor"])
+ground_cost_weight = 1000.0
+out_of_bounds_cost = 100.0
 
 
 class default(cost_function_base):
-    def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
+    MAX_COST = (
+        4.0 * pos_x_weight
+        + (4.0 + ground_cost_weight) * pos_y_weight
+        + 50.0 * vel_weight
+        + angle_weight
+        + 10.0 * vel_angle_weight
+        + out_of_bounds_cost * 2.0
+    )
+    
+    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact = self.lib.unstack(states, 7, -1)
         throttle_main, throttle_lr = self.lib.unstack(inputs, 2, -1)
         target_point = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
@@ -30,7 +41,7 @@ class default(cost_function_base):
             pos_x_weight * ((pos_x - target_point[0, 0]) ** 2)
             + pos_y_weight * (
                 ((pos_y - target_point[0, 1]) ** 2)
-                + 1000 * self.lib.clip((ground_contact_detector.surface_y_at_point(pos_x) + 0.02 - pos_y), 0.0, 1.0) ** 2
+                + ground_cost_weight * self.lib.clip((ground_contact_detector.surface_y_at_point(pos_x) + 0.02 - pos_y), 0.0, 1.0) ** 2
             )
             + vel_weight * (
                 vel_x ** 2
@@ -38,8 +49,8 @@ class default(cost_function_base):
             )
             + angle_weight * (self.lib.sin(angle) ** 2)
             + vel_angle_weight * (vel_angle ** 2)
-            + 1e2 * self.lib.clip(self.lib.clip(10.0 * (self.lib.abs(pos_x) - 0.9), 0.0, 1.0) ** 2, 0.0, 1.0)  # Out of bounds
-            + 1e2 * self.lib.clip(self.lib.clip(10.0 * (self.lib.abs(pos_y) - 0.9), 0.0, 1.0) ** 2, 0.0, 1.0)  # Out of bounds
+            + out_of_bounds_cost * self.lib.clip(self.lib.clip(10.0 * (self.lib.abs(pos_x) - 0.9), 0.0, 1.0) ** 2, 0.0, 1.0)  # Out of bounds
+            + out_of_bounds_cost * self.lib.clip(self.lib.clip(10.0 * (self.lib.abs(pos_y) - 0.9), 0.0, 1.0) ** 2, 0.0, 1.0)  # Out of bounds
             - terminated_successfully * 1e6
         )
         return cost
@@ -49,7 +60,7 @@ class default(cost_function_base):
         target_point = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
         terminated_successfully = self.lib.cast(lunar_lander_batched.is_done(self.lib, terminal_states, target_point), self.lib.float32)
         return (
-            contact * (1.0 - terminated_successfully) * 100.0
+            (-100.0) * contact * terminated_successfully
         )
 
     def get_trajectory_cost(self, state_horizon: TensorType, inputs: TensorType, previous_input: TensorType = None) -> TensorType:

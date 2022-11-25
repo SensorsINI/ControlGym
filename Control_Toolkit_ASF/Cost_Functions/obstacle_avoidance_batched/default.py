@@ -17,9 +17,13 @@ done_reward = float(config["continuous_mountaincar_batched"]["default"]["done_re
 control_penalty = float(
     config["continuous_mountaincar_batched"]["default"]["control_penalty"]
 )
-
+distance_weight = 1.0
+obstacle_weight = 4.0
+out_of_bounds_cost = 100.0
 
 class default(cost_function_base):
+    MAX_COST = max(12.0 * distance_weight + 1.0 * obstacle_weight, out_of_bounds_cost)
+    
     def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType, z: TensorType) -> TensorType:
         # x/y/z each has shape batch_size x mpc_horizon
         x_obs, y_obs, z_obs, radius = self.lib.unstack(self.controller.obstacle_positions, 4, -1)
@@ -37,32 +41,29 @@ class default(cost_function_base):
         c = 1.0 - (self.lib.min(1.0, d / radius)) ** 2
         return self.lib.reduce_max(c, 0)
 
-    def get_distance(self, x1, x2):
+    def _get_distance(self, x1, x2):
         # Squared distance between points x1 and x2
         return (x1 - x2) ** 2
 
-    def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
+    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         target = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
         pos_x, pos_y, pos_z, _, _, _ = self.lib.unstack(states, 6, -1)
 
         ld = (
-            self.get_distance(pos_x, target[0])
-            + self.get_distance(pos_y, target[1])
-            + self.get_distance(pos_z, target[2])
+            self._get_distance(pos_x, target[0])
+            + self._get_distance(pos_y, target[1])
+            + self._get_distance(pos_z, target[2])
         )
 
         car_in_bounds = obstacle_avoidance_batched._in_bounds(self.lib, pos_x, pos_y, pos_z)
         car_at_target = obstacle_avoidance_batched._at_target(self.lib, pos_x, pos_y, pos_z, target)
 
-        reward = (
-            - ld
-            + self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
-            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32)
-            * (-1.0 * (ld + 4 * self._distance_to_obstacle_cost(pos_x, pos_y, pos_z)))
-            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-1e4)
+        cost = (
+            - 10.0 * self.lib.cast(car_in_bounds & car_at_target, self.lib.float32)
+            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32) * (
+                distance_weight * ld + obstacle_weight * self._distance_to_obstacle_cost(pos_x, pos_y, pos_z)
+            )
+            + self.lib.cast(~car_in_bounds, self.lib.float32) * out_of_bounds_cost
         )
 
-        return -reward
-
-    def get_terminal_cost(self, terminal_states: TensorType) -> TensorType:
-        return 0.0
+        return cost

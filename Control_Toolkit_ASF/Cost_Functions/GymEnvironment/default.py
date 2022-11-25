@@ -14,10 +14,7 @@ class default(cost_function_base):
     def __init__(self, env) -> None:
         self.env: EnvironmentBatched = env
 
-    def get_terminal_cost(self, terminal_states: TensorType) -> TensorType:
-        return 0.0
-
-    def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
+    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         return -self.env.get_reward(states, inputs)
 
     def get_trajectory_cost(self, state_horizon: TensorType, inputs: TensorType, previous_input: TensorType = None) -> TensorType:
