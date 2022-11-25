@@ -2,11 +2,8 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
-import torch
 from CartPoleSimulation.CartPole.cartpole_model_tf import (
     _cartpole_ode, cartpole_integration_tf)
-from CartPoleSimulation.CartPole.state_utilities import (ANGLE_COS_IDX,
-                                                         POSITION_IDX)
 from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
