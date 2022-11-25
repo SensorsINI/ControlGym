@@ -10,19 +10,21 @@ config = yaml.load(
     open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"),
     Loader=yaml.FullLoader,
 )
-altitude_weight = float(
-    config["continuous_mountaincar_batched"]["default"]["altitude_weight"]
+distance_to_target_weight = float(
+    config["obstacle_avoidance_batched"]["default"]["distance_to_target_weight"]
 )
-done_reward = float(config["continuous_mountaincar_batched"]["default"]["done_reward"])
-control_penalty = float(
-    config["continuous_mountaincar_batched"]["default"]["control_penalty"]
+distance_to_obstacle_weight = float(
+    config["obstacle_avoidance_batched"]["default"]["distance_to_obstacle_weight"]
 )
-distance_weight = 1.0
-obstacle_weight = 4.0
-out_of_bounds_cost = 100.0
+goal_reward = float(
+    config["obstacle_avoidance_batched"]["default"]["goal_reward"]
+)
+out_of_bounds_cost = float(
+    config["obstacle_avoidance_batched"]["default"]["out_of_bounds_cost"]
+)
 
 class default(cost_function_base):
-    MAX_COST = max(12.0 * distance_weight + 1.0 * obstacle_weight, out_of_bounds_cost)
+    MAX_COST = max(12.0 * distance_to_target_weight + 1.0 * distance_to_obstacle_weight, out_of_bounds_cost)
     
     def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType, z: TensorType) -> TensorType:
         # x/y/z each has shape batch_size x mpc_horizon
@@ -59,11 +61,12 @@ class default(cost_function_base):
         car_at_target = obstacle_avoidance_batched._at_target(self.lib, pos_x, pos_y, pos_z, target)
 
         cost = (
-            - 10.0 * self.lib.cast(car_in_bounds & car_at_target, self.lib.float32)
+            - goal_reward * self.lib.sum(self.lib.cast(car_in_bounds & car_at_target, self.lib.float32), 1)[:, self.lib.newaxis]  # Sum number of horizon states at target -> optimizer will try to get as many horizon states into target area
             + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32) * (
-                distance_weight * ld + obstacle_weight * self._distance_to_obstacle_cost(pos_x, pos_y, pos_z)
+                distance_to_target_weight * ld
+                + distance_to_obstacle_weight * self._distance_to_obstacle_cost(pos_x, pos_y, pos_z)
             )
-            + self.lib.cast(~car_in_bounds, self.lib.float32) * out_of_bounds_cost
+            + out_of_bounds_cost * self.lib.cast(~car_in_bounds, self.lib.float32)
         )
 
         return cost
