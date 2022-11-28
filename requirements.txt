@@ -23,8 +23,8 @@ setuptools
 scikit-spatial
 snakeviz
 sympy
-tensorflow
-tensorflow-probability
+tensorflow==2.10.1
+tensorflow-probability==0.18.0
 torch
 torchvision
 tqdm
