@@ -1,7 +1,7 @@
 cem-tf:
   seed:                               # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
-  cem_outer_it: 3                    #how many outer iterations to use
+  cem_outer_it: 4                    #how many outer iterations to use
   cem_initial_action_stdev: 0.5
   num_rollouts: 200          #how many rollouts per outer cem iteration
   cem_stdev_min: 0.01
@@ -11,20 +11,20 @@ cem-tf:
 cem-gmm-tf:
   seed:                               # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
-  cem_outer_it: 3                    #how many outer iterations to use
+  cem_outer_it: 4                    #how many outer iterations to use
   num_rollouts: 200          #how many rollouts per outer cem iteration
   cem_stdev_min: 0.01
   cem_initial_action_stdev: 0.5
   cem_best_k: 40
 cem-naive-grad-tf:
   seed:                               # If null, random seed based on datetime is used
-  mpc_horizon: 35                       # steps
-  cem_outer_it: 1                       # how many outer iterations to use
+  mpc_horizon: 40                       # steps
+  cem_outer_it: 4                       # how many outer iterations to use
   num_rollouts: 200                     # how many rollouts per outer cem iteration
   cem_stdev_min: 0.1
   cem_initial_action_stdev: 0.5
   cem_best_k: 40
-  learning_rate: 0.1
+  learning_rate: 0.05
   gradmax_clip: 10
 cem-grad-bharadhwaj-tf:
   seed:                               # If null, random seed based on datetime is used
@@ -35,21 +35,21 @@ cem-grad-bharadhwaj-tf:
   adam_epsilon: 1.0e-08
   num_rollouts: 32
   cem_best_k: 8
-  cem_outer_it: 2
-  cem_initial_action_stdev: 2
+  cem_outer_it: 4
+  cem_initial_action_stdev: 0.5
   cem_stdev_min: 1.e-6
   gradmax_clip: 5
   warmup: false
   warmup_iterations: 250
 gradient-tf:
   seed:                                 # If null, random seed based on datetime is used
-  mpc_horizon: 35                       # steps
+  mpc_horizon: 40                       # steps
   learning_rate: 0.05
   adam_beta_1: 0.9
   adam_beta_2: 0.999
-  adam_epsilon: 1.0e-07
+  adam_epsilon: 1.0e-08
   rtol: 1.0e-3
-  gradient_steps: 5
+  gradient_steps: 4
   num_rollouts: 40
   initial_action_stdev: 0.5
   gradmax_clip: 5
@@ -62,7 +62,7 @@ mppi-optimize-tf:
   adam_beta_2: 0.8                      #default: 0.999
   adam_epsilon: 1.0e-7                  #default: 1.0e-7
   gradmax_clip: 1000
-  mpc_horizon: 35                       # steps
+  mpc_horizon: 40                       # steps
   num_rollouts: 400                     # Number of Monte Carlo samples
   cc_weight: 1.0
   R: 1.0                                # How much to punish Q
@@ -84,7 +84,7 @@ dist-adam-resamp2-tf:
   rtol: 1.0e-3
   num_rollouts: 32
   opt_keep_k_ratio: 0.25
-  outer_its: 2
+  outer_its: 4
   resamp_per: 10
   sample_stdev: 0.5
   warmup: false
@@ -92,7 +92,7 @@ dist-adam-resamp2-tf:
 rpgd-tf:
   seed:                                 # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
-  SAMPLING_DISTRIBUTION: normal  # "normal" or "uniform"
+  SAMPLING_DISTRIBUTION: uniform         # "normal" or "uniform"
   period_interpolation_inducing_points: 1                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
   learning_rate: 0.05
   adam_beta_1: 0.9
@@ -110,7 +110,7 @@ rpgd-tf:
 rpgd-me-tf:
   seed:                                 # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
-  SAMPLING_DISTRIBUTION: uniform  # "normal" or "uniform"
+  SAMPLING_DISTRIBUTION: uniform          # "normal" or "uniform"
   period_interpolation_inducing_points: 1                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
   learning_rate: 0.05
   adam_beta_1: 0.9
@@ -129,9 +129,9 @@ rpgd-me-tf:
 rpgd-ml-tf:
   seed:                                 # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
-  SAMPLING_DISTRIBUTION: uniform  # "normal" or "uniform"
+  SAMPLING_DISTRIBUTION: uniform          # "normal" or "uniform"
   period_interpolation_inducing_points: 1                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
-  learning_rate: 0.01
+  learning_rate: 0.05
   adam_beta_1: 0.9
   adam_beta_2: 0.999
   adam_epsilon: 1.0e-08
@@ -140,7 +140,7 @@ rpgd-ml-tf:
   rtol: 1.0e-3
   num_rollouts: 32
   opt_keep_k_ratio: 0.25
-  outer_its: 5
+  outer_its: 4
   resamp_per: 1
   sample_stdev: 0.5
   warmup: false
@@ -149,7 +149,7 @@ rpgd-particle-tf:
   seed:                                 # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
   period_interpolation_inducing_points: 1                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
-  learning_rate: 0.01
+  learning_rate: 0.05
   adam_beta_1: 0.9
   adam_beta_2: 0.999
   adam_epsilon: 1.0e-08
@@ -157,14 +157,14 @@ rpgd-particle-tf:
   rtol: 1.0e-3
   num_rollouts: 32
   opt_keep_k_ratio: 0.25
-  outer_its: 5
+  outer_its: 4
   resamp_per: 1
   sample_stdev: 0.5
   warmup: false
   warmup_iterations: 250
 mppi-var-tf:
   seed:                               # If null, random seed based on datetime is used
-  mpc_horizon: 35                       # steps
+  mpc_horizon: 40                       # steps
   num_rollouts: 400                     # Number of Monte Carlo samples
   period_interpolation_inducing_points: 10                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
   cc_weight: 1.0
@@ -180,16 +180,16 @@ mppi-var-tf:
   max_grad_norm: 100000                 # max norm of gradient such that ||gradient||_2
 mppi:
   seed:                                 # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
-  mpc_horizon: 35                       # steps
+  mpc_horizon: 40                       # steps
   num_rollouts: 3500                    # Number of Monte Carlo samples
   cc_weight: 1.0
   R: 1.0                                # How much to punish Q
   LBD: 100.0                            # Cost parameter lambda
   NU: 1000.0                            # Exploration variance
-  SQRTRHOINV: 0.03                      # Sampling variance
+  SQRTRHOINV: 0.1                       # Sampling variance
   GAMMA: 1.00                           # Future cost discount
   period_interpolation_inducing_points: 10                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
 random-action-tf:
   seed:                               # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
-  mpc_horizon: 35                      # steps
+  mpc_horizon: 40                      # steps
   num_rollouts: 320
