@@ -1,22 +1,25 @@
 import os
 import numpy as np
 import glob
+import pandas as pd
 
 import matplotlib.pyplot as plt
 plt.style.use(["science"])
 
 # List hyperparameter names and values
-fig_title = r"RPGD Ablation on Double Inverted Pendulum"
-hp_name = r"\# parallel rollouts"
-hp_values = ["1", "8", "32", "128", "256"]
+fig_title = r"ME-RPGD Ablation on 3D Point Mass"
+hp_name = r"sampling distribution"
+hp_values = ["normal", "uniform"]
 
 # List GUILD AI hashes of runs to plot
 GUILD_AI_HASHES = [
-    "d1cc6b21",
-    "dbf31c93",
-    "4c8c1726",
-    "d72d8392",
-    "b5138d98",
+    "ae0bca4d",
+    "58115d1a",
+    # "09d4e1ba",
+    # "deaedb9c",
+    # "d3b130a7",
+    # "e2d97460",
+    # "2b148b9f",
 ]
 PATHS_TO_EXPERIMENTS = [os.path.join(".env", ".guild", "runs", h) for h in GUILD_AI_HASHES]
 
@@ -51,13 +54,31 @@ if __name__ == "__main__":
         dpi=300.0,
     )
     
+    all_x = []
+    all_y = []
+    
     for i in range(num_experiments):
         scatter_y = np.repeat(i + 1, num_trials) + np.clip(0.07 * np.random.standard_normal(num_trials), -0.35, 0.35)
         r = all_rewards_data[i, :]
+        
+        all_x.extend(list(r))
+        all_y.extend(list(scatter_y))
 
         ax.scatter(r, scatter_y, marker=".", c="b", s=4)
         ax.plot([np.mean(r), np.mean(r)], [i + 1 - 0.35, i + 1 + 0.35], c="r", linewidth=0.75)
-        
+    
+    # Save data as .dat file
+    df = pd.DataFrame({
+        "xcol": all_x,
+        "ycol": all_y,
+        "metacol": all_x,
+    })
+    savedir = os.path.join("Output", "cost_scatter_plots")
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+    df.to_csv(os.path.join(savedir, fig_title + "_" + "_".join(GUILD_AI_HASHES) + ".dat"), sep="\t", index=False)
+    
+    # Save plot file 
     ax.set_xlabel("realized mean reward per episode\nmore positive is better")
     ax.set_ylabel(hp_name)
     ax.set_yticks(np.arange(1, num_experiments + 1), labels=hp_values)
@@ -65,7 +86,5 @@ if __name__ == "__main__":
     # ax.spines[['top', 'right']].set_visible(False)
     fig.tight_layout(pad=1.03)
 
-    savedir = os.path.join("Output", "cost_scatter_plots")
-    if not os.path.exists(savedir):
-        os.makedirs(savedir)
+   
     fig.savefig(os.path.join(savedir, fig_title + "_" + "_".join(GUILD_AI_HASHES) + ".pdf"), bbox_inches="tight", pad_inches=0.03)
