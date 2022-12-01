@@ -55,7 +55,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             "target_position": self.target_position,
         }
 
-        self.x_threshold = (
+        self.__class__.x_threshold = self.x_threshold = (
             0.9 * track_half_length
         )  # Takes care that the cart is not going beyond the boundary
 
