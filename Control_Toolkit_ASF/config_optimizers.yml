@@ -205,14 +205,23 @@ cartpole-forces:
   R: 1.0                                #Input cost
 nlp-forces:
   seed: null
-  mpc_horizon: 11                     # steps
+  mpc_horizon: 21                     # steps
   num_rollouts: 1
-  # Cartpole
-  dynamics: cartpole_non_linear_dynamics
-  optimize_over: [0, 1, 4, 5]           #optimization variables idxs
-  action_max: [2.62]
-#  action_max: 12.62
-  state_max: [1.571, 100.0, 0.198, 0.8]   #[pi/2, v ang. max, TrackHalfLegth, vmax]
-#  state_max: [ 100.0, inf, inf, inf ]
-  q: 1.0                                #State cost
-  r: 1.0                                #Input cost
+#  # Cartpole
+#  dynamics: cartpole_non_linear_dynamics
+#  optimize_over: [0, 1, 4, 5]           #optimization variables idxs
+#  action_max: [2.62]
+##  action_max: 12.62
+##  state_max: [3.142, 100.0, 0.198, 0.8]   #[pi, v ang. max, TrackHalfLegth, vmax]
+#  state_max: [ 3.142, 100.0, 100.0, 100.0 ]
+#  q: [100.0, 10.0, 0.0, 10.0]                                #State cost
+#  r: [0.0]                                #Input cost
+  # Pendulum
+  dynamics: pendulum_dynamics
+  optimize_over: [0, 1]           #optimization variables idxs
+  action_max: [ 2.0 ]
+#  action_max: [100.0]
+#  state_max: [31.42, 8.0]   #[pi, v ang. max]
+  state_max: [ 6.285, 8.0]        #[2pi, v ang. max]
+  q: [ 100.0, 0.0]                                #State cost
+  r: [ 0.0 ]                                #Input cost
