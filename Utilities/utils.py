@@ -63,7 +63,7 @@ class OutputPath:
     collection_folder_name = ""
 
     @classmethod
-    def get_output_path(cls, timestamp: str, file_name: Optional[str]) -> str:
+    def get_output_path(cls, timestamp: str, file_name: Optional[str]=None) -> str:
         folder = os.path.join(
             "Output",
             cls.collection_folder_name,
