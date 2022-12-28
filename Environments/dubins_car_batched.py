@@ -496,7 +496,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                         zorder = 5
                     else:
                         color = "g"
-                        alpha = min(5.0 / trajectories.shape[0], 1.0)
+                        alpha = max(min(5.0 / trajectories.shape[0], 1.0), 0.01)
                         zorder = 4
                     self.ax.plot(
                         trajectory[:, 0] * MAX_X,

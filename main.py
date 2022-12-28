@@ -223,8 +223,12 @@ def run_data_generator(
 def prepare_and_run():
     import ruamel.yaml
     
+    # Create a config manager which looks for '.yml' files within the list of folders specified.
+    # Rationale: We want GUILD AI to be able to update values in configs that we include in this list.
+    # We might intentionally want to exclude the path to a folder which does contain configs but should not be overwritten by GUILD. 
     config_manager = ConfigManager(".", "Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments")
-    # Scan for any custom parameters that should overwrite the toolkit configs:
+    
+    # Scan for any custom parameters that should overwrite the toolkits' config files:
     submodule_configs = ConfigManager("Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments").loaders
     for base_name, loader in submodule_configs.items():
         if base_name in config_manager("config").get("custom_config_overwrites", {}):
@@ -244,7 +248,6 @@ def prepare_and_run():
         run_for_ML_Pipeline=False,
     )
 
-# TODO: Add a top-level dict that references all config files
 if __name__ == "__main__":
     if os.getenv("GUILD_RUN") == "1":
         # Run as guild script

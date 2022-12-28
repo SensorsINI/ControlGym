@@ -12,39 +12,10 @@
         - timeout_rate: 'Timeout rate: (\value)'
         - terminated_rate: 'Terminated rate: (\value)'
         - truncated_rate: 'Truncated rate: (\value)'
-      sourcecode:
+      sourcecode:  # TODO: Save NN models here too.
         - '**.py'
         - '**.yml'
         - exclude: Output
-      # flags:
-      #   controller_name:
-      #       choices:
-      #         - value: controller_mpc
-      #       required: yes
-      #   optimizer_name:
-      #     choices:
-      #       - value: optimizer_cem_tf
-      #       - value: optimizer_mppi_tf
-      #       - value: optimizer_mppi_var_tf
-      #       - value: optimizer_mppi_optimize_tf
-      #       - value: optimizer_cem_grad_bharadhwaj_tf
-      #       - value: optimizer_gradient_tf
-      #       - value: optimizer_random_action_tf
-      #       - value: optimizer_rpgd_tf
-      #       - value: optimizer_rpgd_me_tf
-      #       - value: optimizer_rpgd_ml_tf
-      #     required: yes
-      #   environment_name:
-      #     choices:
-      #       - value: MountainCarContinuous-v0
-      #       - value: CartPoleSimulator-v0
-      #       - value: DubinsCar-v0
-      #       - value: Acrobot-v0
-      #       - value: Pendulum-v0
-      #       - value: CartPoleContinuous-v0
-      #       - value: BipedalWalkerBatched-v0
-      #       - value: ObstacleAvoidance-v0
-      #     required: yes
       requires:  # Reference here the resources defined below
         - config
         - Control_Toolkit
@@ -52,6 +23,7 @@
         - SI_Toolkit
         - SI_Toolkit_ASF
         - Environments
+  # Resources are files and folders that need to be available in the run directory. Example: When you want to load from a file.
   resources:  # Define all configuration files here
     config:
       - config: config.yml

@@ -20,12 +20,10 @@
 custom_config_overwrites:
   # config_controllers:
   #   mpc:
-  #     optimizer: rpgd-me-tf
+  #     optimizer:
   config_optimizers:
-    rpgd-me-tf:
-      maximum_entropy_alpha: 0.1
-  #     period_interpolation_inducing_points:
-  #     learning_rate: 0.6
+    rpgd-tf:
+      learning_rate:
 
 
 ### ------------------------------------------------------- ###
@@ -37,7 +35,7 @@ environment_name: LunarLander-v2
 
 ### ------------------------------------------------------- ###
 
-debug: true  # false to use tf.compile
+debug: false  # false to use tf.compile
 use_jit_compilation: true  # false for reproducibility
 use_gpu: false
 logging_level: DEBUG
