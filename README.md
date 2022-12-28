@@ -37,8 +37,18 @@ The following components are important to make GUILD AI work for your workflow:
     * `python -m Utilities.hyperparameter_sweep`
 * To evaluate the results and generate plots:
     * Set `EXPERIMENT_FOLDER` (within `/Output`), `ENVIRONMENT_NAME` and `sweep_values` (for plot labelling only)
-    * `python -m Utilities.generate_global_plots`
-
+    * Run `python -m Utilities.generate_global_plots`
+* Plot the distribution of episode rewards (= negative costs) for multiple runs
+    * Open `Utilities.generate_reward_distribution_plots`
+        * Set the `GUILD_AI_HASHES` of the runs you want to plot
+        * Each hash refers to a set of episodes using the same hyperparameter specification
+        * Set `fig_title`, `hp_name`, `hp_values` to set the plot annotations.
+            * Example: `hp_name = "learning rate"` and `hp_values = [0.0, 0.1, 0.5]` when the `GUILD_AI_HASHES` contains three hashes to runs with learning rate taking those values
+            * Specifying this annotation is currently done manually here, but one could implement a way to go into the guild recordings and retrieve that automatically
+        * Make sure that the `PATHS_TO_EXPERIMENTS` links to the `.guild` folder within the right environment. This could be a local `.env` folder or a path to the conda environment used.
+    * Then, run `python -m Utilities.generate_reward_distribution_plots`
+    * Result looks like this:
+        * <img src="Visualizations/sample_figures/sample_cost_scatter_plot.png" alt="sample cost scatter plot" width="400"/>
 ### References
 
 * [OpenAI Gym on GitHub](https://github.com/openai/gym)
