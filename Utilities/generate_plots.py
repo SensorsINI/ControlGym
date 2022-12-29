@@ -1,6 +1,6 @@
 import numpy as np
 from Visualizations.plot_horizon_costs import HorizonCostPlotter
-from Visualizations.plot_input_plans import InputPlanPlotter
+from Visualizations.old.plot_input_plans import InputPlanPlotter
 
 from Utilities.utils import OutputPath, get_logger
 from Visualizations.plot_summary import SummaryPlotter
@@ -15,6 +15,8 @@ def generate_experiment_plots(
     frames: "list[np.ndarray]" = None,
 ):
     if frames is not None:
+        # Save video of experiment renderings
+        # Only if `save_plots_to_file` in `config.yml` was True
         from gymnasium.utils.save_video import save_video
         save_video(frames, OutputPath.get_output_path(timestamp, None), fps=20, name_prefix=f"recording_{OutputPath.RUN_NUM}")
     
@@ -22,6 +24,7 @@ def generate_experiment_plots(
         controller_output["s_logged"] is not None
         and controller_output["u_logged"] is not None
     ):
+        # Plot the evolution of all state and input variables over time
         logger.info("Creating summary plot...")
         horizon_cost_plotter = SummaryPlotter(path=OutputPath.get_output_path(timestamp), run_config=config, environment_config=environment_config)
         horizon_cost_plotter.plot(
@@ -36,6 +39,7 @@ def generate_experiment_plots(
         )
 
     if controller_output["J_logged"] is not None:
+        # Plot the distribution of rollout costs over time
         logger.info("Creating horizon cost plot...")
         horizon_cost_plotter = HorizonCostPlotter(path=OutputPath.get_output_path(timestamp), run_config=config, environment_config=environment_config)
         horizon_cost_plotter.plot(
@@ -46,11 +50,12 @@ def generate_experiment_plots(
     else:
         logger.info("Costs were not saved in controller. Not generating plot.")
 
-    ### Uncommented lines below because the input plan plots have not been of interest recently
+    ### Commented lines below because the input plan plots have not been of interest recently
     # if (
     #     controller_output["Q_logged"] is not None
     #     and controller_output["J_logged"] is not None
     # ):
+    #     # Plot a histogram of the ages of the rollouts
     #     logger.info("Creating input plan animation...")
     #     input_plan_plotter = InputPlanPlotter(path=OutputPath.get_output_path(timestamp), run_config=config, environment_config=environment_config)
     #     input_plan_plotter.plot(

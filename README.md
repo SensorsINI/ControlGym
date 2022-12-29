@@ -30,7 +30,7 @@ The following components are important to make GUILD AI work for your workflow:
 * `config.yml` contains the right controller parameters
 * To run a standard set of simulations:
     * At the top of `config.yml`: Set the list of environments and controllers to run
-    * `python -m Utilities.controller_comparison`
+    * `python -m Utilities.run_mpc_sweep`
 * To run a variation of a hyperparameter:
     * Set the variables (`CONTROLLER_TO_ANALYZE`, `PARAMETERS_TO_SWEEP`, `SWEEP_VALUES`) at the top of `Utilities/hyperparameter_sweep.py`
     * Select one environment in `config.yml`
@@ -38,8 +38,10 @@ The following components are important to make GUILD AI work for your workflow:
 * To evaluate the results and generate plots:
     * Set `EXPERIMENT_FOLDER` (within `/Output`), `ENVIRONMENT_NAME` and `sweep_values` (for plot labelling only)
     * Run `python -m Utilities.generate_global_plots`
-* Plot the distribution of episode rewards (= negative costs) for multiple runs
-    * Open `Utilities.generate_reward_distribution_plots`
+
+### Plots you can generate
+* If you used GUILD AI, you can plot the effect of a hyperparameter on the distribution of episode rewards (= negative costs)
+    * To do so, open the `Utilities.generate_reward_distribution_plots` module
         * Set the `GUILD_AI_HASHES` of the runs you want to plot
         * Each hash refers to a set of episodes using the same hyperparameter specification
         * Set `fig_title`, `hp_name`, `hp_values` to set the plot annotations.
@@ -48,15 +50,23 @@ The following components are important to make GUILD AI work for your workflow:
         * Make sure that the `PATHS_TO_EXPERIMENTS` links to the `.guild` folder within the right environment. This could be a local `.env` folder or a path to the conda environment used.
     * Then, run `python -m Utilities.generate_reward_distribution_plots`
     * Result looks like this:
-        * <img src="Visualizations/sample_figures/sample_cost_scatter_plot.png" alt="sample cost scatter plot" width="400"/>
-### References
+        * <img src="Visualizations/sample_figures/sample_reward_distribution_plot.png" alt="sample reward distribution scatter plot" width="400"/>
+* If you ran the `Utilities.run_mpc_sweep` module or the `main` module
+    * You can have plots saved if you set `save_plots_to_file: true` in `config.yml`
+    * Horizon cost plot:
+        * <img src="Visualizations/sample_figures/sample_horizon_cost_plot.png" alt="sample horizon cost plot" width="400"/>
+    * Summary plot:
+        * <img src="Visualizations/sample_figures/sample_summary_plot.png" alt="sample summary plot" width="400"/>
+    * A plot of the ages of rollout-inducing input plans before they are replaced by new input samples
+        
 
+
+# References
 * [OpenAI Gym on GitHub](https://github.com/openai/gym)
 * [Brockman et al. 2016, OpenAI Gym](https://arxiv.org/abs/1606.01540)
 
 
-### Installation
-
+# Installation
 * `pip install -r requirements.txt`
 * If you want GUI / rendering:
   * `pip install PyQt5` or `PyQt6`

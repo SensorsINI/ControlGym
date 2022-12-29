@@ -17,13 +17,13 @@
 ### Any parameter specified here can also be overwritten as flag in bash.
 ### Example: `guild run controller_mpc:run_control custom_config_overwrites.config_optimizers.cem-tf.cem_best_k='[1,4,16]'`
 ###
-custom_config_overwrites:
+# custom_config_overwrites:
   # config_controllers:
   #   mpc:
   #     optimizer:
-  config_optimizers:
-    rpgd-tf:
-      learning_rate:
+  # config_optimizers:
+  #   rpgd-tf:
+  #     learning_rate:
 
 
 ### ------------------------------------------------------- ###
@@ -35,15 +35,15 @@ environment_name: LunarLander-v2
 
 ### ------------------------------------------------------- ###
 
-debug: false  # false to use tf.compile
-use_jit_compilation: true  # false for reproducibility
-use_gpu: false
-logging_level: DEBUG
-num_experiments: 50
-num_iterations: 200
-render_for_humans: false
-save_plots_to_file: false
-seed_entropy: 49604
-split:
+debug: false                  # false to use tf.compile
+use_jit_compilation: true     # false for reproducibility
+use_gpu: false                # currently only affects tensorflow
+logging_level: DEBUG          # typically one of ERROR, WARNING, INFO, DEBUG
+num_experiments: 10           # how many randomdly initialized episodes to run
+num_iterations: 200           # maximum no. of control steps per episode
+render_for_humans: false      # display rendering while running
+save_plots_to_file: false     # save renderings to file
+seed_entropy: 49604           # master seed. Spawns reproducible seeds for each episode.
+split:                        # train / val split if running ML pipeline mode
 - 0.6
 - 0.2

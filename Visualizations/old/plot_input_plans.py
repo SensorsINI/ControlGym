@@ -7,6 +7,11 @@ from Utilities.utils import OutputPath
 
 
 class InputPlanPlotter(Plotter):
+    """
+    Saves a video of a control episode.
+    On the left side, it shows the rollout-creating input plans of all the rollouts the optimizer currently uses.
+    On the right side, it renders the environment.
+    """
     def plot(
         self,
         actions: np.ndarray,

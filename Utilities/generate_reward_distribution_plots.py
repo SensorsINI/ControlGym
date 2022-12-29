@@ -6,24 +6,35 @@ import pandas as pd
 import matplotlib.pyplot as plt
 plt.style.use(["science"])
 
-# List hyperparameter names and values
+"""
+Save a scatter plot which compares the effect of a hyperparameter on the distribution of realized control rewards.
+This script assumes that the GUILD AI library was used to generate the results.
+You specify a list of hashes to compare.
+Each hash references a GUILD AI experiment with e.g. 100 randomized episodes.
+The randomized episodes have different initialization and seeds, so that you can be sure the effect of a hyperparameter you get is not a random outlier.
+Typically, all the runs in your list used the same hyperparameters, except one that was varied.
+You then have to manually define the name of the parameter and the values you gave it. (This is not extracted automatically).
+The resulting plot has one row for each GUILD hash, so that e.g. 100 points in the row show the distribution of control rewards obtained during the 100 random episodes.
+On the horizontal axis, you see the scale of the rewards.
+"""
+
+### List hyperparameter names and values
 fig_title = r"ME-RPGD Ablation on 3D Point Mass"
 hp_name = r"sampling distribution"
 hp_values = ["normal", "uniform"]
 
-# List GUILD AI hashes of runs to plot
+### List GUILD AI hashes of runs to plot
 GUILD_AI_HASHES = [
     "ae0bca4d",
     "58115d1a",
     # "09d4e1ba",
-    # "deaedb9c",
-    # "d3b130a7",
-    # "e2d97460",
-    # "2b148b9f",
+    # ...
 ]
+
+### Make sure that ".env" below is the path to your python virtual environment
 PATHS_TO_EXPERIMENTS = [os.path.join(".env", ".guild", "runs", h) for h in GUILD_AI_HASHES]
 
-# Or specify paths manually, like so:
+### Or specify paths manually, like so:
 # PATHS_TO_EXPERIMENTS = [
 #     ".env/.guild/runs/4c8c1726",
 # ]

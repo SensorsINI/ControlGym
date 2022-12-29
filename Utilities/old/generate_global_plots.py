@@ -56,7 +56,7 @@ import os
 from datetime import datetime
 
 import numpy as np
-from Visualizations.plot_cost_scatter_plots import CostScatterPlotPlotter
+from Visualizations.old.plot_cost_scatter_plots import CostScatterPlotPlotter
 from Visualizations.trajectory_age_plotter import TrajectoryAgePlotter
 from yaml import FullLoader, load
 

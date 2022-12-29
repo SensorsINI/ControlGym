@@ -9,6 +9,12 @@ plt.style.use(["science"])
 
 
 class HorizonCostPlotter(Plotter):
+    """
+    Saves a scatter plot. Each marker represents the horizon cost of a rollout.
+    x-axis: The control iteration.
+    y-axis: The costs of all the rollouts.
+    Ideally, these rollout costs should tend to decrease going from left to right along the x-axis.
+    """
     def plot(self, costs: np.ndarray, save_to_image: bool = True):
         if self.ax is None:
             self.fig, self.ax = plt.subplots(
@@ -39,10 +45,16 @@ class HorizonCostPlotter(Plotter):
         self.ax.set_title("Total cost of input plans per global control iteration")
 
         self._display_some_config()
+        
+        c = 1
+        p = f"J_logged_{c}.svg"
+        while os.path.isfile(os.path.join(self._path, p)):
+            c += 1
+            p = f"J_logged_{c}.svg"
 
         if save_to_image:
             self.fig.savefig(
-                os.path.join(self._path, "J_logged.svg"),
+                os.path.join(self._path, p),
                 bbox_inches="tight",
             )
         else:
