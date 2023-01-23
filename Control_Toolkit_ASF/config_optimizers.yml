@@ -205,7 +205,6 @@ cartpole-forces:
   R: 1.0                                #Input cost
 nlp-forces:
   seed: null
-  mpc_horizon: 21                     # steps
   num_rollouts: 1
 #  # Cartpole
 #  dynamics: cartpole_non_linear_dynamics
@@ -216,12 +215,21 @@ nlp-forces:
 #  state_max: [ 3.142, 100.0, 100.0, 100.0 ]
 #  q: [100.0, 10.0, 0.0, 10.0]                                #State cost
 #  r: [0.0]                                #Input cost
-  # Pendulum
-  dynamics: pendulum_dynamics
-  optimize_over: [0, 1]           #optimization variables idxs
-  action_max: [ 2.0 ]
-#  action_max: [100.0]
-#  state_max: [31.42, 8.0]   #[pi, v ang. max]
-  state_max: [ 6.285, 8.0]        #[2pi, v ang. max]
-  q: [ 100.0, 0.0]                                #State cost
+#  # Pendulum
+#  mpc_horizon: 21                     # steps
+#  dynamics: pendulum_dynamics
+#  optimize_over: [0, 1]           #optimization variables idxs
+#  action_max: [ 2.0 ]
+##  action_max: [100.0]
+##  state_max: [31.42, 8.0]   #[pi, v ang. max]
+#  state_max: [ 6.284, 8.0]        #[pi, v ang. max]
+#  q: [ 100.0, 0.0]                                #State cost
+#  r: [ 0.0 ]                                #Input cost
+  # Continuous mountain car
+  mpc_horizon: 51                     # steps
+  dynamics: continuous_mountain_car
+  optimize_over: [ 0, 1 ]           #optimization variables idxs
+  action_max: [ 1.0 ]
+  state_max: [ 1.2, 0.07 ]        #[position, v max]
+  q: [ 8.0, 0.0 ]                                #State cost
   r: [ 0.0 ]                                #Input cost
