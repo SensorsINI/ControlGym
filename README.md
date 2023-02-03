@@ -67,6 +67,10 @@ The following components are important to make GUILD AI work for your workflow:
 
 
 # Installation
+* `git clone` this repository
+* In the cloned `ControlGym` directory, run
+    * `git submodule init`
+    * `git submodule update` to load the submodules.
 * `pip install -r requirements.txt`
 * If you want GUI / rendering:
   * `pip install PyQt5` or `PyQt6`
