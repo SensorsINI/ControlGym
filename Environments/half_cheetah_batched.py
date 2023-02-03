@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import NumpyLibrary, TensorType
-from gym.envs.mujoco.half_cheetah_v3 import HalfCheetahEnv
+from gymnasium.envs.mujoco.half_cheetah_v3 import HalfCheetahEnv
 from tf_agents.environments import BatchedPyEnvironment, suite_gym
 
 

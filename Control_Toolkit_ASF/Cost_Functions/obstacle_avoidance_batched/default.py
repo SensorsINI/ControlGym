@@ -10,54 +10,63 @@ config = yaml.load(
     open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"),
     Loader=yaml.FullLoader,
 )
-altitude_weight = float(
-    config["continuous_mountaincar_batched"]["default"]["altitude_weight"]
+distance_to_target_weight = float(
+    config["obstacle_avoidance_batched"]["default"]["distance_to_target_weight"]
 )
-done_reward = float(config["continuous_mountaincar_batched"]["default"]["done_reward"])
-control_penalty = float(
-    config["continuous_mountaincar_batched"]["default"]["control_penalty"]
+distance_to_obstacle_weight = float(
+    config["obstacle_avoidance_batched"]["default"]["distance_to_obstacle_weight"]
 )
-
+goal_reward = float(
+    config["obstacle_avoidance_batched"]["default"]["goal_reward"]
+)
+out_of_bounds_cost = float(
+    config["obstacle_avoidance_batched"]["default"]["out_of_bounds_cost"]
+)
 
 class default(cost_function_base):
-    def _distance_to_obstacle_cost(self, x: TensorType) -> TensorType:
-        # x has shape batch_size x mpc_horizon x num_dimensions
-        x_obs = self.controller.obstacle_positions[:, :-1]  # [num_obstacles, num_dimensions]
-        x_obs = x_obs[:, self.lib.newaxis, self.lib.newaxis, :]
-        radius = self.controller.obstacle_positions[:, -1:]  # [num_obstacles, 1]
-        radius = radius[:, self.lib.newaxis, :]
+    MAX_COST = max(12.0 * distance_to_target_weight + 1.0 * distance_to_obstacle_weight, out_of_bounds_cost)
+    
+    def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType, z: TensorType) -> TensorType:
+        # x/y/z each has shape batch_size x mpc_horizon
+        x_obs, y_obs, z_obs, radius = self.lib.unstack(self.controller.obstacle_positions, 4, -1)
+        x_obs = x_obs[:, self.lib.newaxis, self.lib.newaxis]
+        y_obs = y_obs[:, self.lib.newaxis, self.lib.newaxis]
+        z_obs = z_obs[:, self.lib.newaxis, self.lib.newaxis]
+        radius = radius[:, self.lib.newaxis, self.lib.newaxis]
         
         num_obstacles = self.lib.shape(x_obs)[0]
-        # Repeat x and y to match the shape of the obstacle map
-        x_repeated = self.lib.repeat(self.lib.unsqueeze(x, 0), num_obstacles, 0)
-        d = self.lib.sqrt(self.lib.sum(
-            (x_repeated - x_obs) ** 2, 3
-        ))
+        d = self.lib.sqrt(
+            (self.lib.repeat(x[self.lib.newaxis, ...], num_obstacles, 0) - x_obs) ** 2
+            + (self.lib.repeat(y[self.lib.newaxis, ...], num_obstacles, 0) - y_obs) ** 2
+            + (self.lib.repeat(z[self.lib.newaxis, ...], num_obstacles, 0) - z_obs) ** 2
+        )
         c = 1.0 - (self.lib.min(1.0, d / radius)) ** 2
         return self.lib.reduce_max(c, 0)
 
-    def get_distance(self, x1, x2):
-        # Distance between points x1 and x2
-        return self.lib.sqrt(self.lib.sum((x1 - x2) ** 2, -1))
+    def _get_distance(self, x1, x2):
+        # Squared distance between points x1 and x2
+        return (x1 - x2) ** 2
 
-    def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
+    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         target = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
-        num_dimensions = int(self.lib.shape(states)[-1] / 2)
-        position = states[..., :num_dimensions]
+        pos_x, pos_y, pos_z, _, _, _ = self.lib.unstack(states, 6, -1)
 
-        ld = self.get_distance(position, self.lib.unsqueeze(target, 0))
-
-        car_in_bounds = obstacle_avoidance_batched._in_bounds(self.lib, position)
-        car_at_target = obstacle_avoidance_batched._at_target(self.lib, position, target)
-
-        reward = (
-            self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
-            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32)
-            * (-1.0 * (ld + 4 * self._distance_to_obstacle_cost(position)))
-            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-10.0)
+        ld = (
+            self._get_distance(pos_x, target[0])
+            + self._get_distance(pos_y, target[1])
+            + self._get_distance(pos_z, target[2])
         )
 
-        return -reward
+        car_in_bounds = obstacle_avoidance_batched._in_bounds(self.lib, pos_x, pos_y, pos_z)
+        car_at_target = obstacle_avoidance_batched._at_target(self.lib, pos_x, pos_y, pos_z, target)
 
-    def get_terminal_cost(self, terminal_states: TensorType) -> TensorType:
-        return 0.0
+        cost = (
+            - goal_reward * self.lib.sum(self.lib.cast(car_in_bounds & car_at_target, self.lib.float32), 1)[:, self.lib.newaxis]  # Sum number of horizon states at target -> optimizer will try to get as many horizon states into target area
+            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32) * (
+                distance_to_target_weight * ld
+                + distance_to_obstacle_weight * self._distance_to_obstacle_cost(pos_x, pos_y, pos_z)
+            )
+            + out_of_bounds_cost * self.lib.cast(~car_in_bounds, self.lib.float32)
+        )
+
+        return cost

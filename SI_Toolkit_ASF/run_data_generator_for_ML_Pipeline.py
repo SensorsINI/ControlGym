@@ -1,12 +1,24 @@
-from Utilities.utils import CurrentRunMemory, get_logger
+from Utilities.utils import ConfigManager, CurrentRunMemory, get_logger
 from main import run_data_generator
+
+controller_names = ["controller_mpc"]
+environment_names = [
+    "MountainCarContinuous-v0",
+    # "CartPoleSimulator-v0",
+    # "DubinsCar-v0",
+    # "Acrobot-v0",
+    # "Pendulum-v0",
+    # "CartPoleContinuous-v0",
+    # "BipedalWalkerBatched-v0",
+    # "ObstacleAvoidance-v0",
+]
 
 # Automatically create new path to save everything in
 
 import tensorflow as tf
 import yaml, os
 config_SI = yaml.load(open(os.path.join('SI_Toolkit_ASF', 'config_training.yml')), Loader=yaml.FullLoader)
-config_GymEnv = yaml.load(open('config.yml'), Loader=yaml.FullLoader)
+config_manager = ConfigManager(".")
 
 logger = get_logger(__name__)
 
@@ -26,7 +38,7 @@ def get_record_path():
 if __name__ == '__main__':
     record_path = get_record_path()
     
-    controller_names, environment_names, num_experiments = config_GymEnv["1_data_generation"]["controller_names"], config_GymEnv["1_data_generation"]["environment_names"], config_GymEnv["1_data_generation"]["num_experiments"]
+    num_experiments = config_manager("config")["num_experiments"]
     if isinstance(controller_names, list):
         if len(controller_names) > 1:
             logger.warning("Multiple controller names supplied. Only using the first one.")
@@ -45,14 +57,14 @@ if __name__ == '__main__':
     if not os.path.exists(record_path):
         os.makedirs(record_path)
     yaml.dump(config_SI, open(record_path + "/SI_Toolkit_config_savefile.yml", "w"), default_flow_style=False)
-    yaml.dump(config_GymEnv, open(record_path + "/GymEnv_config_savefile.yml", "w"), default_flow_style=False)
+    yaml.dump(config_manager("config"), open(record_path + "/GymEnv_config_savefile.yml", "w"), default_flow_style=False)
 
     # Run data generator
     CurrentRunMemory.current_controller_name = controller_name
     CurrentRunMemory.current_environment_name = environment_name
 
     device_name = "/CPU:0"
-    if config_GymEnv["1_data_generation"]["use_gpu"]:
+    if config_manager("config")["use_gpu"]:
         if len(tf.config.list_physical_devices("GPU")) > 0:
             device_name = "/GPU:0"
         else:
@@ -61,5 +73,5 @@ if __name__ == '__main__':
             )
 
     with tf.device(device_name):
-        run_data_generator(controller_name, environment_name, num_experiments, config_GymEnv, run_for_ML_Pipeline=True, record_path=record_path)
+        run_data_generator(controller_name, environment_name, config_manager, run_for_ML_Pipeline=True, record_path=record_path)
     

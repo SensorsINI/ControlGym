@@ -1,0 +1,45 @@
+- model: controller_mpc
+  description: MPC Control Experiment
+  operations:
+    run_control:
+      description: Run a control experiment
+      main: main
+      flags-dest: config:config.yml
+      flags-import: all
+      output-scalars:
+        - reward_mean: 'Mean total reward: (\value)'
+        - reward_stdev: 'Stdev of reward: (\value)'
+        - timeout_rate: 'Timeout rate: (\value)'
+        - terminated_rate: 'Terminated rate: (\value)'
+        - truncated_rate: 'Truncated rate: (\value)'
+      sourcecode:  # TODO: Save NN models here too.
+        - '**.py'
+        - '**.yml'
+        - exclude: Output
+      requires:  # Reference here the resources defined below
+        - config
+        - Control_Toolkit
+        - Control_Toolkit_ASF
+        - SI_Toolkit
+        - SI_Toolkit_ASF
+        - Environments
+  # Resources are files and folders that need to be available in the run directory. Example: When you want to load from a file.
+  resources:  # Define all configuration files here
+    config:
+      - config: config.yml
+        target-type: copy
+    Control_Toolkit:
+      - file: Control_Toolkit
+        target-type: copy
+    Control_Toolkit_ASF:
+      - file: Control_Toolkit_ASF
+        target-type: copy
+    SI_Toolkit:
+      - file: SI_Toolkit
+        target-type: copy
+    SI_Toolkit_ASF:
+      - file: SI_Toolkit_ASF
+        target-type: copy
+    Environments:
+      - file: Environments/config_environments.yml
+        target-type: copy

@@ -14,6 +14,10 @@ def _build_color_seq(n):
 
 
 class CostScatterPlotPlotter(Plotter):
+    """
+    Saves a box plot of rewards obtained during a series of randomized episodes using the same controller.
+    Resulting plot gives a more differentiated intuition abou the distribution of rewards when a hyperparameter is varied.
+    """
     def plot(self, costs: "dict[str, list]", axis_info: dict, save_to_image):
         """_summary_
 
@@ -73,12 +77,12 @@ class CostScatterPlotPlotter(Plotter):
 
         if save_to_image:
             # self.fig.savefig(
-            #     os.path.join("Output", f"{self._timestamp}_cost_scatter_plot.eps"),
+            #     os.path.join(self._path, f"cost_scatter_plot.eps"),
             #     bbox_inches="tight",
             #     format="eps",  # Save to EPS
             # )
             self.fig.savefig(
-                os.path.join("Output", f"{self._timestamp}_cost_scatter_plot.png"),
+                os.path.join(self._path, f"cost_scatter_plot.png"),
                 bbox_inches="tight",
             )
         else:

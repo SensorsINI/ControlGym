@@ -1,12 +1,12 @@
 from typing import Optional, Tuple, Union
 
-import gym
+import gymnasium as gym
 import numpy as np
 import tensorflow as tf
 import torch
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import NumpyLibrary, TensorType
-from gym.envs.box2d.bipedal_walker import *
+from gymnasium.envs.box2d.bipedal_walker import *
 
 
 class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
@@ -65,7 +65,7 @@ class bipedal_walker_batched(EnvironmentBatched, BipedalWalker):
         
         self.state = self.step_dynamics(self.state, action, self.dt)
 
-        terminated = self.is_done(self.state)
+        terminated = bool(self.is_done(self.state))
         truncated = False
         reward = self.get_reward(self.state, action)
 

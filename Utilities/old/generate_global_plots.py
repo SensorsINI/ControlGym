@@ -16,24 +16,26 @@ You need to provide the `<<datetime>>_sweep_<<sweep_variable>>/` entry to this s
 will search for all suitable trials to compare within the subfolders.
 
 """
+import re
+from glob import glob
+from natsort import natsorted
 ### ------------- 1. Specify the paths to the experiment ------------- ###
 ### Option 1: Specify paths manually, e.g.
 # experiments_to_plot = [
-#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=0/20220905-151037_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
-#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=1/20220905-153936_controller_rpgd_tf_CustomEnvironments_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=0/20220905-151037_controller_rpgd_tf_CartPoleSimulator-v0_predictor_ODE_tf",
+#     "Output/20220905-151036_sweep_outer_its_controller_rpgd_tf/outer_its=1/20220905-153936_controller_rpgd_tf_CartPoleSimulator-v0_predictor_ODE_tf",
 #     ...
 # ]
 
 ### Option 2: Specify a top-level folder
-EXPERIMENT_FOLDER = "20221101-171103_sweep_controller_name"
+EXPERIMENT_FOLDER = "20221114-190635_sweep_config_controllers.mpc.optimizer"
 ENVIRONMENT_NAME = "ObstacleAvoidance"
 ### ------------- Do not modify the following two lines ------------- ###
-experiments_to_plot = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*", recursive="True")
+experiments_to_plot = glob(f"Output/{EXPERIMENT_FOLDER}/**/*_controller_*{ENVIRONMENT_NAME}*/*/*/", recursive="True")
 experiments_to_plot = natsorted(experiments_to_plot)
 ### ------------- ------------- ------------- ------------- ------------- ###
 
-
-sweep_value = EXPERIMENT_FOLDER.split("sweep_")[1].split("_controller")[0]
+sweep_value = EXPERIMENT_FOLDER.split("sweep_")[1]
 
 ### ------------- 2. Specify what the sweeped value is (labeled on x-axis) ------------- ###
 sweep_values = {
@@ -51,14 +53,10 @@ sweep_values["ylabel"] = "Average Control Cost"
 
 
 import os
-import re
 from datetime import datetime
-from glob import glob
-from pprint import pformat
 
 import numpy as np
-from natsort import natsorted
-from Visualizations.plot_cost_scatter_plots import CostScatterPlotPlotter
+from Visualizations.old.plot_cost_scatter_plots import CostScatterPlotPlotter
 from Visualizations.trajectory_age_plotter import TrajectoryAgePlotter
 from yaml import FullLoader, load
 
@@ -138,11 +136,9 @@ def generate_global_plots() -> None:
 
     logger.info("Generating box plot...")
     box_plot_plotter = CostScatterPlotPlotter(
-        datetime.now().strftime("%Y%m%d-%H%M%S"),
-        {
-            "1_data_generation": {"controller_name": "", "environment_name": ""},
-            "2_environments": {"": {"actuator_noise": 0}},
-        },
+        os.path.join("Output", EXPERIMENT_FOLDER),
+        {"controller_name": "", "environment_name": ""},
+        {"actuator_noise": ""},
     )
     if sweep_value == "resamp_per":
         box_plot_plotter.plot(all_trajectory_cost_data, sweep_values, True)
@@ -158,10 +154,8 @@ def generate_global_plots() -> None:
     #     logger.info("Generating trajectory age plot...")
     #     trajectory_age_plot = TrajectoryAgePlotter(
     #         datetime.now().strftime("%Y%m%d-%H%M%S"),
-    #         {
-    #             "1_data_generation": {"controller_name": "", "environment_name": ""},
-    #             "2_environments": {"": {"actuator_noise": 0}},
-    #         },
+    #         {"controller_name": "", "environment_name": ""},
+    #         {"": {"actuator_noise": 0}},
     #     )
     #     trajectory_age_plot.plot(all_ages_data, True)
     #     logger.info("...done.")

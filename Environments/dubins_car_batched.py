@@ -30,22 +30,20 @@ SOFTWARE.
 import math
 from typing import Optional, Tuple, Union
 
-import gym
+import gymnasium as gym
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-import torch
 from Control_Toolkit.others.environment import EnvironmentBatched
-from gym import spaces
-from matplotlib import use
+from gymnasium import spaces
 from matplotlib.patches import Circle
+from matplotlib import use
 from SI_Toolkit.computation_library import (ComputationLibrary, NumpyLibrary,
                                             TensorType)
 from SI_Toolkit.Functions.TF.Compile import CompileTF
 
 from Control_Toolkit.others.globals_and_utils import get_logger
 
-use("QtAgg")
 logger = get_logger(__name__)
 
 
@@ -137,6 +135,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             self.obstacle_positions = (
                 obstacle_positions  # List of lists [[x_pos, y_pos, radius], ...]
             )
+        self.obstacle_positions = self.lib.to_variable(self.obstacle_positions, self.lib.float32)
 
         self.action = [0.0, 0.0]  # Action
 
@@ -281,6 +280,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         Union[np.ndarray, bool],
         dict,
     ]:
+        self.action = list(np.array(action))
         if self.count % self.shuffle_target_every == 0:
             target_new = tf.convert_to_tensor(
                 [
@@ -298,7 +298,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
 
         self.state = self.lib.to_numpy(self.step_dynamics(self.state, action, self.dt))
 
-        terminated = self.is_done(self.lib, self.state, self.target_point)
+        terminated = bool(self.is_done(self.lib, self.state, self.target_point))
         truncated = False
         reward = 0.0
 
@@ -312,6 +312,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             # Turn interactive plotting off
             plt.ioff()
         else:
+            if self.render_mode in {"human"}:
+                use("QtAgg")
             plt.ion()
 
         # Storing tracked trajectory
@@ -480,8 +482,8 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
             )
 
     def plot_trajectory_plans(self):
-        trajectories = self._logs.get("rollout_trajectories_logged", None)
-        costs = self._logs.get("J_logged")
+        trajectories = self.logs.get("rollout_trajectories_logged", [])
+        costs = self.logs.get("J_logged", [])
         
         if len(trajectories) and len(costs):
             trajectories = trajectories[-1]
@@ -494,7 +496,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                         zorder = 5
                     else:
                         color = "g"
-                        alpha = min(5.0 / trajectories.shape[0], 1.0)
+                        alpha = max(min(5.0 / trajectories.shape[0], 1.0), 0.01)
                         zorder = 4
                     self.ax.plot(
                         trajectory[:, 0] * MAX_X,

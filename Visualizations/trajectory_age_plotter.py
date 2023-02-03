@@ -9,6 +9,12 @@ plt.style.use(["science"])
 
 
 class TrajectoryAgePlotter(Plotter):
+    """
+    This plotter is only relevant for MPC optimizers which use rollouts.
+    It saves a histogram if the optimizer kept track of the age of its rollouts over time.
+    The age is the rolling number of control steps in the past that each rollout was created.
+    For an optimizer like RPGD, this can give insight into how often it replaces old input plans by new samples.
+    """
     def plot(self, ages: "dict[str, list]", save_to_image):
         num_datapoints_per_experiment = [len(v) for v in list(ages.values())]
         num_experiments = len(ages.values())
@@ -38,7 +44,7 @@ class TrajectoryAgePlotter(Plotter):
             self.ax.set_xlabel("Age of Input Plan")
 
             if save_to_image:
-                path = os.path.join("Output", f"{self._timestamp}_trajectory_ages")
+                path = os.path.join(self._path, f"trajectory_ages")
                 if not os.path.exists(path):
                     os.makedirs(path)
                 self.fig.savefig(

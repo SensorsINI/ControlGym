@@ -3,7 +3,7 @@ import os
 
 from SI_Toolkit.computation_library import TensorType
 from Control_Toolkit.Cost_Functions import cost_function_base
-
+from Environments.cartpole_simulator_batched import cartpole_simulator_batched
 
 config = yaml.load(
     open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"),
@@ -14,13 +14,12 @@ position_weight = float(config["cartpole_simulator_batched"]["default"]["positio
 
 
 class default(cost_function_base):
-    def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
+    MAX_COST = angle_weight + position_weight * 4 * (cartpole_simulator_batched.x_threshold ** 2)
+    
+    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(states, 6, -1)
         cost = (
             - angle_weight * angle_cos
             + position_weight * (position - self.controller.target_position) ** 2
         )
         return cost
-
-    def get_terminal_cost(self, terminal_states: TensorType) -> TensorType:
-        return 0.0

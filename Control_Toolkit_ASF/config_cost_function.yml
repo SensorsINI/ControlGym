@@ -11,6 +11,12 @@ acrobot_batched:
   default:
     angle_weight: 1.0
     angleD_weight: 0.01
+  discounted_horizon:
+    angle1_weight: 1.0
+    angle2_weight: 0.5
+    angleD1_weight: 0.02
+    angleD2_weight: 0.01
+    discount_factor: 0.95
 cartpole_simulator_batched:
   default:
     angle_weight: 1.0
@@ -35,13 +41,20 @@ dubins_car_batched:
     out_of_bounds_penalty: 1.0
 obstacle_avoidance_batched:
   default:
-    goal_reward: 10.0
-    quadratic_cost_weight: 0.125
-    distance_to_target_weight: 0.1
+    goal_reward: 100.0
+    distance_to_target_weight: 5.0
     distance_to_obstacle_weight: 5.0
-    out_of_bounds_penalty: 1.0
+    out_of_bounds_cost: 100.0
 pendulum_batched:
   default:
     angle_weight: 1.0
     angleD_weight: 0.1
     control_weight: 0.001
+lunar_lander_batched:
+  default:
+    pos_x_weight: 1.1
+    pos_y_weight: 1.0
+    vel_weight: 0.2
+    angle_weight: 0.1
+    vel_angle_weight: 0.0
+    discount_factor: 0.98

@@ -1,3 +1,4 @@
+import os
 import itertools
 import numpy as np
 
@@ -6,6 +7,11 @@ from Utilities.utils import OutputPath
 
 
 class InputPlanPlotter(Plotter):
+    """
+    Saves a video of a control episode.
+    On the left side, it shows the rollout-creating input plans of all the rollouts the optimizer currently uses.
+    On the right side, it renders the environment.
+    """
     def plot(
         self,
         actions: np.ndarray,
@@ -130,7 +136,7 @@ class InputPlanPlotter(Plotter):
 
         if save_to_video:
             anim.save(
-                OutputPath.get_output_path(self._timestamp, "Q_logged", ".mp4"),
+                os.path.join(self._path, "Q_logged.mp4"),
                 writer=animation.FFMpegWriter(fps=15),
             )
         else:

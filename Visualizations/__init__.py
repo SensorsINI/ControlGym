@@ -4,16 +4,14 @@ from matplotlib import gridspec
 
 
 class Plotter:
-    def __init__(self, timestamp: str, config: dict, **kwargs) -> None:
+    def __init__(self, path: str, run_config: dict, environment_config: dict, **kwargs) -> None:
         self.fig: plt.Figure = None
         self.ax: plt.Axes = None
         self.axs: "list[plt.Axes]" = None
-        self._timestamp: str = timestamp
+        self._path = path
         self._config_to_disp: dict = {
-            "Controller name": config["1_data_generation"]["controller_name"],
-            "Actuation stdev/range(actions)": config["2_environments"][
-                config["1_data_generation"]["environment_name"]
-            ]["actuator_noise"],
+            "Controller name": run_config["controller_name"],
+            "Actuation stdev/range(actions)": environment_config["actuator_noise"],
         }
 
     def _display_some_config(self):

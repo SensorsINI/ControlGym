@@ -4,6 +4,7 @@ import numpy as np
 
 from SI_Toolkit.computation_library import TensorType
 from Control_Toolkit.Cost_Functions import cost_function_base
+from Environments.continuous_cartpole_batched import continuous_cartpole_batched
 
 
 config = yaml.load(
@@ -17,7 +18,9 @@ positionD_weight = float(config["continuous_cartpole_batched"]["default"]["posit
 
 
 class default(cost_function_base):
-    def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
+    MAX_COST = (12 * 2 * np.pi / 360)**2 * angle_weight + 100 * angleD_weight + position_weight * continuous_cartpole_batched.x_threshold**2 + 9 * positionD_weight
+    
+    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         x, x_dot, theta, theta_dot = self.lib.unstack(states, 4, -1)
         cost = (
             angle_weight * (theta**2)
@@ -26,6 +29,3 @@ class default(cost_function_base):
             + positionD_weight * (x_dot**2)
         )
         return cost
-
-    def get_terminal_cost(self, terminal_states: TensorType) -> TensorType:
-        return 0.0

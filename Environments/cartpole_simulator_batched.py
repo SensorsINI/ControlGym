@@ -2,15 +2,12 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
-import torch
 from CartPoleSimulation.CartPole.cartpole_model_tf import (
     _cartpole_ode, cartpole_integration_tf)
-from CartPoleSimulation.CartPole.state_utilities import (ANGLE_COS_IDX,
-                                                         POSITION_IDX)
 from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
-from gym.spaces import Box
+from gymnasium.spaces import Box
 
 
 class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
@@ -58,7 +55,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             "target_position": self.target_position,
         }
 
-        self.x_threshold = (
+        self.__class__.x_threshold = self.x_threshold = (
             0.9 * track_half_length
         )  # Takes care that the cart is not going beyond the boundary
 
@@ -201,7 +198,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self.count += 1
 
         reward = 0.0
-        terminated = self.is_done(self.lib, self.state)
+        terminated = bool(self.is_done(self.lib, self.state))
         truncated = False
 
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))

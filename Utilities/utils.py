@@ -1,14 +1,16 @@
+from collections import OrderedDict
+from glob import glob
 import logging
 import os
 from importlib import import_module
 from importlib.util import find_spec
 from pathlib import Path
 import platform
-from typing import Any
+from typing import Any, Optional
 import tensorflow as tf
 import torch
 
-from yaml import FullLoader, load
+from yaml import FullLoader, load, safe_load
 from Control_Toolkit.others.environment import EnvironmentBatched
 
 config = load(open("config.yml", "r"), Loader=FullLoader)
@@ -44,7 +46,7 @@ class CustomFormatter(logging.Formatter):
 def get_logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(
-        getattr(import_module("logging"), config["1_data_generation"]["logging_level"])
+        getattr(import_module("logging"), config["logging_level"])
     )
     # create console handler
     ch = logging.StreamHandler()
@@ -61,21 +63,20 @@ class OutputPath:
     collection_folder_name = ""
 
     @classmethod
-    def get_output_path(cls, timestamp: str, env_name: str, controller_name: str, predictor_name: str, filename: str, suffix: str) -> str:
+    def get_output_path(cls, timestamp: str, file_name: Optional[str]=None) -> str:
         folder = os.path.join(
             "Output",
             cls.collection_folder_name,
-            f"{timestamp}_{controller_name}_{env_name}_{predictor_name}".replace(
-                "/", "_"
-            ),
+            timestamp,
         )
         Path(folder).mkdir(parents=True, exist_ok=True)
-        return os.path.join(
-            folder,
-            f"{timestamp}_{filename}{suffix}"
-            if cls.RUN_NUM is None
-            else f"{timestamp}_{filename}_{cls.RUN_NUM}{suffix}",
-        )
+        if file_name is not None:
+            f, suffix = file_name.split(".")
+            suffix = f".{suffix}"
+            fn = f"{timestamp}_{f}_{suffix}" if cls.RUN_NUM is None else f"{timestamp}_{f}_{cls.RUN_NUM}{suffix}"
+        else:
+            fn = ""
+        return os.path.join(folder, fn)
 
 
 class SeedMemory:
@@ -99,11 +100,86 @@ class CurrentRunMemory:
     current_optimizer_name: str
     current_environment_name: str
     current_environment: EnvironmentBatched
+    
+
+class ConfigManager:
+    """Detects configuration files in project directory recursively within specified folders and spawns loaders for each"""
+    def __init__(self, *paths_to_folders) -> None:
+        config_files = []
+        for path in paths_to_folders:
+            config_files.extend(glob(os.path.join(path, "*config*.yml"), recursive=True))
+        
+        self._config_loaders = {str(os.path.basename(filename)).replace(".yml", ""): CustomLoader(filename) for filename in config_files}
+        for name, custom_loader in self._config_loaders.items():
+            setattr(self, name, custom_loader)
+            
+    def update_configs(self):
+        for config_loader in self._config_loaders.values():
+            config_loader.update_from_config()
+    
+    @property
+    def loaders(self):
+        return self._config_loaders
+    
+    def __call__(self, config_name: str) -> Any:
+        """Get the config with specified name (without '.yml' suffix) if it is loaded."""
+        config_loader: Optional[CustomLoader] = self._config_loaders.get(config_name, None)
+        if config_loader is None:
+            raise ValueError(f"No configuration with name {config_name} loaded.")
+        return config_loader.config
+
+
+import ruamel.yaml
+ruamel_yaml = ruamel.yaml.YAML()
+class CustomLoader:
+    """
+    Class that loads a yaml, observes for changes and updates the output config
+    """
+    
+    def __init__(self, path: str) -> None:
+        self.path = path
+        self.name = os.path.basename(path)
+        self.load_config_from_file()
+    
+    def load(self):
+        with open(self.path) as fp:
+            data: ruamel.yaml.comments.CommentedMap = ruamel_yaml.load(fp)
+        return data
+
+    def overwrite_config(self, data):
+        with open(self.path, "w") as fp:
+            ruamel_yaml.dump(data, fp)
+    
+    @property
+    def config(self):
+        self.load_config_from_file()
+        return self._config
+    
+    def load_config_from_file(self):
+        self._config = dict(safe_load(open(self.path, "r")))
+
+
+def nested_conversion_to_ordereddict(d):
+    if isinstance(d, dict):
+        return OrderedDict({k: nested_conversion_to_ordereddict(v) for k, v in d.items()})
+    else:
+        return d
+
+
+def nested_assignment_to_ordereddict(target: OrderedDict, source: dict):
+    # In-place update of the OrderedDict `target` with values from the regular dictionary `source`
+    for k, v in source.items():
+        if k not in target:
+            raise ValueError(f"Trying to re-assign target dictionary at key {k} which does not exist.")
+        if isinstance(v, dict):
+            nested_assignment_to_ordereddict(target[k], v)
+        else:
+            target[k] = v
 
 
 ### Below is copied from CartPole repo
 
-if config["1_data_generation"]["debug"]:
+if config["debug"]:
     CompileTF = lambda func: func
     CompileTorch = lambda func: func
 else:

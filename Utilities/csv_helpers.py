@@ -4,10 +4,11 @@ import os
 import pandas as pd
 from Control_Toolkit.Controllers import template_controller
 
-from Utilities.utils import CurrentRunMemory, get_logger
+from Utilities.utils import ConfigManager, CurrentRunMemory, get_logger
 
 log = get_logger(__name__)
 
+config_manager = ConfigManager("Environments")
 
 def save_to_csv(config, controller: template_controller, environment_name: str, path: str):
     os.makedirs(path, exist_ok=True)
@@ -21,7 +22,7 @@ def save_to_csv(config, controller: template_controller, environment_name: str, 
     states = controller_outputs["s_logged"]
     inputs = controller_outputs["u_logged"]
     
-    dt = config["2_environments"][environment_name]["dt"]
+    dt = config_manager("config_environments")[environment_name]["dt"]
     df = pd.DataFrame({
         "time": [k * dt for k in range(states.shape[0])],
         **{f"x_{k}": states[:, k] for k in range(states.shape[1])},

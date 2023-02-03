@@ -10,12 +10,14 @@ config = yaml.load(
     open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"),
     Loader=yaml.FullLoader,
 )
-altitude_weight = float(config["continuous_mountaincar_batched"]["default"]["altitude_weight"])
-done_reward = float(config["continuous_mountaincar_batched"]["default"]["done_reward"])
-control_penalty = float(config["continuous_mountaincar_batched"]["default"]["control_penalty"])
-
+distance_cost_weight = 0.125
+x_cost_weight = 0.1
+y_cost_weight = 0.1
+obstacle_cost_weight = 5.0
 
 class default(cost_function_base):
+    MAX_COST = max(distance_cost_weight * (4.0 * x_cost_weight + 4.0 * y_cost_weight + 1.0 * distance_cost_weight), 1.0)
+    
     def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType) -> TensorType:
         # x/y each have shape batch_size x mpc_horizon
         x_obs, y_obs, radius = self.lib.unstack(self.controller.obstacle_positions[:, :, self.lib.newaxis, self.lib.newaxis], 3, 1)
@@ -29,7 +31,7 @@ class default(cost_function_base):
         c = 1.0 - (self.lib.min(1.0, d / radius)) ** 2
         return self.lib.reduce_max(c, 0)
         
-    def get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
+    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         x, y, yaw_car, steering_rate = self.lib.unstack(states, 4, -1)
         target = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
         x_target, y_target, yaw_target = self.lib.unstack(target, 3, 0)
@@ -42,22 +44,17 @@ class default(cost_function_base):
         car_in_bounds = dubins_car_batched._car_in_bounds(self.lib, x, y)
         car_at_target = dubins_car_batched._car_at_target(self.lib, x, y, x_target, y_target)
 
-        reward = (
-            self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * 10.0
-            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32)
-            * (
-                -0.125
-                * (
+        cost = (
+            self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * (-10.0)
+            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32) * (
+                distance_cost_weight * (
                     # 3 * crossTrackError**2
-                    0.1 * (x - x_target) ** 2
-                    + 0.1 * (y - y_target) ** 2
+                    x_cost_weight * (x - x_target) ** 2
+                    + y_cost_weight * (y - y_target) ** 2
                     # + 3 * (head_to_target - yaw_car)**2 / MAX_STEER
-                    + 5 * self._distance_to_obstacle_cost(x, y)
+                    + obstacle_cost_weight * self._distance_to_obstacle_cost(x, y)
                 )
             )
-            + self.lib.cast(~car_in_bounds, self.lib.float32) * (-1.0)
+            + self.lib.cast(~car_in_bounds, self.lib.float32)
         )
-        return -reward
-
-    def get_terminal_cost(self, terminal_states: TensorType) -> TensorType:
-        return 0.0
+        return cost

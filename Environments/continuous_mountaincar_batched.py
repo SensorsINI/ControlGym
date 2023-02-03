@@ -1,9 +1,7 @@
 from typing import Optional, Tuple, Union
 
 import numpy as np
-import tensorflow as tf
-import torch
-from gym.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
+from gymnasium.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
@@ -95,10 +93,10 @@ class continuous_mountaincar_batched(EnvironmentBatched, Continuous_MountainCarE
         assert self._batch_size == 1
         action = self._apply_actuator_noise(action)
 
-        state_updated: tf.Tensor = self.step_dynamics(self.state, action, self.dt)
+        state_updated: TensorType = self.step_dynamics(self.state, action, self.dt)
         self.state = self.lib.to_numpy(state_updated)
 
-        terminated = self.is_done(self.lib, self.state, self.goal_position, self.goal_velocity)
+        terminated = bool(self.is_done(self.lib, self.state, self.goal_position, self.goal_velocity))
         truncated = False
         reward = 0.0
 

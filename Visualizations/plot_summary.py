@@ -1,3 +1,4 @@
+import os
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
@@ -9,12 +10,21 @@ plt.style.use(["science"])
 
 
 class SummaryPlotter(Plotter):
+    """
+    Saves a plot of a control episode.
+    The x-axis of each subplot is the control iteration.
+    The y-axis is the value of a state/input variable.
+    In the top row, it plots one subplot for each state variable. Going from left to right within the subplot, you can see how it evolves during the episode.
+    In the bottom row, it plots one subplot for each input variable. Again, each subplot shows the input over time during the control episode.
+    """
     def plot(self, states: np.ndarray, actions: np.ndarray, save_to_image: bool = True):
         assert states.shape[0] == actions.shape[0]
 
         num_steps, n = states.shape
-        _, m = actions.shape
-
+        if actions.ndim == 1:
+            actions = actions[:, np.newaxis]
+        m = actions.shape[-1]
+        
         if self.axs is None:
             self.fig = plt.figure(figsize=(12, 8))
             self.gs = gridspec.GridSpec(
@@ -69,10 +79,16 @@ class SummaryPlotter(Plotter):
         self.fig.subplots_adjust(left=0.02, right=0.98, top=0.95, bottom=0.1)
         self.fig.suptitle("State 's' and Action 'u' Evolution")
         self._display_some_config()
+        
+        c = 1
+        p = f"summary_logged_{c}.svg"
+        while os.path.isfile(os.path.join(self._path, p)):
+            c += 1
+            p = f"summary_logged_{c}.svg"
 
         if save_to_image:
             self.fig.savefig(
-                OutputPath.get_output_path(self._timestamp, "summary_logged", ".svg"),
+                os.path.join(self._path, p),
                 bbox_inches="tight",
             )
         else:

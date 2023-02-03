@@ -3,8 +3,8 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import tensorflow as tf
 import torch
-from gym import spaces
-from gym.envs.classic_control.pendulum import PendulumEnv
+from gymnasium import spaces
+from gymnasium.envs.classic_control.pendulum import PendulumEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
@@ -92,7 +92,7 @@ class pendulum_batched(EnvironmentBatched, PendulumEnv):
 
         self.state = self.step_dynamics(self.state, action, self.dt)
 
-        terminated = self.is_done(self.lib, self.state)
+        terminated = bool(self.is_done(self.lib, self.state))
         truncated = False
         reward = 0.0
 
