@@ -31,7 +31,7 @@
 ### The following flags are required. Modify them as needed: ###
 ### Alternatively, you can pass values as flags in bash      ###
 controller_name: controller_mpc
-environment_name: LunarLander-v2
+environment_name: DubinsCar-v0
 
 ### ------------------------------------------------------- ###
 
