@@ -221,7 +221,7 @@ nlp-forces:
       cost: cartpole_simulator
       dt: 0.02                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1, 4, 5]       # Optimization variables idxs: [angle, ang vel, pos, vel]
-      is_angle: [0]                     # Which of the idxs refer to an angle
+      is_angle: []                     # Which of the idxs refer to an angle
       action_max: [1.0]
       state_max: [6.284, 100.0, 0.198, 0.8]   # State constraints [pi, v ang. max, TrackHalfLegth, vmax]
       q: [100.0, 0.0, 00.0, 0.0]        # State cost
