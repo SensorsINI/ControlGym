@@ -212,11 +212,13 @@ random-action-tf:
   num_rollouts: 32
 nlp-forces:
   seed: null
-  mpc_horizon: 10                     # steps
+  mpc_horizon: 40                     # steps
   num_rollouts: 1
+  initial_guess: PD                     # no_action or PD
   environment_specific_parameters:
     cartpole_simulator:
       dynamics: cartpole_non_linear_dynamics
+      cost: cartpole_simulator
       dt: 0.02                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1, 4, 5]       # Optimization variables idxs: [angle, ang vel, pos, vel]
       is_angle: [0]                     # Which of the idxs refer to an angle
@@ -226,6 +228,7 @@ nlp-forces:
       r: [0.0]                          # Input cost
     pendulum:
       dynamics: pendulum_dynamics
+      cost:
       dt: 0.05                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1]             # Optimization variables idxs: [angle, ang vel]
       is_angle: [0]                     # Which of the idxs refer to an angle
@@ -234,7 +237,8 @@ nlp-forces:
       q: [ 100.0, 0.0]                  # State cost
       r: [ 0.0 ]                        # Input cost
     continuous_mountaincar:
-      dynamics: continuous_mountain_car
+      dynamics: continuous_mountaincar
+      cost: continuous_mountaincar
       dt: 1.0                           # Integration stepsize, make sure matches the one of the environment
       optimize_over: [ 0, 1 ]           # Optimization variables idxs: [pos, vel]
       is_angle: []                      # Which of the idxs refer to an angle
@@ -244,10 +248,11 @@ nlp-forces:
       r: [ 0.0 ]                        # Input cost
     acrobot:
       dynamics: acrobot_dynamics
+      cost:
       dt: 0.1                           # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1, 2, 3]       # Optimization variables idxs: [th1, th2, dth1, dth2]
       is_angle: [0, 1]                  # Which of the idxs refer to an angle
       action_max: [1.0]                 # Input constraints
       state_max: [6.285, 6.285, 12.56637, 28.2743338823]          # State constraints [finish, v max]
-      q: [10.0, 0.0]                    # State cost
+      q: [10.0, 0.0, 0.0, 0.0]                    # State cost
       r: [0.0]                          # Input cost
