@@ -215,10 +215,12 @@ nlp-forces:
   mpc_horizon: 40                     # steps
   num_rollouts: 1
   initial_guess: PD                     # no_action or PD
+  generate_new_solver: True
+  terminal_constraint_at_target: False
   environment_specific_parameters:
     cartpole_simulator:
       dynamics: cartpole_non_linear_dynamics
-      cost: cartpole_simulator
+      cost: cartpole_simulator1
       dt: 0.02                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1, 4, 5]       # Optimization variables idxs: [angle, ang vel, pos, vel]
       is_angle: []                     # Which of the idxs refer to an angle
