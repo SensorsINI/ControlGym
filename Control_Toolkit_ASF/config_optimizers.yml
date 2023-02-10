@@ -212,20 +212,23 @@ random-action-tf:
   num_rollouts: 32
 nlp-forces:
   seed: null
-  mpc_horizon: 40                     # steps
+  mpc_horizon: 40                       # steps
   num_rollouts: 1
   initial_guess: PD                     # no_action or PD
+#  generate_new_solver: False
   generate_new_solver: True
   terminal_constraint_at_target: False
+  terminal_set_width: 0.5               # Set to <=0 for no terminal set
   environment_specific_parameters:
     cartpole_simulator:
       dynamics: cartpole_non_linear_dynamics
       cost: cartpole_simulator1
       dt: 0.02                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1, 4, 5]       # Optimization variables idxs: [angle, ang vel, pos, vel]
-      is_angle: []                     # Which of the idxs refer to an angle
+      is_angle: []                      # Which of the idxs refer to an angle
       action_max: [1.0]
       state_max: [6.284, 100.0, 0.198, 0.8]   # State constraints [pi, v ang. max, TrackHalfLegth, vmax]
+      idx_terminal_set: [2]             # Which state idx are affected by terminal set
       q: [100.0, 0.0, 00.0, 0.0]        # State cost
       r: [0.0]                          # Input cost
     pendulum:
