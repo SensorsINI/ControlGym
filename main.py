@@ -68,10 +68,12 @@ def run_data_generator(
         SeedMemory.set_seeds(seeds)
         
         config_controller = dict(config_manager("config_controllers")[controller_short_name])
-        config_optimizer = dict(config_manager("config_optimizers")[optimizer_short_name])
-        config_optimizer.update({"seed": int(seeds[1])})
-        config_environment = dict(config_manager("config_environments")[environment_name])
-        config_environment.update({"seed": int(seeds[0])})
+        config_optimizer = dict(config_manager("config_optimizers"))
+        config_optimizer[optimizer_short_name].update({"seed": int(seeds[1])})
+        config_manager.set_config("config_optimizers", config_optimizer)
+        config_environment = dict(config_manager("config_environments"))
+        config_environment[environment_name].update({"seed": int(seeds[0])})
+        config_manager.set_config("config_environments", config_environment)
         all_rewards = []
 
         ##### ----------------------------------------------- #####
@@ -90,12 +92,12 @@ def run_data_generator(
 
         env: EnvironmentBatched = gym.make(
             environment_name,
-            **config_environment,
+            **config_environment[environment_name],
             computation_lib=TensorFlowLibrary,
             render_mode=render_mode,
         )
         CurrentRunMemory.current_environment = env
-        obs, obs_info = env.reset(seed=config_environment["seed"])
+        obs, obs_info = env.reset(seed=config_environment[environment_name]["seed"])
         assert len(env.action_space.shape) == 1, f"Action space needs to be a flat vector, is Box with shape {env.action_space.shape}"
         
         ##### ---------------------------------------------- #####
@@ -109,7 +111,7 @@ def run_data_generator(
             control_limits=(env.action_space.low, env.action_space.high),
             initial_environment_attributes=env.environment_attributes,
         )
-        controller.configure(optimizer_name=optimizer_short_name, predictor_specification=config_controller["predictor_specification"])
+        controller.configure(config_manager=config_manager, optimizer_name=optimizer_short_name, predictor_specification=config_controller["predictor_specification"])
 
         ##### ----------------------------------------------------- #####
         ##### ----------------- MAIN CONTROL LOOP ----------------- #####
