@@ -28,7 +28,7 @@ cem-naive-grad-tf:
   gradmax_clip: 10
 cem-grad-bharadhwaj-tf:
   seed:                               # If null, random seed based on datetime is used
-  mpc_horizon: 50                       # steps
+  mpc_horizon: 40                       # steps
   learning_rate: 0.05
   adam_beta_1: 0.9
   adam_beta_2: 0.999
