@@ -119,7 +119,7 @@ class ConfigManager:
     
     def set_config(self, config_name: str, updated_config: dict) -> None:
         config_loader: Optional[CustomLoader] = self._config_loaders.get(config_name, None)
-        config_loader.config = updated_config
+        config_loader.updated_config = updated_config
     
     @property
     def loaders(self):
@@ -156,12 +156,12 @@ class CustomLoader:
     
     @property
     def config(self):
-        # self.load_config_from_file()
-        return self._config
-    
-    @config.setter
-    def config(self, new_config: dict):
-        self._config = new_config.copy()
+        if hasattr(self, "updated_config"):
+            logger.debug("Using updated configuration, not reading from file.")
+            return self.updated_config
+        else:
+            self.load_config_from_file()
+            return self._config
     
     def load_config_from_file(self):
         self._config = dict(safe_load(open(self.path, "r")))

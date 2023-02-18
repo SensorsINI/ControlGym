@@ -157,7 +157,7 @@ def run_data_generator(
         # Print compute time statistics
         end_time = time.time()
         control_freq = num_iterations / (end_time - start_time)
-        logger.debug(f"Achieved average control frequency of {round(control_freq, 2)}Hz ({round(1.0e3/control_freq, 2)}ms per iteration)")
+        logger.info(f"Episode {i+1}: Achieved average control frequency of {round(control_freq, 2)}Hz ({round(1.0e3/control_freq, 2)}ms per iteration)")
 
         # Close the env
         env.close()
@@ -198,12 +198,13 @@ def run_data_generator(
                     "wb",
                 ) as f:
                     np.save(f, a)
-            # Save configs
-            for loader in config_manager.loaders.values():
-                with open(
-                    OutputPath.get_output_path(timestamp_str, loader.name), "w"
-                ) as f:
-                    dump(loader.config, f)
+            del controller_output
+        # Save configs
+        for loader in config_manager.loaders.values():
+            with open(
+                OutputPath.get_output_path(timestamp_str, loader.name), "w"
+            ) as f:
+                dump(loader.config, f)
     
     # Dump all saved scalar metrics as csv
     with open(
