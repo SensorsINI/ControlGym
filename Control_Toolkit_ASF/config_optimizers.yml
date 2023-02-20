@@ -218,14 +218,14 @@ nlp-forces:
 #  generate_new_solver: False
   generate_new_solver: True
   terminal_constraint_at_target: False
-  terminal_set_width: 0.5               # Set to <=0 for no terminal set
+  terminal_set_width: 0.0               # Set to <=0 for no terminal set
   environment_specific_parameters:
     cartpole_simulator:
       dynamics: cartpole_non_linear_dynamics
       cost: cartpole_simulator1
       dt: 0.02                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1, 4, 5]       # Optimization variables idxs: [angle, ang vel, pos, vel]
-      is_angle: []                      # Which of the idxs refer to an angle
+      is_angle: [0]                      # Which of the idxs refer to an angle
       action_max: [1.0]
       state_max: [6.284, 100.0, 0.198, 0.8]   # State constraints [pi, v ang. max, TrackHalfLegth, vmax]
       idx_terminal_set: [2]             # Which state idx are affected by terminal set
@@ -233,12 +233,13 @@ nlp-forces:
       r: [0.0]                          # Input cost
     pendulum:
       dynamics: pendulum_dynamics
-      cost:
+      cost: pendulum
       dt: 0.05                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1]             # Optimization variables idxs: [angle, ang vel]
-      is_angle: [0]                     # Which of the idxs refer to an angle
+      is_angle: []                     # Which of the idxs refer to an angle
       action_max: [ 2.0 ]               # Input constraints
       state_max: [ 6.285, 8.0]          # State constraints [2pi, v ang. max]
+      idx_terminal_set: [0]
       q: [ 100.0, 0.0]                  # State cost
       r: [ 0.0 ]                        # Input cost
     continuous_mountaincar:
@@ -249,6 +250,7 @@ nlp-forces:
       is_angle: []                      # Which of the idxs refer to an angle
       action_max: [ 1.0 ]               # Input constraints
       state_max: [ 1.2, 0.07 ]          # State constraints [finish, v max]
+      idx_terminal_set: [ 0 ]
       q: [ 10.0, 0.0 ]                  # State cost
       r: [ 0.0 ]                        # Input cost
     acrobot:
