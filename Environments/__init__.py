@@ -20,6 +20,7 @@ ENV_REGISTRY = {
     "Pendulum-v0": "Environments.pendulum_batched:pendulum_batched",
     "HalfCheetahBatched-v0": "Environments.half_cheetah_batched:half_cheetah_batched",
     "BipedalWalkerBatched-v0": "Environments.bipedal_walker_batched:bipedal_walker_batched",
+    "Armbot-v0": "Environments.armbot_batched:armbot_batched",
 }
 
 

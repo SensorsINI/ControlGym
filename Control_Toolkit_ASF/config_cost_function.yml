@@ -58,3 +58,7 @@ lunar_lander_batched:
     angle_weight: 0.1
     vel_angle_weight: 0.0
     discount_factor: 0.98
+armbot_batched:
+  default:
+    angle_weight: 1.0
+    angleD_weight: 0.01
