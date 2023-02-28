@@ -15,6 +15,8 @@ The following components are important to make GUILD AI work for your workflow:
 * `guild.yml` GUILD AI configuration file: It instructs the framework to look in the `config.yml` for hyperparameters
 * `main.py` script is called through GUILD AI
 
+In `Control_Toolkit_ASF.config_controllers`: Set `controller_logging` to `False` to prevent overly large output folders, especially when generating lots of runs.
+
 #### Important commands
 * `guild ops`: List available scripts to run
 * `guild run controller_mpc:run_control`: Run an MPC experiment using specification from `config.yml`.
