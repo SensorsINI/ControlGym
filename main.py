@@ -4,6 +4,7 @@ import time
 import csv
 from datetime import datetime
 from importlib import import_module
+from tqdm import trange
 
 from typing import Any
 import gymnasium as gym
@@ -62,7 +63,7 @@ def run_data_generator(
     )
     
     # Loop through independent experiments
-    for i in range(num_experiments):
+    for i in trange(num_experiments):
         # Generate new seeds for environment and controller
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.set_seeds(seeds)
