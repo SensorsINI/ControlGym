@@ -4,7 +4,8 @@ import os
 from SI_Toolkit.computation_library import TensorType
 from Control_Toolkit.Cost_Functions import cost_function_base
 from Environments.armbot_batched import armbot_batched
-
+import tensorflow as tf
+import numpy as np
 
 config = yaml.load(
     open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"),
