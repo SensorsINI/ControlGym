@@ -11,7 +11,13 @@ config = yaml.load(
     open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"),
     Loader=yaml.FullLoader,
 )
+config2 = yaml.load(
+    open(os.path.join("Control_Toolkit_ASF", "config_optimizers.yml"), "r"),
+    Loader=yaml.FullLoader,
+)
+# 'n_horizon': self.config_controller["mpc_horizon"]
 discount_factor = float(config["armbot_batched"]["discounted_horizon"]["discount_factor"])
+mpc_horizon=int(config2["rpgd-tf"]["mpc_horizon"])
 xtarget = armbot_batched.xtarget
 ytarget = armbot_batched.ytarget
 
@@ -29,6 +35,20 @@ class discounted_horizon(cost_function_base):
         cost = (
                 (xee - xtarget) ** 2 + (yee - ytarget) ** 2
         )
+        cost2 = tf.where(tf.less_equal(cost, 0.01), -1000.0, 0)
+        cost+=cost2
+        # tuple3 = self.lib.unstack(cost, mpc_horizon, -1)
+        # for i in range(len(tuple3)):
+        #     tmp=tuple3[i].numpy()
+        #     tmp[tmp<0.01]=-1000
+        #     tmp=tf.Variable(tmp)
+        #     tuple3[i]+=tmp
+        # cost = self.lib.stack(tuple3, 1)
+        # costnp=cost.numpy()
+        # costnp[costnp<0.01]=-1000
+        # cost=cost+costnp
+        # cost=tf.convert_to_tensor(costnp)
+        # cost2=tf.Variable(cost)
         return cost
     #discounted cost adapted from existing discount horizon implementation
     def get_trajectory_cost(self, state_horizon: TensorType, inputs: TensorType, previous_input: TensorType = None) -> TensorType:

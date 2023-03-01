@@ -61,4 +61,4 @@ lunar_lander_batched:
 armbot_batched:
   default:
   discounted_horizon:
-    discount_factor: 0.93
+    discount_factor: 0.95
