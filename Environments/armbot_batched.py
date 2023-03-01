@@ -247,14 +247,15 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
             gfxdraw.filled_circle(surf, int(x), int(y), int(0.15 * scale), (204, 204, 0))\
         #draw target
         gfxdraw.filled_circle(surf, int(self.ytarget * scale + offset), int(-self.xtarget * scale + offset),
-                              int(0.25 * scale), (204, 0, 0))
+                              int(0.85 * scale), (204, 0, 0))
         surf = pygame.transform.flip(surf, False, True)
         self.screen.blit(surf, (0, 0))
-
+        pygame.image.save(self.screen, './imgs/tmp.png')
         if self.render_mode == "human":
             pygame.event.pump()
             self.clock.tick(self.metadata["render_fps"])
             pygame.display.flip()
+
 
         elif self.render_mode == "rgb_array":
             return np.transpose(

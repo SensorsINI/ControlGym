@@ -60,5 +60,5 @@ lunar_lander_batched:
     discount_factor: 0.98
 armbot_batched:
   default:
-    angle_weight: 1.0
-    angleD_weight: 0.01
+  discounted_horizon:
+    discount_factor: 0.95
