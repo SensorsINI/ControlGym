@@ -8,6 +8,7 @@ import tensorflow as tf
 import numpy as np
 costoption=1
 costoption2=1
+anglecost_fact=50
 #option 0 (costoption=1 and costoption2=1): only quadratic cost of end effector to target position
 #option 1: add some ultra reward when reach to target
 #option 2: add cost on angle changes between segments
@@ -45,7 +46,7 @@ class discounted_horizon(cost_function_base):
             cost2=tf.zeros_like(tuple2[0])
             for i in range(len(tuple2)-1):
                 cost2+=tf.abs(tuple2[i+1]-tuple2[i])
-            cost += cost2*50
+            cost += cost2*anglecost_fact
         return cost
     #discounted cost adapted from existing acrobot discount horizon implementation
     def get_trajectory_cost(self, state_horizon: TensorType, inputs: TensorType, previous_input: TensorType = None) -> TensorType:
