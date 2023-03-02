@@ -16,7 +16,7 @@ import os
 class armbot_batched(EnvironmentBatched, AcrobotEnv):
     rendercnt=0
     saveimgs=0
-    num_states = 6 #reconfigurable number of joints here
+    num_states = 20 #reconfigurable number of joints here
     num_actions = num_states
     book_or_nips = "nips"
     th1_0 = np.pi / 4

@@ -6,7 +6,11 @@ from Control_Toolkit.Cost_Functions import cost_function_base
 from Environments.armbot_batched import armbot_batched
 import tensorflow as tf
 import numpy as np
-
+costoption=1
+costoption2=1
+#option 0 (costoption=1 and costoption2=1): only quadratic cost of end effector to target position
+#option 1: add some ultra reward when reach to target
+#option 2: add cost on angle changes between segments
 config = yaml.load(
     open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"),
     Loader=yaml.FullLoader,
@@ -34,8 +38,14 @@ class discounted_horizon(cost_function_base):
         cost = (
                 (xee - xtarget) ** 2 + (yee - ytarget) ** 2
         )
-        cost2 = tf.where(tf.less_equal(cost, 0.01), -1000.0, 0)
-        cost+=cost2
+        if costoption==1:
+            cost2 = tf.where(tf.less_equal(cost, 0.01), -1000.0, 0)
+            cost+=cost2
+        if costoption2==1:
+            cost2=tf.zeros_like(tuple2[0])
+            for i in range(len(tuple2)-1):
+                cost2+=tf.abs(tuple2[i+1]-tuple2[i])
+            cost += cost2*50
         return cost
     #discounted cost adapted from existing acrobot discount horizon implementation
     def get_trajectory_cost(self, state_horizon: TensorType, inputs: TensorType, previous_input: TensorType = None) -> TensorType:
