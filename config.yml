@@ -35,7 +35,7 @@ environment_name: Armbot-v0
 
 ### ------------------------------------------------------- ###
 
-debug: false                  # false to use tf.compile
+debug: true                # false to use tf.compile
 use_jit_compilation: true     # false for reproducibility
 use_gpu: false                # currently only affects tensorflow
 logging_level: DEBUG          # typically one of ERROR, WARNING, INFO, DEBUG

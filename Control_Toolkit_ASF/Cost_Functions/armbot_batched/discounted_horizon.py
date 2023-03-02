@@ -15,7 +15,6 @@ config2 = yaml.load(
     open(os.path.join("Control_Toolkit_ASF", "config_optimizers.yml"), "r"),
     Loader=yaml.FullLoader,
 )
-# 'n_horizon': self.config_controller["mpc_horizon"]
 discount_factor = float(config["armbot_batched"]["discounted_horizon"]["discount_factor"])
 mpc_horizon=int(config2["rpgd-tf"]["mpc_horizon"])
 xtarget = armbot_batched.xtarget
@@ -38,7 +37,7 @@ class discounted_horizon(cost_function_base):
         cost2 = tf.where(tf.less_equal(cost, 0.01), -1000.0, 0)
         cost+=cost2
         return cost
-    #discounted cost adapted from existing discount horizon implementation
+    #discounted cost adapted from existing acrobot discount horizon implementation
     def get_trajectory_cost(self, state_horizon: TensorType, inputs: TensorType, previous_input: TensorType = None) -> TensorType:
         stage_costs = self.get_stage_cost(state_horizon[:, :-1, :], inputs, previous_input)  # Select all but last state of the horizon
         gamma = discount_factor * self.lib.ones_like(stage_costs)

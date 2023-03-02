@@ -11,9 +11,11 @@ from gymnasium.envs.classic_control.acrobot import AcrobotEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
-
-
+import yaml
+import os
 class armbot_batched(EnvironmentBatched, AcrobotEnv):
+    rendercnt=0
+    saveimgs=0
     num_states = 6 #reconfigurable number of joints here
     num_actions = num_states
     book_or_nips = "nips"
@@ -21,6 +23,11 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
     th2_0 = np.pi / 5
     xtarget = tf.cos(th1_0) + tf.cos(th1_0 + th2_0) + (num_states - 2) * tf.cos(th1_0 + th2_0)
     ytarget = tf.sin(th1_0) + tf.sin(th1_0 + th2_0) + (num_states - 2) * tf.sin(th1_0 + th2_0)
+    config = yaml.load(
+        open(os.path.join("Control_Toolkit_ASF", "config_controllers.yml"), "r"),
+        Loader=yaml.FullLoader,
+    )
+    whichcontroller=config["mpc"]["optimizer"]
     def __init__(
             self,
             batch_size=1,
@@ -102,7 +109,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         state = options.get("state", None) if isinstance(options, dict) else None
 
         if state is None:
-            low, high = utils.maybe_parse_reset_bounds(options, -0.1, 0.1)
+            low, high = utils.maybe_parse_reset_bounds(options, -0.0, 0.0)
             ns = self.lib.uniform(
                 self.rng, (self._batch_size, self.num_states), low, high, self.lib.float32
             )
@@ -116,7 +123,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
             else:
                 ns = state
 
-        # Augment state with sin/cos
+
         self.state = ns
 
         return self._get_reset_return_val()
@@ -244,13 +251,16 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
             gfxdraw.filled_polygon(surf, transformed_coords, (0, 204, 204))
 
             gfxdraw.aacircle(surf, int(x), int(y), int(0.1 * scale), (204, 204, 0))
-            gfxdraw.filled_circle(surf, int(x), int(y), int(0.15 * scale), (204, 204, 0))\
+            gfxdraw.filled_circle(surf, int(x), int(y), int(0.15 * scale), (204, 204, 0))
         #draw target
         gfxdraw.filled_circle(surf, int(self.ytarget * scale + offset), int(-self.xtarget * scale + offset),
                               int(NL*0.05 * scale), (204, 0, 0))
         surf = pygame.transform.flip(surf, False, True)
         self.screen.blit(surf, (0, 0))
-        pygame.image.save(self.screen, './imgs/tmp.png')
+        if self.saveimgs>0:
+            if self.rendercnt ==0:
+                filename='./imgs/'+self.whichcontroller+f'/{self.rendercnt:04d}.png'
+                pygame.image.save(self.screen, filename)
         if self.render_mode == "human":
             pygame.event.pump()
             self.clock.tick(self.metadata["render_fps"])
@@ -261,3 +271,4 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
             )
+        self.rendercnt+=1
