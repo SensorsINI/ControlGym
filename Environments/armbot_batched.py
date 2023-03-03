@@ -23,6 +23,11 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
     th2_0 = np.pi / 5
     xtarget = tf.cos(th1_0) + tf.cos(th1_0 + th2_0) + (num_states - 2) * tf.cos(th1_0 + th2_0)
     ytarget = tf.sin(th1_0) + tf.sin(th1_0 + th2_0) + (num_states - 2) * tf.sin(th1_0 + th2_0)
+    robs = 3
+    xobs=xtarget+robs+0.5
+    yobs=ytarget-2.5
+
+    useobs=1
     config = yaml.load(
         open(os.path.join("Control_Toolkit_ASF", "config_controllers.yml"), "r"),
         Loader=yaml.FullLoader,
@@ -64,6 +69,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         tuple2 = self.lib.unstack(state, self.num_states, 1)
         for i in range(len(tuple2)):
             tuple2[i] += action[:, i] * dt
+            tuple2[i]=self.lib.floormod(tuple2[i] + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
 
         state = self.lib.stack(tuple2, 1)
 
@@ -86,6 +92,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         tuple2 = self.lib.unstack(self.state, self.num_states, 1)
         for i in range(len(tuple2)):
             tuple2[i] += action[:, i] * self.dt
+            tuple2[i] = self.lib.floormod(tuple2[i] + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
         self.state = self.lib.stack(tuple2, 1)
 
         terminated = bool(self.is_done(self.lib, self.state))
@@ -255,6 +262,10 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         #draw target
         gfxdraw.filled_circle(surf, int(self.ytarget * scale + offset), int(-self.xtarget * scale + offset),
                               int(NL*0.05 * scale), (204, 0, 0))
+        #draw obstacle(s)
+        if self.useobs>0:
+            gfxdraw.filled_circle(surf, int(self.yobs * scale + offset), int(-self.xobs * scale + offset),
+                                  int(self.robs * scale), (0, 200, 200))
         surf = pygame.transform.flip(surf, False, True)
         self.screen.blit(surf, (0, 0))
         if self.saveimgs>0:
