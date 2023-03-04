@@ -92,7 +92,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         
         self.state = self.step_dynamics(self.state, action, self.dt)
 
-        terminated = bool(self.is_done(self.lib, self.state))
+        terminated = bool(self.is_done(self.lib, self.state, self.xtarget, self.ytarget))
         self.state = self.lib.squeeze(self.state)
 
         return (
@@ -133,8 +133,18 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         return self._get_reset_return_val()
 
     @staticmethod
-    def is_done(lib: "type[ComputationLibrary]", state: TensorType):
-        return False
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType, xtarget: float, ytarget: float):
+        tuple2 = lib.unstack(state, armbot_batched.num_states, -1)
+        theta = tuple2[0]
+        xee = tf.cos(theta)
+        yee = tf.cos(theta)
+        for i in range(1, armbot_batched.num_states):
+            theta += tuple2[i]
+            xee += tf.cos(theta)
+            yee += tf.sin(theta)
+        return (
+                (xee - xtarget) ** 2 + (yee - ytarget) ** 2
+        ) < 0.2
 
     def _convert_to_state(self, state):
         if self.lib.shape(state)[-1] == self.num_states:

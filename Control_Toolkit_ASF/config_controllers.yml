@@ -1,5 +1,5 @@
 mpc:
-  optimizer: cem-tf
+  optimizer: rpgd-tf
   predictor_specification: ODE_TF
   cost_function_specification: discounted_horizon
 #  cost_function_specification: default
