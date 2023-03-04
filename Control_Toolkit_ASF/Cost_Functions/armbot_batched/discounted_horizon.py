@@ -64,6 +64,14 @@ class discounted_horizon(cost_function_base):
                 cost_obs = (xees[i] - xobs) ** 2 + (yees[i] - yobs) ** 2
                 cost2 = tf.where(tf.less_equal(cost_obs, robs ** 2), np.inf, 0.0)
                 cost += cost2
+        #crossing constaints, at least ee should not cross with other segments:
+        for i in range(len(xees)-2):
+            dist1 = (xees[i] - xee) ** 2 + (yees[i] - yee) ** 2
+            dist2 = (xees[i+1] - xee) ** 2 + (yees[i+1] - yee) ** 2
+            dist3 = (xees[i]-xees[i+1])**2 + (yees[i]-yees[i+1])**2
+            diff=dist1+dist2-dist3
+            cost2 = tf.where(tf.less_equal(tf.abs(diff), 0.0025), np.inf, 0.0)
+            cost += cost2
         return cost
 
     # discounted cost adapted from existing acrobot discount horizon implementation
