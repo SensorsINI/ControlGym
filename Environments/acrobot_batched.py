@@ -81,29 +81,11 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         dict,
     ]:
         self.state, action = self._expand_arrays(self.state, action)
-
         assert self._batch_size == 1
         action = self._apply_actuator_noise(action)
 
-        torque = action
-        s_augmented = self.lib.concat([self.state, torque], 1)
-
-        th1_new, th2_new, th1_vel_new, th2_vel_new = self.lib.unstack(
-            self.rk4(self._dsdt, s_augmented, [0, self.dt]), 4, 1
-        )
-
-        # Wrap angles
-        th1_new = (
-            self.lib.floormod(th1_new + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
-        )
-        th2_new = (
-            self.lib.floormod(th2_new + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
-        )
-
-        # Clip angular velocities
-        th1_vel_new = self.lib.clip(th1_vel_new, -self.MAX_VEL_1, self.MAX_VEL_1)
-        th2_vel_new = self.lib.clip(th2_vel_new, -self.MAX_VEL_2, self.MAX_VEL_2)
-        self.state = self.lib.stack([th1_new, th2_new, th1_vel_new, th2_vel_new], 1)
+        state_updated: TensorType = self.step_dynamics(self.state, action, self.dt)
+        self.state = self.lib.to_numpy(state_updated)
 
         terminated = bool(self.is_done(self.lib, self.state))
         truncated = False
