@@ -89,13 +89,8 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
 
         truncated = False
         self.state, action = self._expand_arrays(self.state, action)
-
-        tuple2 = self.lib.unstack(self.state, self.num_states, 1)
-        for i in range(len(tuple2)):
-            tuple2[i] += action[:, i] * self.dt
-            tuple2[i] = self.lib.floormod(tuple2[i] + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
-            tuple2[i] = self.lib.clip(tuple2[i], -self.anglemax, self.anglemax)
-        self.state = self.lib.stack(tuple2, 1)
+        
+        self.state = self.step_dynamics(self.state, action, self.dt)
 
         terminated = bool(self.is_done(self.lib, self.state))
         self.state = self.lib.squeeze(self.state)
