@@ -14,8 +14,9 @@ from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, Ten
 import yaml
 import os
 class armbot_batched(EnvironmentBatched, AcrobotEnv):
+    anglemax=np.pi
     rendercnt=0
-    saveimgs=1
+    saveimgs=0
     num_states = 20 #reconfigurable number of joints here
     num_actions = num_states
     book_or_nips = "nips"
@@ -23,7 +24,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
     th2_0 = np.pi / 5
     xtarget = tf.cos(th1_0) + tf.cos(th1_0 + th2_0) + (num_states - 2) * tf.cos(th1_0 + th2_0)
     ytarget = tf.sin(th1_0) + tf.sin(th1_0 + th2_0) + (num_states - 2) * tf.sin(th1_0 + th2_0)
-    robs = 3
+    robs = 4
     xobs=xtarget+robs+0.5
     yobs=ytarget-2.5
 
@@ -70,7 +71,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         for i in range(len(tuple2)):
             tuple2[i] += action[:, i] * dt
             tuple2[i]=self.lib.floormod(tuple2[i] + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
-
+            tuple2[i]=self.lib.clip(tuple2[i], -self.anglemax,self.anglemax)
         state = self.lib.stack(tuple2, 1)
 
         return state
@@ -93,6 +94,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         for i in range(len(tuple2)):
             tuple2[i] += action[:, i] * self.dt
             tuple2[i] = self.lib.floormod(tuple2[i] + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
+            tuple2[i] = self.lib.clip(tuple2[i], -self.anglemax, self.anglemax)
         self.state = self.lib.stack(tuple2, 1)
 
         terminated = bool(self.is_done(self.lib, self.state))
