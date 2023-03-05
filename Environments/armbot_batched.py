@@ -19,7 +19,6 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
     saveimgs=0
     num_states = 20 #reconfigurable number of joints here
     num_actions = num_states
-    book_or_nips = "nips"
     th1_0 = np.pi / 4
     th2_0 = np.pi / 5
     xtarget = tf.cos(th1_0) + tf.cos(th1_0 + th2_0) + (num_states - 2) * tf.cos(th1_0 + th2_0)

@@ -52,7 +52,7 @@ class discounted_horizon(cost_function_base):
                 (xee - xtarget) ** 2 + (yee - ytarget) ** 2
         )
         if costoption == 1:
-            cost2 = tf.where(tf.less_equal(cost, 0.01), -1000.0, 0.0)
+            cost2 = tf.where(tf.less_equal(cost, 0.2), -1000.0, 0.0)
             cost += cost2
         if costoption2 == 1:
             cost2 = tf.zeros_like(tuple2[0])
@@ -62,7 +62,7 @@ class discounted_horizon(cost_function_base):
         if useobs > 0:
             for i in range(len(xees)):
                 cost_obs = (xees[i] - xobs) ** 2 + (yees[i] - yobs) ** 2
-                cost2 = tf.where(tf.less_equal(cost_obs, robs ** 2), np.inf, 0.0)
+                cost2 = tf.where(tf.less_equal(cost_obs, robs ** 2), 1e4, 0.0)
                 cost += cost2
         #crossing constaints, at least ee should not cross with other segments:
         for i in range(len(xees)-2):
@@ -70,7 +70,7 @@ class discounted_horizon(cost_function_base):
             dist2 = (xees[i+1] - xee) ** 2 + (yees[i+1] - yee) ** 2
             dist3 = (xees[i]-xees[i+1])**2 + (yees[i]-yees[i+1])**2
             diff=dist1+dist2-dist3
-            cost2 = tf.where(tf.less_equal(tf.abs(diff), 0.0025), np.inf, 0.0)
+            cost2 = tf.where(tf.less_equal(tf.abs(diff), 0.0025), 1e4, 0.0)
             cost += cost2
         return cost
 
