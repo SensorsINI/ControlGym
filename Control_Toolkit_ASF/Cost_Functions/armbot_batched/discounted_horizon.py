@@ -9,7 +9,7 @@ import numpy as np
 
 costoption = 1
 costoption2 = 1
-anglecost_fact = 20
+anglecost_fact = 2
 # option 0 (costoption=1 and costoption2=1): only quadratic cost of end effector to target position
 # option 1: add some ultra reward when reach to target
 # option 2: add cost on angle changes between segments
@@ -32,8 +32,8 @@ useobs = armbot_batched.useobs
 
 
 class discounted_horizon(cost_function_base):
-    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
-        tuple2 = self.lib.unstack(states, armbot_batched.num_states, -1)
+    def get_distance_cost(self, states_tuple: TensorType):
+        tuple2 = states_tuple
         theta = tuple2[0]
         xees = []
         yees = []
@@ -51,9 +51,12 @@ class discounted_horizon(cost_function_base):
         cost = (
                 (xee - xtarget) ** 2 + (yee - ytarget) ** 2
         )
-        if costoption == 1:
-            cost2 = tf.where(tf.less_equal(cost, 0.2), -1000.0, 0.0)
-            cost += cost2
+        return cost, xees, yees, xee, yee
+        
+    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
+        tuple2 = self.lib.unstack(states, armbot_batched.num_states, -1)
+        cost, xees, yees, xee, yee = self.get_distance_cost(tuple2)
+        
         if costoption2 == 1:
             cost2 = tf.zeros_like(tuple2[0])
             for i in range(len(tuple2) - 1):
@@ -73,6 +76,13 @@ class discounted_horizon(cost_function_base):
             cost2 = tf.where(tf.less_equal(tf.abs(diff), 0.0025), 1e4, 0.0)
             cost += cost2
         return cost
+
+    def get_terminal_cost(self, terminal_states: TensorType):
+        tuple2 = self.lib.unstack(terminal_states, armbot_batched.num_states, -1)
+        cost, _, _, _, _ = self.get_distance_cost(tuple2)
+        if costoption == 1:
+            cost = tf.where(tf.less_equal(cost, 0.2), -1e6, 0.0)
+        return self.lib.unsqueeze(cost, 1)
 
     # discounted cost adapted from existing acrobot discount horizon implementation
     def get_trajectory_cost(self, state_horizon: TensorType, inputs: TensorType,
