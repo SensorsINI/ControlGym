@@ -9,7 +9,7 @@ import numpy as np
 
 costoption = 1
 costoption2 = 1
-anglecost_fact = 2
+anglecost_fact = 1
 # option 0 (costoption=1 and costoption2=1): only quadratic cost of end effector to target position
 # option 1: add some ultra reward when reach to target
 # option 2: add cost on angle changes between segments
@@ -22,6 +22,7 @@ config2 = yaml.load(
     Loader=yaml.FullLoader,
 )
 discount_factor = float(config["armbot_batched"]["discounted_horizon"]["discount_factor"])
+distance_factor = float(config["armbot_batched"]["discounted_horizon"]["distance_factor"])
 mpc_horizon = int(config2["rpgd-tf"]["mpc_horizon"])
 xtarget = armbot_batched.xtarget
 ytarget = armbot_batched.ytarget
@@ -48,7 +49,7 @@ class discounted_horizon(cost_function_base):
                 yee += tf.sin(theta)
                 xees.append(xee)
                 yees.append(yee)
-        cost = (
+        cost = distance_factor * (
                 (xee - xtarget) ** 2 + (yee - ytarget) ** 2
         )
         return cost, xees, yees, xee, yee
@@ -65,7 +66,7 @@ class discounted_horizon(cost_function_base):
         if useobs > 0:
             for i in range(len(xees)):
                 cost_obs = (xees[i] - xobs) ** 2 + (yees[i] - yobs) ** 2
-                cost2 = tf.where(tf.less_equal(cost_obs, robs ** 2), 1e4, 0.0)
+                cost2 = tf.where(tf.less_equal(cost_obs, robs ** 2), 1e6, 0.0)
                 cost += cost2
         #crossing constaints, at least ee should not cross with other segments:
         for i in range(len(xees)-2):
