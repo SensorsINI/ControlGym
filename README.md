@@ -39,6 +39,11 @@ The following components are important to make GUILD AI work for your workflow:
     * Set `EXPERIMENT_FOLDER` (within `/Output`), `ENVIRONMENT_NAME` and `sweep_values` (for plot labelling only)
     * Run `python -m Utilities.generate_global_plots`
 
+### Reproduction of Benchmarking Results
+* Forces optimizer: select `optimizer: nlp-forces` in `Control_Toolikit_ASF/config_controllers.yml` and profile `step` function in `Control_Toolkit/optimizers/optimizer_nlp_forces.py`. Licensed ForcesPRO client is required in the folder forces/.
+* RPGD optimizer: select `optimizer: rpgd-tf` in `Control_Toolikit_ASF/config_controllers.yml` and profile `step` function in `Control_Toolkit/optimizers/optimizer_rpgd_tf.py`. Note that in the first step of the RPGD optimizer, the Tensorflow computational graph is created, to get a coherent evaulation of the asyntotic computational time, it is needed to not get into account the first step.
+
+
 ### Plots you can generate
 * If you used GUILD AI, you can plot the effect of a hyperparameter on the distribution of episode rewards (= negative costs)
     * To do so, open the `Utilities.generate_reward_distribution_plots` module
@@ -58,7 +63,6 @@ The following components are important to make GUILD AI work for your workflow:
     * Summary plot:
         * <img src="Visualizations/sample_figures/sample_summary_plot.png" alt="sample summary plot" width="400"/>
     * A plot of the ages of rollout-inducing input plans before they are replaced by new input samples
-        
 
 
 # References
@@ -75,3 +79,5 @@ The following components are important to make GUILD AI work for your workflow:
 * If you want GUI / rendering:
   * `pip install PyQt5` or `PyQt6`
   * `ffmpeg` and `latex`. Look up how to do that for your OS.
+  
+ 
