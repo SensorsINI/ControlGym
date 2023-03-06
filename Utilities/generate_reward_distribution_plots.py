@@ -19,17 +19,56 @@ On the horizontal axis, you see the scale of the rewards.
 """
 
 ### List hyperparameter names and values
-fig_title = r"ME-RPGD Ablation on 3D Point Mass"
-hp_name = r"sampling distribution"
-hp_values = ["normal", "uniform"]
+fig_title = r"RPGD G"
+hp_name = r"Gradient steps"
+hp_values = [0, 2, 5, 10, 50, 200]
+hp_values = ["0", "2", "5", "10", "50", "200"]
+hp_values = ["0", "0r", "2", "2r", "5", "5r", "10", "10r", "15", "15r", "20", "20r", "30", "30r", "50", "50r", "200", "200r"]
 
-### List GUILD AI hashes of runs to plot
-GUILD_AI_HASHES = [
-    "ae0bca4d",
-    "58115d1a",
-    # "09d4e1ba",
-    # ...
+standard = [
+    "befc09d8",
+    "0a524e51",
+    "1fefd556",
+    "b214e693",
+    "3b280f33",
+    "7ee471dc",
+    "3f201d9b",
+    "a2d8043a",
+    "c47b33b6"
 ]
+# reduced = [ # Old
+# "b5338280",
+# "2a22c015",
+# "e9e6005d",
+# "cbeaefed",
+# "33919ba2",
+# "4d961833",
+# ]
+
+reduced = [
+"6af8376f",
+"d26ea738",
+"e7ebb540",
+"9f2b0c60",
+"d83c42ce",
+"32b19802",
+"6075ae26",
+"09a534ac",
+"165c2c33",
+]
+GUILD_AI_HASHES = []
+for i in range(len(standard)):
+    GUILD_AI_HASHES.append(standard[i])
+    GUILD_AI_HASHES.append(reduced[i])
+### List GUILD AI hashes of runs to plot
+# GUILD_AI_HASHES = [
+#     "befc09d8",
+#     "0a524e51",
+#     "1fefd556",
+#     "b214e693",
+#     "a2d8043a",
+#     "c47b33b6"
+# ]
 
 ### Make sure that ".env" below is the path to your python virtual environment
 PATHS_TO_EXPERIMENTS = [os.path.join(".env", ".guild", "runs", h) for h in GUILD_AI_HASHES]
@@ -69,6 +108,10 @@ if __name__ == "__main__":
     all_y = []
     
     for i in range(num_experiments):
+        if i%2 == 0:
+            colour_mean = "red"
+        else:
+            colour_mean = "green"
         scatter_y = np.repeat(i + 1, num_trials) + np.clip(0.07 * np.random.standard_normal(num_trials), -0.35, 0.35)
         r = all_rewards_data[i, :]
         
@@ -76,7 +119,7 @@ if __name__ == "__main__":
         all_y.extend(list(scatter_y))
 
         ax.scatter(r, scatter_y, marker=".", c="b", s=4)
-        ax.plot([np.mean(r), np.mean(r)], [i + 1 - 0.35, i + 1 + 0.35], c="r", linewidth=0.75)
+        ax.plot([np.mean(r), np.mean(r)], [i + 1 - 0.35, i + 1 + 0.35], c=colour_mean, linewidth=0.75)
     
     # Save data as .dat file
     df = pd.DataFrame({
