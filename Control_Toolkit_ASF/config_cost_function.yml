@@ -61,5 +61,5 @@ lunar_lander_batched:
 armbot_batched:
   default:
   discounted_horizon:
-    discount_factor: 0.95
-    distance_factor: 500.0
+    discount_factor: 1.0
+    distance_factor: 50.0

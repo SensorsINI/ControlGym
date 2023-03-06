@@ -1,5 +1,5 @@
 mpc:
-  optimizer: rpgd-tf
+  optimizer: gradient-tf
   predictor_specification: ODE_TF
   cost_function_specification: discounted_horizon
 #  cost_function_specification: default
