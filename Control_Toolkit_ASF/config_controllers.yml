@@ -2,6 +2,6 @@ mpc:
   optimizer: rpgd-tf
   predictor_specification: ODE_TF
   cost_function_specification: discounted_horizon
-#  cost_function_specification: default
+  # cost_function_specification: default
   computation_library: tensorflow
   controller_logging: false
