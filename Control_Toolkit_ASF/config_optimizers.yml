@@ -223,6 +223,7 @@ nlp-forces:
     cartpole_simulator:
       dynamics: cartpole_non_linear_dynamics
       cost: cartpole_simulator1
+      target: cartpole_target
       dt: 0.02                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1, 4, 5]       # Optimization variables idxs: [angle, ang vel, pos, vel]
       is_angle: [0]                      # Which of the idxs refer to an angle
