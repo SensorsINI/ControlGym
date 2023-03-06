@@ -10,8 +10,11 @@
 *.env
 *.vscode
 *.prof
+*.forces
 /Modeling/SI_Toolkit/TF/NNI/NNI_Results
 /Output/
 
 /SI_Toolkit_ASF/Experiments/*
-forces/
+
+forces/*
+FORCES_NLP_solver
