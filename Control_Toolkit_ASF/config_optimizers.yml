@@ -264,3 +264,15 @@ nlp-forces:
       state_max: [6.285, 6.285, 12.56637, 28.2743338823]          # State constraints [finish, v max]
       q: [10.0, 0.0, 0.0, 0.0]                    # State cost
       r: [0.0]                          # Input cost
+    dubins_car:
+      dynamics: dubins_car
+#      cost: dubins_car
+      target: dubins_car_target
+      dt: 0.005                          # Integration stepsize, make sure matches the one of the environment
+      optimize_over: [ 0, 1, 2, 3 ]       # Optimization variables idxs: [x, y, yaw, steer rate]
+      is_angle: [ 0 ]                      # Which of the idxs refer to an angle
+      action_max: [ 1.047197, 10.0 ]
+      state_max: [1.0, 1.0, 4.0, 0.5]   # State constraints [pi, v ang. max, TrackHalfLegth, vmax]
+      idx_terminal_set: [ 2 ]             # Which state idx are affected by terminal set
+      q: [ 10.0, 10.0, 0.0, 0.0]        # State cost
+      r: [ 0.0, 0.0 ]                          # Input cost
