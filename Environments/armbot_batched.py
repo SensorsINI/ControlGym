@@ -142,7 +142,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
             xee += tf.cos(theta)
             yee += tf.sin(theta)
         return (
-                np.abs(xee - xtarget) + np.abs(yee - ytarget)
+                (xee - xtarget) ** 2 + (yee - ytarget) ** 2
         ) < 0.2
 
     def _convert_to_state(self, state):

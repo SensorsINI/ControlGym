@@ -9,7 +9,7 @@ import numpy as np
 
 costoption = 1
 costoption2 = 1
-anglecost_fact = 20
+anglecost_fact = 5
 # option 0 (costoption=1 and costoption2=1): only quadratic cost of end effector to target position
 # option 1: add some ultra reward when reach to target
 # option 2: add cost on angle changes between segments
@@ -50,7 +50,7 @@ class discounted_horizon(cost_function_base):
                 xees.append(xee)
                 yees.append(yee)
         cost = distance_factor * (
-                (xee - xtarget) ** 2 + (yee - ytarget) ** 2
+                self.lib.abs(xee - xtarget) + self.lib.abs(yee - ytarget)
         )
         return cost, xees, yees, xee, yee
         
@@ -66,7 +66,7 @@ class discounted_horizon(cost_function_base):
         if useobs > 0:
             for i in range(len(xees)):
                 cost_obs = (xees[i] - xobs) ** 2 + (yees[i] - yobs) ** 2
-                cost2 = tf.where(tf.less_equal(cost_obs, robs ** 2), 1e9, 0.0)
+                cost2 = 1e12 * self.lib.max(0.0 * cost_obs, 1 - self.lib.sqrt(cost_obs) / robs)**2
                 cost += cost2
         #crossing constaints, at least ee should not cross with other segments:
         for i in range(len(xees)-2):
@@ -74,7 +74,7 @@ class discounted_horizon(cost_function_base):
             dist2 = (xees[i+1] - xee) ** 2 + (yees[i+1] - yee) ** 2
             dist3 = (xees[i]-xees[i+1])**2 + (yees[i]-yees[i+1])**2
             diff=dist1+dist2-dist3
-            cost2 = tf.where(tf.less_equal(tf.abs(diff), 0.0025), 1e9, 0.0)
+            cost2 = tf.where(tf.less_equal(tf.abs(diff), 0.0025), 1e12, 0.0)
             cost += cost2
         return cost
 
