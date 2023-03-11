@@ -10,6 +10,7 @@ import numpy as np
 costoption = 1
 costoption2 = 1
 anglecost_fact = 20.0
+disc_cost_type = "indicator"  # "indicator" (used for paper) or "quadratic"
 # option 0 (costoption=1 and costoption2=1): only quadratic cost of end effector to target position
 # option 1: add some ultra reward when reach to target
 # option 2: add cost on angle changes between segments
@@ -49,9 +50,9 @@ class discounted_horizon(cost_function_base):
                 yee += tf.sin(theta)
                 xees.append(xee)
                 yees.append(yee)
-        cost =  distance_factor* (
-                tf.abs(xee - xtarget) + tf.abs(yee - ytarget))
-
+        cost = distance_factor * (
+                self.lib.abs(xee - xtarget) + self.lib.abs(yee - ytarget)
+        )
         return cost, xees, yees, xee, yee
         
     def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
@@ -66,7 +67,14 @@ class discounted_horizon(cost_function_base):
         if useobs > 0:
             for i in range(len(xees)):
                 cost_obs = (xees[i] - xobs) ** 2 + (yees[i] - yobs) ** 2
-                cost2 = tf.where(tf.less_equal(cost_obs, robs ** 2), 1e12, 0.0)
+                
+                if disc_cost_type == "indicator":
+                    # Indicator disc cost:
+                    cost2 = tf.where(tf.less_equal(cost_obs, robs ** 2), 1e12, 0.0)
+                elif disc_cost_type == "quadratic":
+                    # Quadratic disc cost:
+                    cost2 = 1e12 * self.lib.max(0.0 * cost_obs, 1 - self.lib.sqrt(cost_obs) / robs)**2
+                
                 cost += cost2
         #crossing constaints, at least ee should not cross with other segments:
         for i in range(len(xees)-2):
