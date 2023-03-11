@@ -111,3 +111,7 @@ LunarLander-v2:
   enable_wind: false
   wind_power: 15.0
   turbulence_power: 1.5
+Armbot-v0:
+  actuator_noise:
+  - 0.0
+  dt: 0.1

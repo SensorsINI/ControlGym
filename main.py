@@ -143,16 +143,19 @@ def run_data_generator(
             
             # If the episode is up, start a new experiment
             if truncated:
-                logger.info(f"Episode truncated (failure)")
+                logger.warning(f"!!!! FAILURE: Episode truncated")
                 break
             elif terminated:
-                logger.info(f"Episode terminated successfully")
+                logger.info(f"**** SUCCESS: Episode terminated successfully")
                 break
 
             logger.debug(
                 f"\nStep          : {step+1}/{num_iterations}\nObservation   : {obs}\nPlanned Action: {action}\n"
             )
             obs = new_obs
+        
+        if not(terminated):
+            logger.warning(f"**** TIMEOUT: Failed to reach target in {num_iterations} iterations")
         
         # Print compute time statistics
         end_time = time.time()
