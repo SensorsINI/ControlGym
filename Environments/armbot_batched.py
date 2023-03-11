@@ -49,7 +49,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         self.dt = kwargs["dt"]
 
         high = np.pi * np.ones(self.num_states, dtype=np.float32)
-        umax = 0.2
+        umax = 0.6
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
         self.action_space = spaces.Box(-umax * np.ones(self.num_states), umax * np.ones(self.num_states),
                                        dtype=np.float32)
@@ -143,7 +143,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
             yee += tf.sin(theta)
         return (
                 (xee - xtarget) ** 2 + (yee - ytarget) ** 2
-        ) < 0.2
+        ) < 1
 
     def _convert_to_state(self, state):
         if self.lib.shape(state)[-1] == self.num_states:
