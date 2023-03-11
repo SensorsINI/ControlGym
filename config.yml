@@ -35,13 +35,13 @@ environment_name: Armbot-v0
 
 ### ------------------------------------------------------- ###
 
-debug: false                # false to use tf.compile
+debug: false                  # false to use tf.compile
 use_jit_compilation: true     # false for reproducibility
 use_gpu: false                # currently only affects tensorflow
 logging_level: INFO           # typically one of ERROR, WARNING, INFO, DEBUG
 num_experiments: 100          # how many randomly initialized episodes to run
 num_iterations: 200           # maximum no. of control steps per episode
-render_for_humans: true      # display rendering while running
+render_for_humans: false      # display rendering while running
 save_plots_to_file: false     # save renderings to file
 seed_entropy: 49604           # master seed. Spawns reproducible seeds for each episode.
 split:                        # train / val split if running ML pipeline mode
