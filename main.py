@@ -139,22 +139,24 @@ def run_data_generator(
             elif config_manager("config")["save_plots_to_file"]:
                 frames.append(env.render())
 
-            time.sleep(0.1)
+            time.sleep(1e-6)
             
             # If the episode is up, start a new experiment
             if truncated:
-                logger.warning(f"FAIL!!!!! Episode truncated (failure)")
+                logger.warning(f"!!!! FAILURE: Episode truncated")
                 break
             elif terminated:
-                logger.info(f"**** SUCCESSS: Episode terminated successfully")
+                logger.info(f"**** SUCCESS: Episode terminated successfully")
                 break
 
             logger.debug(
                 f"\nStep          : {step+1}/{num_iterations}\nObservation   : {obs}\nPlanned Action: {action}\n"
             )
             obs = new_obs
+        
         if not(terminated):
-            logger.warning(f' *** failed to reach target')
+            logger.warning(f"**** TIMEOUT: Failed to reach target in {num_iterations} iterations")
+        
         # Print compute time statistics
         end_time = time.time()
         control_freq = num_iterations / (end_time - start_time)
