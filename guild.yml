@@ -18,6 +18,7 @@
         - exclude: Output
       requires:  # Reference here the resources defined below
         - config
+        - CartPoleSimulation
         - Control_Toolkit
         - Control_Toolkit_ASF
         - SI_Toolkit
@@ -27,6 +28,9 @@
   resources:  # Define all configuration files here
     config:
       - config: config.yml
+        target-type: copy
+    CartPoleSimulation:
+      - file: CartPoleSimulation
         target-type: copy
     Control_Toolkit:
       - file: Control_Toolkit

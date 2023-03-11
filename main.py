@@ -68,10 +68,12 @@ def run_data_generator(
         SeedMemory.set_seeds(seeds)
         
         config_controller = dict(config_manager("config_controllers")[controller_short_name])
-        config_optimizer = dict(config_manager("config_optimizers")[optimizer_short_name])
-        config_optimizer.update({"seed": int(seeds[1])})
-        config_environment = dict(config_manager("config_environments")[environment_name])
-        config_environment.update({"seed": int(seeds[0])})
+        config_optimizer = dict(config_manager("config_optimizers"))
+        config_optimizer[optimizer_short_name].update({"seed": int(seeds[1])})
+        config_manager.set_config("config_optimizers", config_optimizer)
+        config_environment = dict(config_manager("config_environments"))
+        config_environment[environment_name].update({"seed": int(seeds[0])})
+        config_manager.set_config("config_environments", config_environment)
         all_rewards = []
 
         ##### ----------------------------------------------- #####
@@ -90,12 +92,12 @@ def run_data_generator(
 
         env: EnvironmentBatched = gym.make(
             environment_name,
-            **config_environment,
+            **config_environment[environment_name],
             computation_lib=TensorFlowLibrary,
             render_mode=render_mode,
         )
         CurrentRunMemory.current_environment = env
-        obs, obs_info = env.reset(seed=config_environment["seed"])
+        obs, obs_info = env.reset(seed=config_environment[environment_name]["seed"])
         assert len(env.action_space.shape) == 1, f"Action space needs to be a flat vector, is Box with shape {env.action_space.shape}"
         
         ##### ---------------------------------------------- #####
@@ -109,7 +111,7 @@ def run_data_generator(
             control_limits=(env.action_space.low, env.action_space.high),
             initial_environment_attributes=env.environment_attributes,
         )
-        controller.configure(optimizer_name=optimizer_short_name, predictor_specification=config_controller["predictor_specification"])
+        controller.configure(config_manager=config_manager, optimizer_name=optimizer_short_name, predictor_specification=config_controller["predictor_specification"])
 
         ##### ----------------------------------------------------- #####
         ##### ----------------- MAIN CONTROL LOOP ----------------- #####
@@ -141,10 +143,10 @@ def run_data_generator(
             
             # If the episode is up, start a new experiment
             if truncated:
-                logger.info(f"Episode truncated (failure)")
+                logger.warning(f"!!!! FAILURE: Episode truncated")
                 break
             elif terminated:
-                logger.info(f"Episode terminated successfully")
+                logger.info(f"**** SUCCESS: Episode terminated successfully")
                 break
 
             logger.debug(
@@ -152,10 +154,13 @@ def run_data_generator(
             )
             obs = new_obs
         
+        if not(terminated):
+            logger.warning(f"**** TIMEOUT: Failed to reach target in {num_iterations} iterations")
+        
         # Print compute time statistics
         end_time = time.time()
         control_freq = num_iterations / (end_time - start_time)
-        logger.debug(f"Achieved average control frequency of {round(control_freq, 2)}Hz ({round(1.0e3/control_freq, 2)}ms per iteration)")
+        logger.info(f"Episode {i+1}: Achieved average control frequency of {round(control_freq, 2)}Hz ({round(1.0e3/control_freq, 2)}ms per iteration)")
 
         # Close the env
         env.close()
@@ -196,12 +201,13 @@ def run_data_generator(
                     "wb",
                 ) as f:
                     np.save(f, a)
-            # Save configs
-            for loader in config_manager.loaders.values():
-                with open(
-                    OutputPath.get_output_path(timestamp_str, loader.name), "w"
-                ) as f:
-                    dump(loader.config, f)
+            del controller_output
+        # Save configs
+        for loader in config_manager.loaders.values():
+            with open(
+                OutputPath.get_output_path(timestamp_str, loader.name), "w"
+            ) as f:
+                dump(loader.config, f)
     
     # Dump all saved scalar metrics as csv
     with open(

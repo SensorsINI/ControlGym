@@ -49,6 +49,9 @@ logger = get_logger(__name__)
 MAX_ACCELERATION = 5.0
 MAX_POSITION = 1.0
 MAX_VELOCITY = 1.0
+
+# State: One position and velocity per dimension
+# Action: One acceleration per dimension
 NUM_DIMENSIONS = 3  # Do not change
 
 THRESHOLD_DISTANCE_2_GOAL = 0.05
@@ -65,8 +68,6 @@ WB = 0.25  # [m]
 
 
 class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
-    num_states = 6  # One position and velocity per dimension
-    num_actions = 3  # One acceleration per dimension
     metadata = {"render_modes": ["console", "single_rgb_array", "rgb_array", "human"], "video.frames_per_second": 30, "render_fps": 30}
 
     def __init__(

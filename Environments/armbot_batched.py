@@ -19,7 +19,6 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
     saveimgs=0
     num_states = 20 #reconfigurable number of joints here
     num_actions = num_states
-    book_or_nips = "nips"
     th1_0 = np.pi / 4
     th2_0 = np.pi / 5
     xtarget = tf.cos(th1_0) + tf.cos(th1_0 + th2_0) + (num_states - 2) * tf.cos(th1_0 + th2_0)
@@ -50,7 +49,7 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         self.dt = kwargs["dt"]
 
         high = np.pi * np.ones(self.num_states, dtype=np.float32)
-        umax = 2
+        umax = 0.6
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
         self.action_space = spaces.Box(-umax * np.ones(self.num_states), umax * np.ones(self.num_states),
                                        dtype=np.float32)
@@ -89,15 +88,10 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
 
         truncated = False
         self.state, action = self._expand_arrays(self.state, action)
+        
+        self.state = self.step_dynamics(self.state, action, self.dt)
 
-        tuple2 = self.lib.unstack(self.state, self.num_states, 1)
-        for i in range(len(tuple2)):
-            tuple2[i] += action[:, i] * self.dt
-            tuple2[i] = self.lib.floormod(tuple2[i] + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
-            tuple2[i] = self.lib.clip(tuple2[i], -self.anglemax, self.anglemax)
-        self.state = self.lib.stack(tuple2, 1)
-
-        terminated = bool(self.is_done(self.lib, self.state))
+        terminated = bool(self.is_done(self.lib, self.state, self.xtarget, self.ytarget))
         self.state = self.lib.squeeze(self.state)
 
         return (
@@ -138,8 +132,18 @@ class armbot_batched(EnvironmentBatched, AcrobotEnv):
         return self._get_reset_return_val()
 
     @staticmethod
-    def is_done(lib: "type[ComputationLibrary]", state: TensorType):
-        return False
+    def is_done(lib: "type[ComputationLibrary]", state: TensorType, xtarget: float, ytarget: float):
+        tuple2 = lib.unstack(state, armbot_batched.num_states, -1)
+        theta = tuple2[0]
+        xee = tf.cos(theta)
+        yee = tf.cos(theta)
+        for i in range(1, armbot_batched.num_states):
+            theta += tuple2[i]
+            xee += tf.cos(theta)
+            yee += tf.sin(theta)
+        return (
+                (xee - xtarget) ** 2 + (yee - ytarget) ** 2
+        ) < 1
 
     def _convert_to_state(self, state):
         if self.lib.shape(state)[-1] == self.num_states:

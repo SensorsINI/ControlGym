@@ -109,7 +109,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         self.num_obstacles = 8 + math.floor(
             float(self.lib.uniform(self.rng, (), 0, 8, self.lib.float32))
         )
-        self.initial_state = initial_state
+        self.initial_state = np.array(initial_state)
         self.dt = kwargs["dt"]
 
         if obstacle_positions is None or obstacle_positions == []:

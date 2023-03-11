@@ -9,7 +9,8 @@ import numpy as np
 
 costoption = 1
 costoption2 = 1
-anglecost_fact = 20
+anglecost_fact = 20.0
+disc_cost_type = "indicator"  # "indicator" (used for paper) or "quadratic"
 # option 0 (costoption=1 and costoption2=1): only quadratic cost of end effector to target position
 # option 1: add some ultra reward when reach to target
 # option 2: add cost on angle changes between segments
@@ -22,6 +23,7 @@ config2 = yaml.load(
     Loader=yaml.FullLoader,
 )
 discount_factor = float(config["armbot_batched"]["discounted_horizon"]["discount_factor"])
+distance_factor = float(config["armbot_batched"]["discounted_horizon"]["distance_factor"])
 mpc_horizon = int(config2["rpgd-tf"]["mpc_horizon"])
 xtarget = armbot_batched.xtarget
 ytarget = armbot_batched.ytarget
@@ -32,8 +34,8 @@ useobs = armbot_batched.useobs
 
 
 class discounted_horizon(cost_function_base):
-    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
-        tuple2 = self.lib.unstack(states, armbot_batched.num_states, -1)
+    def get_distance_cost(self, states_tuple: TensorType):
+        tuple2 = states_tuple
         theta = tuple2[0]
         xees = []
         yees = []
@@ -48,12 +50,15 @@ class discounted_horizon(cost_function_base):
                 yee += tf.sin(theta)
                 xees.append(xee)
                 yees.append(yee)
-        cost = (
-                (xee - xtarget) ** 2 + (yee - ytarget) ** 2
+        cost = distance_factor * (
+                self.lib.abs(xee - xtarget) + self.lib.abs(yee - ytarget)
         )
-        if costoption == 1:
-            cost2 = tf.where(tf.less_equal(cost, 0.01), -1000.0, 0.0)
-            cost += cost2
+        return cost, xees, yees, xee, yee
+        
+    def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
+        tuple2 = self.lib.unstack(states, armbot_batched.num_states, -1)
+        cost, xees, yees, xee, yee = self.get_distance_cost(tuple2)
+        
         if costoption2 == 1:
             cost2 = tf.zeros_like(tuple2[0])
             for i in range(len(tuple2) - 1):
@@ -62,7 +67,14 @@ class discounted_horizon(cost_function_base):
         if useobs > 0:
             for i in range(len(xees)):
                 cost_obs = (xees[i] - xobs) ** 2 + (yees[i] - yobs) ** 2
-                cost2 = tf.where(tf.less_equal(cost_obs, robs ** 2), np.inf, 0.0)
+                
+                if disc_cost_type == "indicator":
+                    # Indicator disc cost:
+                    cost2 = tf.where(tf.less_equal(cost_obs, robs ** 2), 1e12, 0.0)
+                elif disc_cost_type == "quadratic":
+                    # Quadratic disc cost:
+                    cost2 = 1e12 * self.lib.max(0.0 * cost_obs, 1 - self.lib.sqrt(cost_obs) / robs)**2
+                
                 cost += cost2
         #crossing constaints, at least ee should not cross with other segments:
         for i in range(len(xees)-2):
@@ -70,9 +82,16 @@ class discounted_horizon(cost_function_base):
             dist2 = (xees[i+1] - xee) ** 2 + (yees[i+1] - yee) ** 2
             dist3 = (xees[i]-xees[i+1])**2 + (yees[i]-yees[i+1])**2
             diff=dist1+dist2-dist3
-            cost2 = tf.where(tf.less_equal(tf.abs(diff), 0.0025), np.inf, 0.0)
+            cost2 = tf.where(tf.less_equal(tf.abs(diff), 0.0025), 1e12, 0.0)
             cost += cost2
         return cost
+
+    def get_terminal_cost(self, terminal_states: TensorType):
+        tuple2 = self.lib.unstack(terminal_states, armbot_batched.num_states, -1)
+        cost, _, _, _, _ = self.get_distance_cost(tuple2)
+        if costoption == 1:
+            cost = tf.where(tf.less_equal(cost, 0.2), -1e6, 0.0)
+        return self.lib.unsqueeze(cost, 1)
 
     # discounted cost adapted from existing acrobot discount horizon implementation
     def get_trajectory_cost(self, state_horizon: TensorType, inputs: TensorType,
