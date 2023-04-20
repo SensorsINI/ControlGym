@@ -20,6 +20,6 @@ class default(cost_function_base):
         angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(states, 6, -1)
         cost = (
             - angle_weight * angle_cos
-            + position_weight * (position - self.controller.target_position) ** 2
+            + position_weight * (position - self.variable_parameters.target_position) ** 2
         )
         return cost

@@ -28,7 +28,7 @@ class default(cost_function_base):
     
     def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType, z: TensorType) -> TensorType:
         # x/y/z each has shape batch_size x mpc_horizon
-        x_obs, y_obs, z_obs, radius = self.lib.unstack(self.controller.obstacle_positions, 4, -1)
+        x_obs, y_obs, z_obs, radius = self.lib.unstack(self.variable_parameters.obstacle_positions, 4, -1)
         x_obs = x_obs[:, self.lib.newaxis, self.lib.newaxis]
         y_obs = y_obs[:, self.lib.newaxis, self.lib.newaxis]
         z_obs = z_obs[:, self.lib.newaxis, self.lib.newaxis]
@@ -48,7 +48,7 @@ class default(cost_function_base):
         return (x1 - x2) ** 2
 
     def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
-        target = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
+        target = self.lib.to_tensor(self.variable_parameters.target_point, self.lib.float32)
         pos_x, pos_y, pos_z, _, _, _ = self.lib.unstack(states, 6, -1)
 
         ld = (

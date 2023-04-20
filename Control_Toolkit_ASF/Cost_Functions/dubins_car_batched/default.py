@@ -20,7 +20,7 @@ class default(cost_function_base):
     
     def _distance_to_obstacle_cost(self, x: TensorType, y: TensorType) -> TensorType:
         # x/y each have shape batch_size x mpc_horizon
-        x_obs, y_obs, radius = self.lib.unstack(self.controller.obstacle_positions[:, :, self.lib.newaxis, self.lib.newaxis], 3, 1)
+        x_obs, y_obs, radius = self.lib.unstack(self.variable_parameters.obstacle_positions[:, :, self.lib.newaxis, self.lib.newaxis], 3, 1)
         num_obstacles = self.lib.shape(x_obs)[0]
         # Repeat x and y to match the shape of the obstacle map
         x_repeated = self.lib.repeat(self.lib.unsqueeze(x, 0), num_obstacles, 0)
@@ -33,7 +33,7 @@ class default(cost_function_base):
         
     def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         x, y, yaw_car, steering_rate = self.lib.unstack(states, 4, -1)
-        target = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
+        target = self.lib.to_tensor(self.variable_parameters.target_point, self.lib.float32)
         x_target, y_target, yaw_target = self.lib.unstack(target, 3, 0)
 
         head_to_target = dubins_car_batched.get_heading(self.lib, states, self.lib.unsqueeze(target, 0))
