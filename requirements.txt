@@ -17,7 +17,7 @@ pandas
 pip
 pygame
 pyyaml
-scienceplots
+scienceplots==1.0.8
 scipy
 setuptools
 scikit-spatial
