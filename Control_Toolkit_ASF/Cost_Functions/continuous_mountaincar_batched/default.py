@@ -21,8 +21,8 @@ class default(cost_function_base):
     def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         position, velocity = self.lib.unstack(states, 2, -1)
         force = inputs[..., 0]
-        goal_position = self.controller.goal_position
-        goal_velocity = self.controller.goal_velocity
+        goal_position = self.variable_parameters.goal_position
+        goal_velocity = self.variable_parameters.goal_velocity
         
         cost = (
             - altitude_weight * self.lib.sin(3 * position)

@@ -4,3 +4,4 @@ mpc:
   cost_function_specification: default
   computation_library: tensorflow
   controller_logging: true
+  calculate_optimal_trajectory: true

@@ -17,13 +17,13 @@
 ### Any parameter specified here can also be overwritten as flag in bash.
 ### Example: `guild run controller_mpc:run_control custom_config_overwrites.config_optimizers.cem-tf.cem_best_k='[1,4,16]'`
 ###
-# custom_config_overwrites:
-  # config_controllers:
-  #   mpc:
-  #     optimizer:
-  # config_optimizers:
-  #   rpgd-tf:
-  #     learning_rate:
+#custom_config_overwrites:
+#  config_controllers:
+#    mpc:
+#      optimizer:
+#  config_optimizers:
+#    rpgd-tf:
+#      learning_rate:
 
 
 ### ------------------------------------------------------- ###
@@ -31,7 +31,7 @@
 ### The following flags are required. Modify them as needed: ###
 ### Alternatively, you can pass values as flags in bash      ###
 controller_name: controller_mpc
-environment_name: DubinsCar-v0
+environment_name: Pendulum-v0
 
 ### ------------------------------------------------------- ###
 
@@ -41,7 +41,7 @@ use_gpu: false                # currently only affects tensorflow
 logging_level: DEBUG          # typically one of ERROR, WARNING, INFO, DEBUG
 num_experiments: 10           # how many randomdly initialized episodes to run
 num_iterations: 200           # maximum no. of control steps per episode
-render_for_humans: false      # display rendering while running
+render_for_humans: true      # display rendering while running
 save_plots_to_file: false     # save renderings to file
 seed_entropy: 49604           # master seed. Spawns reproducible seeds for each episode.
 split:                        # train / val split if running ML pipeline mode

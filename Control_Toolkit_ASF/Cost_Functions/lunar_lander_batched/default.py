@@ -33,8 +33,8 @@ class default(cost_function_base):
     def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact = self.lib.unstack(states, 7, -1)
         throttle_main, throttle_lr = self.lib.unstack(inputs, 2, -1)
-        target_point = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
-        ground_contact_detector: GroundContactDetector = self.controller.ground_contact_detector
+        target_point = self.lib.to_tensor(self.variable_parameters.target_point, self.lib.float32)
+        ground_contact_detector: GroundContactDetector = self.variable_parameters.ground_contact_detector
         terminated_successfully = self.lib.cast(lunar_lander_batched.is_done(self.lib, states, target_point), self.lib.float32)
         
         cost = (
@@ -57,7 +57,7 @@ class default(cost_function_base):
 
     def get_terminal_cost(self, terminal_states: TensorType) -> TensorType:
         pos_x, pos_y, vel_x, vel_y, angle, vel_angle, contact = self.lib.unstack(terminal_states, 7, -1)
-        target_point = self.lib.to_tensor(self.controller.target_point, self.lib.float32)
+        target_point = self.lib.to_tensor(self.variable_parameters.target_point, self.lib.float32)
         terminated_successfully = self.lib.cast(lunar_lander_batched.is_done(self.lib, terminal_states, target_point), self.lib.float32)
         return (
             (-100.0) * contact * terminated_successfully

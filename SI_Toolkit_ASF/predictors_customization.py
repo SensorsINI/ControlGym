@@ -37,7 +37,7 @@ class next_state_predictor_ODE:
         self.intermediate_steps = intermediate_steps
         self.t_step = dt / float(self.intermediate_steps)
 
-    def step(self, s, Q, params):
+    def step(self, s, Q):
         for _ in range(self.intermediate_steps):
             next_state = self.step_fun(s, Q, self.t_step)
             s = next_state
