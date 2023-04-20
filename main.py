@@ -53,6 +53,7 @@ def run_data_generator(
 
     controller_short_name = controller_name.replace("controller_", "").replace("_", "-")
     optimizer_short_name = config_manager("config_controllers")[controller_short_name]["optimizer"]
+    gradient_steps = config_manager("config_optimizers")['rpgd-tf']["outer_its"]
     optimizer_name = "optimizer_" + optimizer_short_name.replace("-", "_")
     CurrentRunMemory.current_optimizer_name = optimizer_name
     all_metrics = dict(
@@ -64,6 +65,13 @@ def run_data_generator(
     
     # Loop through independent experiments
     for i in trange(num_experiments):
+        print("*****************************")
+        print("*****************************")
+        print("*****************************")
+        print("Now running {} gradient steps".format(gradient_steps))
+        print("*****************************")
+        print("*****************************")
+        print("*****************************")
         # Generate new seeds for environment and controller
         seeds = seed_sequences[i].generate_state(3)
         SeedMemory.set_seeds(seeds)

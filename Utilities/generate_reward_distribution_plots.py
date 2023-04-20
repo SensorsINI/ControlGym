@@ -21,54 +21,39 @@ On the horizontal axis, you see the scale of the rewards.
 ### List hyperparameter names and values
 fig_title = r"RPGD G"
 hp_name = r"Gradient steps"
-hp_values = [0, 2, 5, 10, 50, 200]
-hp_values = ["0", "2", "5", "10", "50", "200"]
-hp_values = ["0", "0r", "2", "2r", "5", "5r", "10", "10r", "15", "15r", "20", "20r", "30", "30r", "50", "50r", "200", "200r"]
+# hp_values = [0, 2, 5, 10, 50, 200]
+# hp_values = ["0", "2", "5", "10", "50", "200"]
+# hp_values = ["0", "0r", "2", "2r", "5", "5r", "10", "10r", "15", "15r", "20", "20r", "30", "30r", "50", "50r", "200", "200r"]
+hp_values = ["0", "0r", "1", "1r", "2", "2r", "5", "5r", "10", "10r", "15", "15r", "20", "20r", "30", "30r", "50", "50r", "100", "100r", "200", "200r", "500", "500r"]
 
-standard = [
-    "befc09d8",
-    "0a524e51",
-    "1fefd556",
-    "b214e693",
-    "3b280f33",
-    "7ee471dc",
-    "3f201d9b",
-    "a2d8043a",
-    "c47b33b6"
-]
-# reduced = [ # Old
-# "b5338280",
-# "2a22c015",
-# "e9e6005d",
-# "cbeaefed",
-# "33919ba2",
-# "4d961833",
-# ]
+GUILD_AI_HASHES = [
+    "3c03aca2", "d43ec534", "807a6fb8",
+    "e2a72f17", "031b33d5", "cdb857e4",
+    "05c73ad6", "42600468", "96747e11",
+    "c36c87cc", "c9087368", "912ce432",
+    "d6f48b22", "b87f4228", "2d6f428f",
+    "99acafe8", "f8bc8282", "9b972c9a",
+    "282fc807", "caee26e5", "8fa26f36",
+    "91a864c2", "18dda127", "11dbf244",
+    "b6adbda2", "e6bd239d", "b91835b2",
+    "b3135ad8", "9a9ef245", "3211bf2c",
+    "6642649a", "69772ab3", "894a4832",
+    "59fca9f8", "2df6a51b", "74779d58",
+    "26f74f3c", "a6056e2c", "92cfca04",
+    "e3204673", "3bd92b0d", "953b8006",
+    "0ed503af", "1a80749e", "5b345f6e",
+    "027b7535", "f9bf22fc", "acf90273",
+    "4531ee78", "0b150f89", "592dad45",
+    "fc271905", "cd2f94f6", "cedf7aed",
+    "321e2097", "77e60238", "de127cc2",
+    "4f1b41f8", "f13e3f37", "f79513dc",
+    "395d1560", "e3948911", "288f1566",
+    "533e2163", "cd339615", "1479536d",
+    "ea44b7ae", "ec4233ed", "ca527b34",
+    "56ecab37", "5df6aeb0", "c4f0325a",
 
-reduced = [
-"6af8376f",
-"d26ea738",
-"e7ebb540",
-"9f2b0c60",
-"d83c42ce",
-"32b19802",
-"6075ae26",
-"09a534ac",
-"165c2c33",
 ]
-GUILD_AI_HASHES = []
-for i in range(len(standard)):
-    GUILD_AI_HASHES.append(standard[i])
-    GUILD_AI_HASHES.append(reduced[i])
-### List GUILD AI hashes of runs to plot
-# GUILD_AI_HASHES = [
-#     "befc09d8",
-#     "0a524e51",
-#     "1fefd556",
-#     "b214e693",
-#     "a2d8043a",
-#     "c47b33b6"
-# ]
+
 
 ### Make sure that ".env" below is the path to your python virtual environment
 PATHS_TO_EXPERIMENTS = [os.path.join(".env", ".guild", "runs", h) for h in GUILD_AI_HASHES]
@@ -106,20 +91,23 @@ if __name__ == "__main__":
     
     all_x = []
     all_y = []
-    
+
+    counter_single_type = 0
     for i in range(num_experiments):
-        if i%2 == 0:
+        if (i//3)%2 == 0:
             colour_mean = "red"
         else:
             colour_mean = "green"
-        scatter_y = np.repeat(i + 1, num_trials) + np.clip(0.07 * np.random.standard_normal(num_trials), -0.35, 0.35)
-        r = all_rewards_data[i, :]
-        
-        all_x.extend(list(r))
-        all_y.extend(list(scatter_y))
 
-        ax.scatter(r, scatter_y, marker=".", c="b", s=4)
-        ax.plot([np.mean(r), np.mean(r)], [i + 1 - 0.35, i + 1 + 0.35], c=colour_mean, linewidth=0.75)
+        r = all_rewards_data[i, :]
+        # r = r[r > 1]
+        all_x.extend(list(r))
+
+        scatter_y = np.repeat(i//3 + 1, len(r)) + np.clip(0.07 * np.random.standard_normal(len(r)), -0.35, 0.35)
+        all_y.extend(list(scatter_y))
+        if i % 3 == 0:
+            ax.scatter(r, scatter_y, marker=".", c="b", s=4)
+        ax.plot([np.mean(r), np.mean(r)], [i//3 + 1 - 0.35, i//3 + 1 + 0.35], c=colour_mean, linewidth=0.75)
     
     # Save data as .dat file
     df = pd.DataFrame({
@@ -130,15 +118,19 @@ if __name__ == "__main__":
     savedir = os.path.join("Output", "cost_scatter_plots")
     if not os.path.exists(savedir):
         os.makedirs(savedir)
-    df.to_csv(os.path.join(savedir, fig_title + "_" + "_".join(GUILD_AI_HASHES) + ".dat"), sep="\t", index=False)
+    # df.to_csv(os.path.join(savedir, fig_title + "_" + "_".join(GUILD_AI_HASHES) + ".dat"), sep="\t", index=False)
+    df.to_csv(os.path.join(savedir, fig_title + "_" + "all" + ".dat"), sep="\t", index=False)
     
-    # Save plot file 
+    # Save plot file
+    # ax.set_xlim(left=0.95)
     ax.set_xlabel("realized mean reward per episode\nmore positive is better")
     ax.set_ylabel(hp_name)
-    ax.set_yticks(np.arange(1, num_experiments + 1), labels=hp_values)
+    ax.set_yticks(np.arange(1, num_experiments//3 + 1), labels=hp_values)
     ax.set_title(fig_title, fontdict={"fontsize": 9}, pad=3.0)
     # ax.spines[['top', 'right']].set_visible(False)
     fig.tight_layout(pad=1.03)
 
    
-    fig.savefig(os.path.join(savedir, fig_title + "_" + "_".join(GUILD_AI_HASHES) + ".pdf"), bbox_inches="tight", pad_inches=0.03)
+    # fig.savefig(os.path.join(savedir, fig_title + "_" + "_".join(GUILD_AI_HASHES) + ".pdf"), bbox_inches="tight", pad_inches=0.03)
+    fig.savefig(os.path.join(savedir, fig_title + "_" + "all" + ".pdf"), bbox_inches="tight",
+                pad_inches=0.03)
