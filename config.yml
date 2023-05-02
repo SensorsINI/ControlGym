@@ -31,17 +31,21 @@
 ### The following flags are required. Modify them as needed: ###
 ### Alternatively, you can pass values as flags in bash      ###
 controller_name: controller_mpc
-environment_name: DubinsCar-v0
+#environment_name: Pendulum-v0
+#environment_name: MountainCarContinuous-v0
+#environment_name: CartPoleContinuous-v0
+environment_name: ObstacleAvoidance-v0
+
 
 ### ------------------------------------------------------- ###
 
 debug: false                  # false to use tf.compile
 use_jit_compilation: true     # false for reproducibility
-use_gpu: false                # currently only affects tensorflow
+use_gpu: true                # currently only affects tensorflow
 logging_level: DEBUG          # typically one of ERROR, WARNING, INFO, DEBUG
-num_experiments: 10           # how many randomdly initialized episodes to run
+num_experiments: 1           # how many randomdly initialized episodes to run
 num_iterations: 200           # maximum no. of control steps per episode
-render_for_humans: false      # display rendering while running
+render_for_humans: true      # display rendering while running
 save_plots_to_file: false     # save renderings to file
 seed_entropy: 49604           # master seed. Spawns reproducible seeds for each episode.
 split:                        # train / val split if running ML pipeline mode

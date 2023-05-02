@@ -90,7 +90,7 @@ dist-adam-resamp2-tf:
   warmup_iterations: 250
 rpgd-tf:
   seed:                                 # If null, random seed based on datetime is used
-  mpc_horizon: 40                       # steps
+  mpc_horizon: 20                       # steps
   SAMPLING_DISTRIBUTION: uniform         # "normal" or "uniform"
   period_interpolation_inducing_points: 5                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
   learning_rate: 0.05
@@ -198,13 +198,13 @@ mppi-var-tf:
   max_grad_norm: 100000                 # max norm of gradient such that ||gradient||_2
 mppi:
   seed:                                 # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
-  mpc_horizon: 40                       # steps
-  num_rollouts: 3500                    # Number of Monte Carlo samples
+  mpc_horizon: 15                       # steps
+  num_rollouts: 2000                    # Number of Monte Carlo samples
   cc_weight: 1.0
   R: 1.0                                # How much to punish Q
   LBD: 100.0                            # Cost parameter lambda
   NU: 1000.0                            # Exploration variance
-  SQRTRHOINV: 0.1                       # Sampling variance
+  SQRTRHOINV: 1.0                       # Sampling variance
   period_interpolation_inducing_points: 10                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
 random-action-tf:
   seed:                               # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
@@ -212,9 +212,9 @@ random-action-tf:
   num_rollouts: 32
 nlp-forces:
   seed: null
-  mpc_horizon: 40                       # steps
+  mpc_horizon: 20                       # steps
   num_rollouts: 1
-  initial_guess: PD                     # no_action or PD
+  initial_guess: no_action                     # no_action or PD
 #  generate_new_solver: False
   generate_new_solver: True
   terminal_constraint_at_target: False
@@ -236,7 +236,7 @@ nlp-forces:
       cost: pendulum
       dt: 0.05                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1]             # Optimization variables idxs: [angle, ang vel]
-      is_angle: []                     # Which of the idxs refer to an angle
+      is_angle: [0]                     # Which of the idxs refer to an angle
       action_max: [ 2.0 ]               # Input constraints
       state_max: [ 6.285, 8.0]          # State constraints [2pi, v ang. max]
       idx_terminal_set: [0]
