@@ -214,7 +214,7 @@ nlp-forces:
   seed: null
   mpc_horizon: 20                       # steps
   num_rollouts: 1
-  initial_guess: no_action                     # no_action or PD
+  initial_guess: PD_3d                     # no_action or PD
 #  generate_new_solver: False
   generate_new_solver: True
   terminal_constraint_at_target: False
@@ -263,3 +263,25 @@ nlp-forces:
       state_max: [6.285, 6.285, 12.56637, 28.2743338823]          # State constraints [finish, v max]
       q: [10.0, 0.0, 0.0, 0.0]                    # State cost
       r: [0.0]                          # Input cost
+    obstacle_avoidance:
+      dynamics: obstacle_avoidance
+      cost: obstacle_avoidance
+      dt: 0.02                          # Integration stepsize, make sure matches the one of the environment
+      optimize_over: [ 0, 1, 2, 3, 4, 5]             # Optimization variables idxs: [angle, ang vel]
+      is_angle: []                     # Which of the idxs refer to an angle
+      action_max: [ 5.0, 5.0, 5.0 ]               # Input constraints
+      state_max: [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]          # State constraints [2pi, v ang. max]
+      idx_terminal_set: [ 0 ]
+      q: [0.0]                  # State cost
+      r: []                        # Input cost
+    dubins_car:
+      dynamics: dubins_car
+      cost: dubins_car
+      dt: 0.02                          # Integration stepsize, make sure matches the one of the environment
+      optimize_over: [ 0, 1, 2, 3 ]             # Optimization variables idxs: [angle, ang vel]
+      is_angle: [ ]                     # Which of the idxs refer to an angle
+      action_max: [ 5.0, 3.1416, 1.05 ]               # Input constraints
+      state_max: [ 1.0, 10.0, 3.1416, 1.05]          # State constraints [2pi, v ang. max]
+      idx_terminal_set: [ 0 ]
+      q: [ 0.0 ]                  # State cost
+      r: [ ]                        # Input cost

@@ -171,6 +171,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
             if self.initial_state is None:
                 positions = self.lib.uniform(self.rng, (1, NUM_DIMENSIONS), -MAX_POSITION, MAX_POSITION, self.lib.float32)
                 velocities = self.lib.uniform(self.rng, (1, NUM_DIMENSIONS), -MAX_VELOCITY, MAX_VELOCITY, self.lib.float32)
+                velocities = self.lib.zeros((1, NUM_DIMENSIONS))
                 self.state = self.lib.to_numpy(self.lib.concat([positions, velocities], 1))
             else:
                 self.state = self.lib.unsqueeze(self.lib.to_numpy(self.initial_state), 0)
@@ -221,7 +222,6 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         car_at_target = obstacle_avoidance_batched._at_target(lib, pos_x, pos_y, pos_z, target)
         done = car_in_bounds & car_at_target
         return done
-
     def is_truncated(self, state: TensorType, target_point: TensorType):
         target = self.lib.to_tensor(target_point, self.lib.float32)
         pos_x, pos_y, pos_z, _, _, _ = self.lib.unstack(state, 6, -1)
@@ -259,6 +259,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
 
         terminated = bool(self.is_done(NumpyLibrary, self.state, self.target_point))
+        terminated = False
         truncated = bool(self.is_truncated(self.state, self.target_point))
         reward = 0.0
 
