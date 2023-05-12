@@ -196,7 +196,7 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
                 self.state = self.lib.concat([x, y, yaw, rate], 1)
             else:
                 self.state = self.lib.unsqueeze(
-                    self.lib.to_numpy(self.initial_state), 0
+                    np.array(self.initial_state, dtype=np.float32), 0
                 )
                 x, y, theta, yaw = self.lib.unstack(self.state, 4, 1)
             self.traj_x = [float(x * MAX_X)]
@@ -258,18 +258,20 @@ class dubins_car_batched(EnvironmentBatched, gym.Env):
         action: TensorType,
         dt: float,
     ) -> TensorType:
-        x, y, yaw_car, steering_rate = self.lib.unstack(state, 4, 1)
-        throttle, steer = self.lib.unstack(action, 2, 1)
+        x, y, yaw_car, steering = self.lib.unstack(state, 4, 1)
+        throttle, steer_rate = self.lib.unstack(action, 2, 1)
         # Update the pose as per Dubin's equations
 
-        steer = self.lib.clip(steer, -MAX_STEER, MAX_STEER)
+        steer_rate = self.lib.clip(steer_rate, -MAX_STEER, MAX_STEER)
         throttle = self.lib.clip(throttle, MIN_SPEED, MAX_SPEED)
 
         x = x + throttle * self.lib.cos(yaw_car) * dt
         y = y + throttle * self.lib.sin(yaw_car) * dt
-        steering_rate += steer
-        yaw_car = yaw_car + throttle / WB * self.lib.tan(steer) * dt
-        return self.lib.stack([x, y, yaw_car, steering_rate], 1)
+        yaw_car = yaw_car + throttle / WB * self.lib.tan(steering) * dt
+        # yaw_car = yaw_car + (steering) * dt
+
+        steering += steer_rate
+        return self.lib.stack([x, y, yaw_car, steering], 1)
 
     def step(
         self, action: TensorType

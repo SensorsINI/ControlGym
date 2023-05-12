@@ -212,9 +212,10 @@ random-action-tf:
   num_rollouts: 32
 nlp-forces:
   seed: null
-  mpc_horizon: 20                       # steps
+  mpc_horizon: 15                       # steps
   num_rollouts: 1
-  initial_guess: PD_3d                     # no_action or PD
+  initial_guess: no_action                     # no_action or PD
+#  initial_guess: PD_3d                     # no_action or PD
 #  generate_new_solver: False
   generate_new_solver: True
   terminal_constraint_at_target: False
@@ -225,7 +226,7 @@ nlp-forces:
       cost: cartpole_simulator1
       dt: 0.02                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [0, 1, 4, 5]       # Optimization variables idxs: [angle, ang vel, pos, vel]
-      is_angle: [0]                      # Which of the idxs refer to an angle
+      is_angle: []                      # Which of the idxs refer to an angle
       action_max: [1.0]
       state_max: [6.284, 100.0, 0.198, 0.8]   # State constraints [pi, v ang. max, TrackHalfLegth, vmax]
       idx_terminal_set: [2]             # Which state idx are affected by terminal set
@@ -277,11 +278,11 @@ nlp-forces:
     dubins_car:
       dynamics: dubins_car
       cost: dubins_car
-      dt: 0.02                          # Integration stepsize, make sure matches the one of the environment
+      dt: 0.005                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [ 0, 1, 2, 3 ]             # Optimization variables idxs: [angle, ang vel]
       is_angle: [ ]                     # Which of the idxs refer to an angle
-      action_max: [ 5.0, 3.1416, 1.05 ]               # Input constraints
-      state_max: [ 1.0, 10.0, 3.1416, 1.05]          # State constraints [2pi, v ang. max]
+      action_max: [10.0, 6.2832]               # Input constraints
+      state_max: [ 1.0, 1.0, 6.2832, 6.2832]          # State constraints [2pi, v ang. max]
       idx_terminal_set: [ 0 ]
       q: [ 0.0 ]                  # State cost
       r: [ ]                        # Input cost

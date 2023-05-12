@@ -45,8 +45,8 @@ class default(cost_function_base):
         car_at_target = dubins_car_batched._car_at_target(self.lib, x, y, x_target, y_target)
 
         cost = (
-            self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * (-10.0)
-            + self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32) * (
+            # self.lib.cast(car_in_bounds & car_at_target, self.lib.float32) * (-10.0)
+            self.lib.cast(car_in_bounds & (~car_at_target), self.lib.float32) * (
                 distance_cost_weight * (
                     # 3 * crossTrackError**2
                     x_cost_weight * (x - x_target) ** 2
