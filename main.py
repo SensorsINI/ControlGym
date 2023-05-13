@@ -110,6 +110,8 @@ def run_data_generator(
             initial_environment_attributes=env.environment_attributes,
         )
         controller.configure(optimizer_name=optimizer_short_name, predictor_specification=config_controller["predictor_specification"])
+        if hasattr(controller.optimizer, 'environment'):
+            controller.optimizer.environment = env
 
         ##### ----------------------------------------------------- #####
         ##### ----------------- MAIN CONTROL LOOP ----------------- #####

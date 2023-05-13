@@ -29,7 +29,8 @@ class default(cost_function_base):
             (x_repeated - x_obs) ** 2 + (y_repeated - y_obs) ** 2
         )
         c = 1.0 - (self.lib.min(1.0, d / radius)) ** 2
-        return self.lib.reduce_max(c, 0)
+        obstacle_cost = self.lib.reduce_max(c, 0)
+        return obstacle_cost
         
     def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         x, y, yaw_car, steering_rate = self.lib.unstack(states, 4, -1)

@@ -90,7 +90,7 @@ dist-adam-resamp2-tf:
   warmup_iterations: 250
 rpgd-tf:
   seed:                                 # If null, random seed based on datetime is used
-  mpc_horizon: 20                       # steps
+  mpc_horizon: 15                       # steps
   SAMPLING_DISTRIBUTION: uniform         # "normal" or "uniform"
   period_interpolation_inducing_points: 5                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
   learning_rate: 0.05
@@ -216,8 +216,8 @@ nlp-forces:
   num_rollouts: 1
   initial_guess: no_action                     # no_action or PD
 #  initial_guess: PD_3d                     # no_action or PD
-#  generate_new_solver: False
-  generate_new_solver: True
+  generate_new_solver: False
+#  generate_new_solver: True
   terminal_constraint_at_target: False
   terminal_set_width: 0.0               # Set to <=0 for no terminal set
   environment_specific_parameters:
@@ -281,7 +281,7 @@ nlp-forces:
       dt: 0.005                          # Integration stepsize, make sure matches the one of the environment
       optimize_over: [ 0, 1, 2, 3 ]             # Optimization variables idxs: [angle, ang vel]
       is_angle: [ ]                     # Which of the idxs refer to an angle
-      action_max: [10.0, 6.2832]               # Input constraints
+      action_max: [10.0, 1.0471975512]               # Input constraints
       state_max: [ 1.0, 1.0, 6.2832, 6.2832]          # State constraints [2pi, v ang. max]
       idx_terminal_set: [ 0 ]
       q: [ 0.0 ]                  # State cost
