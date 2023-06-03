@@ -46,7 +46,7 @@ use_jit_compilation: true     # false for reproducibility
 use_gpu: true                # currently only affects tensorflow
 logging_level: DEBUG          # typically one of ERROR, WARNING, INFO, DEBUG
 num_experiments: 1           # how many randomdly initialized episodes to run
-num_iterations: 2000           # maximum no. of control steps per episode
+num_iterations: 300           # maximum no. of control steps per episode
 render_for_humans: true      # display rendering while running
 save_plots_to_file: false     # save renderings to file
 seed_entropy: 49607           # master seed. Spawns reproducible seeds for each episode.

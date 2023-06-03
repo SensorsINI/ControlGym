@@ -165,7 +165,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         self.count = 1
         
         target_point = self.lib.uniform(self.rng, (NUM_DIMENSIONS,), -1.0, 1.0, self.lib.float32)
-        self.lib.assign(self.target_point, target_point)
+        # self.lib.assign(self.target_point, target_point)
 
         if state is None:
             if self.initial_state is None:
@@ -226,6 +226,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         target = self.lib.to_tensor(target_point, self.lib.float32)
         pos_x, pos_y, pos_z, _, _, _ = self.lib.unstack(state, 6, -1)
         car_in_bounds = obstacle_avoidance_batched._in_bounds(self.lib, pos_x, pos_y, pos_z)
+        return False
         return ~car_in_bounds
 
     @CompileTF
@@ -246,7 +247,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         Union[np.ndarray, bool],
         dict,
     ]:
-        if self.count % self.shuffle_target_every == 0:
+        if self.count % self.shuffle_target_every == self.shuffle_target_every - 1:
             target_new = self.lib.uniform(self.rng, [NUM_DIMENSIONS,], -MAX_POSITION, MAX_POSITION, self.lib.float32)
             self.target_point.assign(target_new)
         self.count += 1
@@ -259,7 +260,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
 
         terminated = bool(self.is_done(NumpyLibrary, self.state, self.target_point))
-        terminated = False
+        # terminated = False
         truncated = bool(self.is_truncated(self.state, self.target_point))
         reward = 0.0
 

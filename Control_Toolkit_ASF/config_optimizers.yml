@@ -90,7 +90,7 @@ dist-adam-resamp2-tf:
   warmup_iterations: 250
 rpgd-tf:
   seed:                                 # If null, random seed based on datetime is used
-  mpc_horizon: 15                       # steps
+  mpc_horizon: 21                     # steps
   SAMPLING_DISTRIBUTION: uniform         # "normal" or "uniform"
   period_interpolation_inducing_points: 5                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
   learning_rate: 0.05
@@ -198,12 +198,12 @@ mppi-var-tf:
   max_grad_norm: 100000                 # max norm of gradient such that ||gradient||_2
 mppi:
   seed:                                 # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
-  mpc_horizon: 15                       # steps
+  mpc_horizon: 20                       # steps
   num_rollouts: 2000                    # Number of Monte Carlo samples
   cc_weight: 1.0
   R: 1.0                                # How much to punish Q
-  LBD: 100.0                            # Cost parameter lambda
-  NU: 1000.0                            # Exploration variance
+  LBD: 0.01                            # Cost parameter lambda
+  NU: 10.0                            # Exploration variance
   SQRTRHOINV: 1.0                       # Sampling variance
   period_interpolation_inducing_points: 10                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
 random-action-tf:
@@ -212,7 +212,7 @@ random-action-tf:
   num_rollouts: 32
 nlp-forces:
   seed: null
-  mpc_horizon: 15                       # steps
+  mpc_horizon: 21                     # steps
   num_rollouts: 1
   initial_guess: no_action                     # no_action or PD
 #  initial_guess: PD_3d                     # no_action or PD
@@ -271,7 +271,7 @@ nlp-forces:
       optimize_over: [ 0, 1, 2, 3, 4, 5]             # Optimization variables idxs: [angle, ang vel]
       is_angle: []                     # Which of the idxs refer to an angle
       action_max: [ 5.0, 5.0, 5.0 ]               # Input constraints
-      state_max: [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]          # State constraints [2pi, v ang. max]
+      state_max: [ 1.0, 1.0, 1.0, 5.0, 5.0, 5.0]          # State constraints [2pi, v ang. max]
       idx_terminal_set: [ 0 ]
       q: [0.0]                  # State cost
       r: []                        # Input cost

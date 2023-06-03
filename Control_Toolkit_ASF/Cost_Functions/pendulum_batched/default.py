@@ -32,8 +32,9 @@ class default(cost_function_base):
     def _get_stage_cost(self, states: TensorType, inputs: TensorType, previous_input: TensorType) -> TensorType:
         th, thdot, sinth, costh = self.lib.unstack(states, 4, -1)
         costs = (
-            self._angle_normalize(th) ** 2
-            + thdot_weight * thdot**2
+            # self._angle_normalize(th) ** 2
+            - costh
+            # + thdot_weight * thdot**2
             + control_cost_weight * (inputs[:, 0] ** 2)
         )
         return costs

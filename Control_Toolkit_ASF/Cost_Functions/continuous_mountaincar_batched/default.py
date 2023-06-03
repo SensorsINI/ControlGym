@@ -1,3 +1,4 @@
+import numpy as np
 import yaml
 import os
 
@@ -25,9 +26,10 @@ class default(cost_function_base):
         goal_velocity = self.controller.goal_velocity
 
 
-        position = self.lib.max(position, -0.5)
+        # position = self.lib.max(position, -0.5)
         cost = (
-            - altitude_weight * self.lib.sin(3 * position)
+            # - altitude_weight * self.lib.sin(3 * position)
+            - altitude_weight * self.lib.sin(np.pi * position)
             - done_reward * self.lib.cast(continuous_mountaincar_batched.is_done(self.lib, states, goal_position, goal_velocity), self.lib.float32)  # This part is not differentiable
             + control_penalty * (force**2)
         )
