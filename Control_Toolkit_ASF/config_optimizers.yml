@@ -216,8 +216,8 @@ nlp-forces:
   num_rollouts: 1
   initial_guess: no_action                     # no_action or PD
 #  initial_guess: PD_3d                     # no_action or PD
-  generate_new_solver: False
-#  generate_new_solver: True
+#  generate_new_solver: False
+  generate_new_solver: True
   terminal_constraint_at_target: False
   terminal_set_width: 0.0               # Set to <=0 for no terminal set
   environment_specific_parameters:
