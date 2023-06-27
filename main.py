@@ -105,8 +105,6 @@ def run_data_generator(
         controller: template_controller = getattr(controller_module, controller_name)(
             dt=env.dt,
             environment_name=ENV_REGISTRY[environment_name].split(":")[-1],
-            num_states=env.observation_space.shape[0],
-            num_control_inputs=env.action_space.shape[0],
             control_limits=(env.action_space.low, env.action_space.high),
             initial_environment_attributes=env.environment_attributes,
         )
