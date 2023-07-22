@@ -51,7 +51,7 @@ MAX_POSITION = 1.0
 MAX_VELOCITY = 1.0
 NUM_DIMENSIONS = 3  # Do not change
 
-THRESHOLD_DISTANCE_2_GOAL = 0.05
+THRESHOLD_DISTANCE_2_GOAL = 0.2
 max_ep_length = 800
 
 # Vehicle parameters
@@ -164,7 +164,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         state = options.get("state", None) if isinstance(options, dict) else None
         self.count = 1
         
-        target_point = self.lib.uniform(self.rng, (NUM_DIMENSIONS,), -1.0, 1.0, self.lib.float32)
+        target_point = self.lib.uniform(self.rng, (NUM_DIMENSIONS,), -1.0, 1.0, self.lib.float32) if self.target_point is None else self.target_point
         self.lib.assign(self.target_point, target_point)
 
         if state is None:
@@ -246,7 +246,7 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         Union[np.ndarray, bool],
         dict,
     ]:
-        if self.count % self.shuffle_target_every == 0:
+        if self.count % self.shuffle_target_every == self.shuffle_target_every-1:
             target_new = self.lib.uniform(self.rng, [NUM_DIMENSIONS,], -MAX_POSITION, MAX_POSITION, self.lib.float32)
             self.target_point.assign(target_new)
         self.count += 1
@@ -259,8 +259,9 @@ class obstacle_avoidance_batched(EnvironmentBatched, gym.Env):
         self.state = self.lib.to_numpy(self.lib.squeeze(self.state))
 
         terminated = bool(self.is_done(NumpyLibrary, self.state, self.target_point))
-        terminated = False
+        # terminated = False
         truncated = bool(self.is_truncated(self.state, self.target_point))
+        truncated = False
         reward = 0.0
 
         return self.state, float(reward), terminated, truncated, {}
