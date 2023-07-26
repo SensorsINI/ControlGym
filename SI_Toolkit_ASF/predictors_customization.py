@@ -19,7 +19,7 @@ Environment: "type[EnvironmentBatched]" = getattr(
 )
 
 
-STATE_VARIABLES = np.array([f"x_{i}" for i in range(1, Environment.num_states)])
+STATE_VARIABLES = np.array([f"x_{i}" for i in range(0, Environment.num_states)])
 STATE_INDICES = {x: np.where(STATE_VARIABLES == x)[0][0] for x in STATE_VARIABLES}
 CONTROL_INPUTS = np.array([f"u_{i}" for i in range(Environment.num_actions)])
 CONTROL_INDICES = {x: np.where(CONTROL_INPUTS == x)[0][0] for x in CONTROL_INPUTS}
