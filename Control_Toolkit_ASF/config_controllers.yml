@@ -5,3 +5,10 @@ mpc:
   computation_library: tensorflow
   controller_logging: true
   calculate_optimal_trajectory: true
+neural-imitator:
+  seed: null                            # If null, random seed based on datetime is used
+  PATH_TO_MODELS: './Output/Experiments/Experiment-1/Models/'
+  net_name: 'Dense-5IN-64H1-64H2-4OUT-0'  # TF
+  input_at_input: False
+  controller_logging: True
+  hls4ml: false
