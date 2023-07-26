@@ -21,12 +21,20 @@ cartpole_simulator_batched:
   default:
     angle_weight: 1.0
     position_weight: 1.0
-continuous_cartpole_batched:
+CartPole:
   default:
     angle_weight: 100.0
     angleD_weight: 1.0
     position_weight: 1.0
     positionD_weight: 1.0
+  quadratic_boundary_grad:
+    dd_weight: 1000.0
+    ep_weight: 8000.0
+    ekp_weight: 1000.0
+    cc_weight: 0.0
+    ccrc_weight: 1.0
+    admissible_angle: 10.0
+    R: 1.0
 continuous_mountaincar_batched:
   default:
     altitude_weight: 1.0
