@@ -17,7 +17,7 @@ next_state_predictor_ODE_tf = next_state_predictor_ODE
 
 
 class predictor_output_augmentation_tf:
-    def __init__(self, net_info, differential_network=False):
+    def __init__(self, net_info, lib, differential_network=False):
         self.net_output_indices = {
             key: value for value, key in enumerate(net_info.outputs)
         }
