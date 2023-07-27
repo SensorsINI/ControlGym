@@ -1,7 +1,7 @@
 import tensorflow as tf
 from SI_Toolkit.Functions.TF.Compile import CompileTF
 
-from SI_Toolkit_ASF.predictors_customization import (STATE_INDICES, STATE_VARIABLES, next_state_predictor_ODE)
+from SI_Toolkit_ASF.predictors_customization import (STATE_INDICES, STATE_VARIABLES, next_state_predictor_ODE, CONTROL_INPUTS, CONTROL_INDICES)
 
 STATE_INDICES_TF = tf.lookup.StaticHashTable(  # TF style dictionary
     initializer=tf.lookup.KeyValueTensorInitializer(

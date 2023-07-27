@@ -8,6 +8,11 @@ from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 
 from Utilities.utils import CurrentRunMemory, SeedMemory
 
+if hasattr(CurrentRunMemory, 'current_environment_name'):
+    pass
+else:
+    CurrentRunMemory.current_environment_name = 'Acrobot-v0'
+    print('I assume hardcoded {} environment. Change it in SI_Toolkit_ASF/predictors_customization.py'.format(CurrentRunMemory.current_environment_name))
 
 environment_module = (
     ENV_REGISTRY[CurrentRunMemory.current_environment_name]
