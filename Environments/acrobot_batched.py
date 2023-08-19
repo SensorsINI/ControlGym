@@ -1,4 +1,5 @@
 from typing import Optional, Tuple, Union
+from types import SimpleNamespace
 
 import numpy as np
 import tensorflow as tf
@@ -9,7 +10,7 @@ from gymnasium.envs.classic_control.acrobot import AcrobotEnv
 
 from Control_Toolkit.others.environment import EnvironmentBatched
 from SI_Toolkit.computation_library import ComputationLibrary, NumpyLibrary, TensorType
-
+from Acrobot_helper_functions import _dsdt, rk4
 
 class acrobot_batched(EnvironmentBatched, AcrobotEnv):
     num_actions = 1
@@ -43,6 +44,19 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         self.set_computation_library(computation_lib)
         self._set_up_rng(kwargs["seed"])
 
+        parameters = SimpleNamespace()
+        parameters.m1 = self.LINK_MASS_1
+        parameters.m2 = self.LINK_MASS_2
+        parameters.l1 = self.LINK_LENGTH_1
+        parameters.lc1 = self.LINK_COM_POS_1
+        parameters.lc2 = self.LINK_COM_POS_2
+        parameters.I1 = self.LINK_MOI
+        parameters.I2 = self.LINK_MOI
+        parameters.g = 9.8
+
+        self._dsdt = _dsdt(parameters, self.lib, source='gym', book_or_nips=self.book_or_nips)
+
+
     def step_dynamics(
         self,
         state: TensorType,
@@ -53,7 +67,7 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         s_augmented = self.lib.concat([state, torque], 1)
 
         th1_new, th2_new, th1_vel_new, th2_vel_new = self.lib.unstack(
-            self.rk4(self._dsdt, s_augmented, [0, dt]), 4, 1
+            rk4(self._dsdt, s_augmented, [0, dt], self.lib), 4, 1
         )
 
         # Wrap angles
@@ -85,25 +99,7 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
         assert self._batch_size == 1
         action = self._apply_actuator_noise(action)
 
-        torque = action
-        s_augmented = self.lib.concat([self.state, torque], 1)
-
-        th1_new, th2_new, th1_vel_new, th2_vel_new = self.lib.unstack(
-            self.rk4(self._dsdt, s_augmented, [0, self.dt]), 4, 1
-        )
-
-        # Wrap angles
-        th1_new = (
-            self.lib.floormod(th1_new + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
-        )
-        th2_new = (
-            self.lib.floormod(th2_new + self.lib.pi, 2 * self.lib.pi) - self.lib.pi
-        )
-
-        # Clip angular velocities
-        th1_vel_new = self.lib.clip(th1_vel_new, -self.MAX_VEL_1, self.MAX_VEL_1)
-        th2_vel_new = self.lib.clip(th2_vel_new, -self.MAX_VEL_2, self.MAX_VEL_2)
-        self.state = self.lib.stack([th1_new, th2_new, th1_vel_new, th2_vel_new], 1)
+        self.state = self.step_dynamics(self.state, action, self.dt)
 
         terminated = bool(self.is_done(self.lib, self.state))
         truncated = False
@@ -143,6 +139,10 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
             else:
                 ns = state
 
+        # ns = self.lib.uniform(self.rng, (4,), -0.0, 0.0, self.lib.float32) #* self.lib.to_tensor([np.pi, np.pi, 4.0 * np.pi, 9.0 * np.pi], self.lib.float32)
+        # ns = ns*self.lib.to_tensor([0.0, 1.0, 1.0, 1.0], self.lib.float32) + self.lib.to_tensor([np.pi/2.0, np.pi/2.0, 0.0, 0.0], self.lib.float32)
+        # ns = ns * self.lib.to_tensor([0.0, 1.0, 1.0, 1.0], self.lib.float32) + self.lib.to_tensor([np.pi / 2.0, np.pi / 2.0, 0.0, 0.0], self.lib.float32)
+        ns = self.lib.to_tensor([0.0, 0.0, 0.0, 0.0], self.lib.float32)
         # Augment state with sin/cos
         self.state = ns
 
@@ -167,54 +167,6 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
             1,
         )
 
-    def _dsdt(self, s_augmented):
-        m1 = self.LINK_MASS_1
-        m2 = self.LINK_MASS_2
-        l1 = self.LINK_LENGTH_1
-        lc1 = self.LINK_COM_POS_1
-        lc2 = self.LINK_COM_POS_2
-        I1 = self.LINK_MOI
-        I2 = self.LINK_MOI
-        g = 9.8
-        theta1, theta2, dtheta1, dtheta2, a = self.lib.unstack(s_augmented, 5, 1)
-        d1 = (
-            m1 * lc1**2
-            + m2 * (l1**2 + lc2**2 + 2 * l1 * lc2 * self.lib.cos(theta2))
-            + I1
-            + I2
-        )
-        d2 = m2 * (lc2**2 + l1 * lc2 * self.lib.cos(theta2)) + I2
-        phi2 = m2 * lc2 * g * self.lib.cos(theta1 + theta2 - self.lib.pi / 2.0)
-        phi1 = (
-            -m2 * l1 * lc2 * dtheta2**2 * self.lib.sin(theta2)
-            - 2 * m2 * l1 * lc2 * dtheta2 * dtheta1 * self.lib.sin(theta2)
-            + (m1 * lc1 + m2 * l1) * g * self.lib.cos(theta1 - self.lib.pi / 2)
-            + phi2
-        )
-        if self.book_or_nips == "nips":
-            # the following line is consistent with the description in the
-            # paper
-            ddtheta2 = (a + d2 / d1 * phi1 - phi2) / (m2 * lc2**2 + I2 - d2**2 / d1)
-        else:
-            # the following line is consistent with the java implementation and the
-            # book
-            ddtheta2 = (
-                a
-                + d2 / d1 * phi1
-                - m2 * l1 * lc2 * dtheta1**2 * self.lib.sin(theta2)
-                - phi2
-            ) / (m2 * lc2**2 + I2 - d2**2 / d1)
-        ddtheta1 = -(d2 * ddtheta2 + phi1) / d1
-        return self.lib.stack(
-            [
-                dtheta1,
-                dtheta2,
-                ddtheta1,
-                ddtheta2,
-                self.lib.zeros_like(dtheta1),
-            ],
-            1,
-        )
 
     def bound(self, x, m, M=None):
         """Either have m as scalar, so bound(x,m,M) which returns m <= x <= M *OR*
@@ -233,45 +185,3 @@ class acrobot_batched(EnvironmentBatched, AcrobotEnv):
             m = m[0]
         # bound x between min (m) and Max (M)
         return self.lib.min(self.lib.max(x, m), M)
-
-    def rk4(self, derivs, y0, t):
-        """
-        Integrate 1-D or N-D system of ODEs batch-wise using 4-th order Runge-Kutta.
-
-        Example for 2D system:
-
-            >>> def derivs(x):
-            ...     d1 =  x[0] + 2*x[1]
-            ...     d2 =  -3*x[0] + 4*x[1]
-            ...     return d1, d2
-
-            >>> dt = 0.0005
-            >>> t = np.arange(0.0, 2.0, dt)
-            >>> y0 = (1,2)
-            >>> yout = rk4(derivs, y0, t)
-
-        Args:
-            derivs: the derivative of the system and has the signature ``dy = derivs(yi)``
-            y0: initial state vector
-            t: sample times
-
-        Returns:
-            yout: Runge-Kutta approximation of the ODE
-        """
-        yout = self.lib.unsqueeze(y0, 1)  # batch_size x rk-steps x states
-
-        for i in np.arange(len(t) - 1):
-
-            this = t[i]
-            dt = t[i + 1] - this
-            dt2 = dt / 2.0
-            y0 = yout[:, i, :]
-
-            k1 = derivs(y0)
-            k2 = derivs(y0 + dt2 * k1)
-            k3 = derivs(y0 + dt2 * k2)
-            k4 = derivs(y0 + dt * k3)
-            y_next = self.lib.unsqueeze(y0 + dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4), 1)
-            yout = self.lib.concat([yout, y_next], 1)
-        # We only care about the final timestep and we cleave off action value which will be zero
-        return yout[:, -1, :4]
