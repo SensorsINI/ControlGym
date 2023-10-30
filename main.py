@@ -21,11 +21,11 @@ def run_data_generator(
     )
 
     # Loop through independent experiments
-    for i in trange(Env.num_experiments):
-        Env.make(i)
-        for step in range(Env.num_iterations):
+    for _ in trange(Env.num_experiments):
+        Env.reset()
+        for _ in range(Env.num_iterations):
             action = Env.controller.step(Env.obs, updated_attributes=Env.env.environment_attributes)
-            obs, reward, terminated, truncated, info = Env.step(action, step)
+            obs, reward, terminated, truncated, info = Env.step(action)
 
             Env.render()
 

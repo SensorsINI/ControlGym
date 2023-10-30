@@ -38,6 +38,9 @@ class EnvManager:
                  config_manager: ConfigManager,
                  run_for_ML_Pipeline=False,
                  record_path=None,
+                 num_experiments=None,
+                 num_iterations=None,
+                 concat_state_and_attributes=False,
                  ):
 
         self.CRM = CRM
@@ -46,6 +49,7 @@ class EnvManager:
         self.config_manager = config_manager
         self.run_for_ML_Pipeline = run_for_ML_Pipeline
         self.record_path = record_path
+        self.concat_state_and_attributes = concat_state_and_attributes
 
         # Generate seeds and set timestamp
         timestamp = datetime.now()
@@ -54,7 +58,16 @@ class EnvManager:
             seed_entropy = int(timestamp.timestamp())
             logger.info("No seed entropy specified. Setting to posix timestamp.")
 
-        self.num_experiments = self.config_manager("config")["num_experiments"]
+        if num_experiments is None:
+            self.num_experiments = self.config_manager("config")["num_experiments"]
+        else:
+            self.num_experiments = num_experiments
+
+        if num_iterations is None:
+            self.num_iterations = self.config_manager("config")["num_iterations"]
+        else:
+            self.num_iterations = num_iterations
+
         self.seed_sequences = SeedSequence(entropy=seed_entropy).spawn(self.num_experiments)
         self.timestamp_str = timestamp.strftime("%Y%m%d-%H%M%S")
 
@@ -75,6 +88,7 @@ class EnvManager:
         )
 
         self.i = 0
+        self.experiment_step = 0
 
         self.frames = []
         self.start_time = None
@@ -82,7 +96,7 @@ class EnvManager:
         self.env = None
         self.controller = None
 
-        self.num_iterations = None
+        self.sorted_attributes_keys = []
 
         self.config_controller = None
 
@@ -92,8 +106,10 @@ class EnvManager:
 
         self.all_rewards = []
 
-    def make(self, i):
-        self.i = i
+    def reset(self):
+        self.i += 1
+        self.experiment_step = 0
+
         # Generate new seeds for environment and controller
         seeds = self.seed_sequences[self.i].generate_state(3)
         SeedMemory.set_seeds(seeds)
@@ -145,9 +161,9 @@ class EnvManager:
         self.controller.configure(optimizer_name=self.optimizer_short_name,
                              predictor_specification=self.config_controller["predictor_specification"])
 
-        self.num_iterations = self.config_manager("config")["num_iterations"]
 
-    def step(self, action, step):
+    def step(self, action):
+        self.experiment_step += 1
         new_obs, reward, self.terminated, self.truncated, info = self.env.step(action)
         c_fun: CostFunctionWrapper = getattr(self.controller, "cost_function", None)
         if c_fun is not None:
@@ -163,9 +179,17 @@ class EnvManager:
             self.controller.logs["realized_cost_logged"].append(np.array([-reward]).copy())
             self.env.set_logs(self.controller.logs)
         logger.debug(
-            f"\nStep          : {step + 1}/{self.num_iterations}\nObservation   : {self.obs}\nPlanned Action: {action}\n"
+            f"\nStep          : {self.experiment_step + 1}/{self.num_iterations}\nObservation   : {self.obs}\nPlanned Action: {action}\n"
         )
         self.obs = new_obs
+
+        if self.concat_state_and_attributes:
+            observation = np.copy(self.obs)
+            self.sorted_attributes_keys = np.sort(self.env.environment_attributes.keys())
+            for key in self.sorted_attributes_keys:
+                np.append(observation, self.enc.environment_attributesp[key])
+        else:
+            observation = self.obs
 
         # If the episode is up, start a new experiment
         if self.truncated:
@@ -173,7 +197,7 @@ class EnvManager:
         elif self.terminated:
             logger.info(f"Episode terminated successfully")
 
-        return self.obs, reward, self.terminated, self.truncated, info
+        return observation, reward, self.terminated, self.truncated, info
 
     def render(self):
         if self.config_manager("config")["render_for_humans"]:
