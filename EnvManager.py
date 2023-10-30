@@ -32,7 +32,6 @@ logger = get_logger(__name__)
 
 class EnvManager:
     def __init__(self,
-                 CRM: CurrentRunMemory,
                  controller_name: str,
                  environment_name: str,
                  config_manager: ConfigManager,
@@ -43,7 +42,7 @@ class EnvManager:
                  concat_state_and_attributes=False,
                  ):
 
-        self.CRM = CRM
+        self.CRM = CurrentRunMemory
         self.controller_name = controller_name
         self.environment_name = environment_name
         self.config_manager = config_manager

@@ -12,7 +12,6 @@ def run_data_generator(
 ):
 
     Env = EnvManager(
-        CRM=CurrentRunMemory,
         controller_name=controller_name,
         environment_name=environment_name,
         config_manager=config_manager,
