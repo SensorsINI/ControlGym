@@ -10,10 +10,11 @@ from typing import Any, Optional
 import tensorflow as tf
 import torch
 
-from yaml import FullLoader, load, safe_load
+from yaml import safe_load
 from Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.load_and_normalize import load_yaml
 
-config = load(open("config.yml", "r"), Loader=FullLoader)
+config = load_yaml("config.yml", "r")
 
 
 class CustomFormatter(logging.Formatter):

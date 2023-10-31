@@ -1,14 +1,11 @@
-import yaml
 import os
 
 from SI_Toolkit.computation_library import TensorType
+from SI_Toolkit.load_and_normalize import load_yaml
 from Control_Toolkit.Cost_Functions import cost_function_base
 from Environments.cartpole_simulator_batched import cartpole_simulator_batched
 
-config = yaml.load(
-    open(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), "r"),
-    Loader=yaml.FullLoader,
-)
+config = load_yaml(os.path.join("Control_Toolkit_ASF", "config_cost_function.yml"), 'r')
 angle_weight = float(config["cartpole_simulator_batched"]["default"]["angle_weight"])
 position_weight = float(config["cartpole_simulator_batched"]["default"]["position_weight"])
 

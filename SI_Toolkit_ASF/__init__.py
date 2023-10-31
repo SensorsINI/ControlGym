@@ -1,6 +1,6 @@
-from yaml import load, FullLoader
+from SI_Toolkit.load_and_normalize import load_yaml
 
-config = load(open("config.yml", "r"), Loader=FullLoader)
+config = load_yaml("config.yml", "r")
 
 
 GLOBALLY_DISABLE_COMPILATION = config["debug"]
