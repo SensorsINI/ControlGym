@@ -1,7 +1,7 @@
 import os
 from tqdm import trange
-from Utilities.utils import ConfigManager,  CurrentRunMemory, nested_assignment_to_ordereddict
-from EnvManager import EnvManager
+from Utilities.utils import ConfigManager
+from EnvManager import EnvManager, prepare_run
 
 def run_data_generator(
     controller_name: str,
@@ -39,25 +39,8 @@ def run_data_generator(
     Env.summary()
 
 def prepare_and_run():
-    import ruamel.yaml
-    
-    # Create a config manager which looks for '.yml' files within the list of folders specified.
-    # Rationale: We want GUILD AI to be able to update values in configs that we include in this list.
-    # We might intentionally want to exclude the path to a folder which does contain configs but should not be overwritten by GUILD. 
-    config_manager = ConfigManager(".", "Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments")
-    
-    # Scan for any custom parameters that should overwrite the toolkits' config files:
-    submodule_configs = ConfigManager("Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments").loaders
-    for base_name, loader in submodule_configs.items():
-        if base_name in config_manager("config").get("custom_config_overwrites", {}):
-            data: ruamel.yaml.comments.CommentedMap = loader.load()
-            update_dict = config_manager("config")["custom_config_overwrites"][base_name]
-            nested_assignment_to_ordereddict(data, update_dict)
-            loader.overwrite_config(data)
-    
-    # Retrieve required parameters from config:
-    CurrentRunMemory.current_controller_name = config_manager("config")["controller_name"]
-    CurrentRunMemory.current_environment_name = config_manager("config")["environment_name"]
+
+    config_manager, CurrentRunMemory = prepare_run()
     
     run_data_generator(
         controller_name=CurrentRunMemory.current_controller_name,

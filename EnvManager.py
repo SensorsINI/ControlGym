@@ -20,7 +20,7 @@ from Environments import ENV_REGISTRY, register_envs
 from SI_Toolkit.computation_library import TensorFlowLibrary
 from Utilities.csv_helpers import save_to_csv
 from Utilities.generate_plots import generate_experiment_plots
-from Utilities.utils import ConfigManager, CurrentRunMemory, OutputPath, SeedMemory, get_logger
+from Utilities.utils import ConfigManager, CurrentRunMemory, OutputPath, SeedMemory, get_logger, nested_assignment_to_ordereddict
 
 
 
@@ -28,6 +28,33 @@ sys.path.append(os.path.join(os.path.abspath("."),
                              "CartPoleSimulation"))  # Keep allowing absolute imports within CartPoleSimulation subgit
 register_envs()  # Gym API: Register custom environments
 logger = get_logger(__name__)
+
+def prepare_run(path_to_controlgym="."):
+    import ruamel.yaml
+
+    # Create a config manager which looks for '.yml' files within the list of folders specified.
+    # Rationale: We want GUILD AI to be able to update values in configs that we include in this list.
+    # We might intentionally want to exclude the path to a folder which does contain configs but should not be overwritten by GUILD.
+    config_default_locations = ["", "Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments"]
+    config_locations = [os.path.join(path_to_controlgym, x) for x in config_default_locations]
+    config_manager = ConfigManager(*config_locations)
+
+    # Scan for any custom parameters that should overwrite the toolkits' config files:
+    submodule_configs_default_locations = [".", "Control_Toolkit_ASF", "SI_Toolkit_ASF", "Environments"]
+    submodule_configs_locations = [os.path.join(path_to_controlgym, x) for x in submodule_configs_default_locations]
+    submodule_configs = ConfigManager(*submodule_configs_locations).loaders
+    for base_name, loader in submodule_configs.items():
+        if base_name in config_manager("config").get("custom_config_overwrites", {}):
+            data: ruamel.yaml.comments.CommentedMap = loader.load()
+            update_dict = config_manager("config")["custom_config_overwrites"][base_name]
+            nested_assignment_to_ordereddict(data, update_dict)
+            loader.overwrite_config(data)
+
+    # Retrieve required parameters from config:
+    CurrentRunMemory.current_controller_name = config_manager("config")["controller_name"]
+    CurrentRunMemory.current_environment_name = config_manager("config")["environment_name"]
+
+    return config_manager, CurrentRunMemory
 
 
 class EnvManager:
