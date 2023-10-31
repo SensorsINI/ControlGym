@@ -106,7 +106,8 @@ class EnvManager:
         self.all_rewards = []
 
     def reset(self):
-        self.i += 1
+        if self.i != 0:
+            self.i += 1
         self.experiment_step = 0
 
         # Generate new seeds for environment and controller
@@ -162,7 +163,8 @@ class EnvManager:
 
 
     def step(self, action):
-        self.experiment_step += 1
+        if self.experiment_step != 0:
+            self.experiment_step += 1
         new_obs, reward, self.terminated, self.truncated, info = self.env.step(action)
         c_fun: CostFunctionWrapper = getattr(self.controller, "cost_function", None)
         if c_fun is not None:
