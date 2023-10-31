@@ -67,6 +67,7 @@ class EnvManager:
                  num_experiments=None,
                  num_iterations=None,
                  concat_state_and_attributes=False,
+                 gym_output_format=False,
                  ):
 
         self.CRM = CurrentRunMemory
@@ -76,6 +77,7 @@ class EnvManager:
         self.run_for_ML_Pipeline = run_for_ML_Pipeline
         self.record_path = record_path
         self.concat_state_and_attributes = concat_state_and_attributes
+        self.gym_output_format = gym_output_format
 
         # Generate seeds and set timestamp
         timestamp = datetime.now()
@@ -129,6 +131,7 @@ class EnvManager:
         self.obs = None
         self.truncated = None
         self.terminated = None
+        self.done = None
 
         self.all_rewards = []
 
@@ -188,10 +191,13 @@ class EnvManager:
         self.controller.configure(optimizer_name=self.optimizer_short_name,
                              predictor_specification=self.config_controller["predictor_specification"])
 
+        return self.obs
+
 
     def step(self, action):
         if self.experiment_step != 0:
             self.experiment_step += 1
+        action = np.array(action, dtype=np.float32)
         new_obs, reward, self.terminated, self.truncated, info = self.env.step(action)
         c_fun: CostFunctionWrapper = getattr(self.controller, "cost_function", None)
         if c_fun is not None:
@@ -213,9 +219,9 @@ class EnvManager:
 
         if self.concat_state_and_attributes:
             observation = np.copy(self.obs)
-            self.sorted_attributes_keys = np.sort(self.env.environment_attributes.keys())
+            self.sorted_attributes_keys = np.sort(list(self.env.environment_attributes.keys()))
             for key in self.sorted_attributes_keys:
-                np.append(observation, self.enc.environment_attributesp[key])
+                np.append(observation, self.env.environment_attributes[key])
         else:
             observation = self.obs
 
@@ -225,7 +231,12 @@ class EnvManager:
         elif self.terminated:
             logger.info(f"Episode terminated successfully")
 
-        return observation, reward, self.terminated, self.truncated, info
+        self.done = self.truncated or self.terminated
+
+        if self.gym_output_format:
+            return observation, reward, self.done, info
+        else:
+            return observation, reward, self.terminated, self.truncated, info
 
     def render(self):
         if self.config_manager("config")["render_for_humans"]:
